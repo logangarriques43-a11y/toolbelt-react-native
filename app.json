@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Toolbelt",
-    "slug": "Toolbelt",
+    "slug": "toolbelt-react-native",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -34,11 +34,19 @@
             "imageWidth": 76
           }
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "874c5a7f-97f1-49e4-bd72-fa7ab8e83f06"
+      }
+    },
+    "owner": "toolbelt-tools"
   }
 }
