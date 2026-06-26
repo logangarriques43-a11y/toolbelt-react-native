@@ -31,9 +31,6 @@ export default function Dashboard() {
 
   const displayName = resolveDisplayName(account?.name, account?.email);
 
-  // TODO(phase 2+): these navigate to feature screens as they land.
-  const todo = () => {};
-
   return (
     <DashboardGradient>
       <SafeAreaView style={styles.safe} edges={['top']}>
@@ -51,8 +48,8 @@ export default function Dashboard() {
             </View>
 
             <View style={styles.headerActions}>
-              {/* Payout setup (deferred — Phase 7). */}
-              <Pressable onPress={todo} hitSlop={8}>
+              {/* Payout setup (Stripe Connect — Phase 7, webview-stubbed). */}
+              <Pressable onPress={() => router.push('/payout')} hitSlop={8}>
                 <Icon name="wrench.and.screwdriver.fill" size={22} color={Brand.accent} />
               </Pressable>
               <Pressable onPress={signOut} hitSlop={8} accessibilityRole="button">

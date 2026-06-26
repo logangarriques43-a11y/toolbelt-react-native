@@ -103,7 +103,7 @@ export default function Settings() {
           <Section title="Payments & Billing">
             <Row icon="creditcard.fill" title="Payment Methods" color={iOSColors.green} onPress={() => soon('Payments')} />
             <Divider />
-            <Row icon="banknote.fill" title="Payout Settings" color={iOSColors.mint} onPress={() => soon('Payouts')} />
+            <Row icon="banknote.fill" title="Payout Settings" color={iOSColors.mint} onPress={() => router.push('/payout')} />
             <Divider />
             <Row icon="doc.text.fill" title="Invoice Settings" subtitle="Default tax rate, terms, notes" color={iOSColors.blue} onPress={() => router.push('/settings/invoice-settings')} />
             <Divider />
@@ -121,7 +121,7 @@ export default function Settings() {
           <Section title="Data & Privacy">
             <Row icon="square.and.arrow.up.fill" title="Export Data" color={iOSColors.blue} onPress={() => router.push('/settings/export-data')} />
             <Divider />
-            <Row icon="square.and.arrow.down.fill" title="Import Data" color={iOSColors.green} onPress={() => soon('Import Data')} />
+            <Row icon="square.and.arrow.down.fill" title="Import Data" color={iOSColors.green} onPress={() => router.push('/import-data')} />
             <Divider />
             <Row icon="hand.raised.fill" title="Privacy Policy" color={iOSColors.gray} onPress={() => open('privacy')} />
             <Divider />
@@ -136,7 +136,7 @@ export default function Settings() {
             <Divider />
             <Row icon="key.fill" title="Change Password" color={iOSColors.orange} onPress={() => soon('Change password')} />
             <Divider />
-            <Row icon="shield.checkered" title="Two-Factor Authentication" color={iOSColors.green} onPress={() => soon('2FA')} />
+            <Row icon="shield.checkered" title="Two-Factor Authentication" color={iOSColors.green} onPress={() => router.push('/security')} />
             <Divider />
             <Row icon="rectangle.portrait.and.arrow.right" title="Log Out" color={iOSColors.red} onPress={signOut} />
           </Section>
