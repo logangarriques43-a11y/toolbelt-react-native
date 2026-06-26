@@ -11,7 +11,8 @@ import { DEFAULT_SERVICE_COLOR, type Service } from '@/models/service';
 
 export interface ServicesStore {
   services: Service[];
-  addService: (s: Omit<Service, 'id'>) => void;
+  /** Returns the created service (with its generated id). */
+  addService: (s: Omit<Service, 'id'>) => Service;
   updateService: (s: Service) => void;
   deleteService: (id: string) => void;
   findService: (id: string) => Service | undefined;
@@ -40,7 +41,11 @@ export function ServicesProvider({ children }: { children: ReactNode }) {
   const value = useMemo<ServicesStore>(
     () => ({
       services,
-      addService: (s) => setServices((prev) => [...prev, { ...s, id: uuid() }]),
+      addService: (s) => {
+        const created: Service = { ...s, id: uuid() };
+        setServices((prev) => [...prev, created]);
+        return created;
+      },
       updateService: (s) =>
         setServices((prev) => prev.map((it) => (it.id === s.id ? s : it))),
       deleteService: (id) => setServices((prev) => prev.filter((it) => it.id !== id)),

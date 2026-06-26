@@ -96,7 +96,7 @@ export default function Dashboard() {
                 title="Stock Managment"
                 value="Inventory"
                 color={iOSColors.indigo}
-                onPress={todo}
+                onPress={() => router.push('/inventory')}
               />
             </View>
             <View style={styles.statRow}>
@@ -105,7 +105,7 @@ export default function Dashboard() {
                 title="Vendor Marketplace"
                 value="Vending"
                 color={iOSColors.teal}
-                onPress={todo}
+                onPress={() => router.push('/vending')}
               />
               <DashboardStatCard
                 icon="megaphone.fill"

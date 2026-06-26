@@ -7,12 +7,15 @@ import { BusinessSettingsProvider } from '@/context/business-settings-store';
 import { ClientsProvider } from '@/context/clients-store';
 import { ExpensesProvider } from '@/context/expenses-store';
 import { FeatureSetupProvider } from '@/context/feature-setup-store';
+import { InventoryProvider } from '@/context/inventory-store';
 import { InvoicesProvider } from '@/context/invoices-store';
 import { ProductsProvider } from '@/context/products-store';
 import { SalesProvider } from '@/context/sales-store';
 import { ServicesProvider } from '@/context/services-store';
+import { SMSProvider } from '@/context/sms-store';
 import { StaffProvider } from '@/context/staff-store';
 import { TimeOffProvider } from '@/context/time-off-store';
+import { VendorProvider } from '@/context/vendor-store';
 import { WorkingHoursProvider } from '@/context/working-hours-store';
 
 /**
@@ -33,11 +36,17 @@ export default function AppLayout() {
                     <ProductsProvider>
                       <SalesProvider>
                         <FeatureSetupProvider>
-                          <AppointmentsProvider>
-                            <AppointmentFormProvider>
-                              <Stack screenOptions={{ headerShown: false }} />
-                            </AppointmentFormProvider>
-                          </AppointmentsProvider>
+                          <InventoryProvider>
+                            <SMSProvider>
+                              <VendorProvider>
+                                <AppointmentsProvider>
+                                  <AppointmentFormProvider>
+                                    <Stack screenOptions={{ headerShown: false }} />
+                                  </AppointmentFormProvider>
+                                </AppointmentsProvider>
+                              </VendorProvider>
+                            </SMSProvider>
+                          </InventoryProvider>
                         </FeatureSetupProvider>
                       </SalesProvider>
                     </ProductsProvider>

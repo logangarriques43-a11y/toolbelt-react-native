@@ -26,7 +26,7 @@ export function HamburgerMenu({ visible, onClose }: { visible: boolean; onClose:
   const router = useRouter();
   const { account, signOut } = useSession();
 
-  const go = (path: '/appointments/search' | '/clients' | '/services' | '/staff') => {
+  const go = (path: '/appointments/search' | '/clients' | '/services' | '/staff' | '/import-data' | '/messages' | '/sms-conversations') => {
     onClose();
     router.push(path);
   };
@@ -61,12 +61,12 @@ export function HamburgerMenu({ visible, onClose }: { visible: boolean; onClose:
               <Item icon="house.fill" title="Dashboard" color={PROFILE_BLUE} onPress={dashboard} />
               <Item icon="person.3.fill" title="Clients" color="#4CBF80" onPress={() => go('/clients')} />
               <Item icon="list.clipboard.fill" title="Services" color="#9966E6" onPress={() => go('/services')} />
-              <Item icon="message.fill" title="Messages" color="#F29933" onPress={() => stub('Messages')} />
-              <Item icon="bubble.left.and.text.bubble.right.fill" title="AI Texting" color="#3380FF" onPress={() => stub('AI Texting')} />
+              <Item icon="message.fill" title="Messages" color="#F29933" onPress={() => go('/messages')} />
+              <Item icon="bubble.left.and.text.bubble.right.fill" title="AI Texting" color="#3380FF" onPress={() => go('/sms-conversations')} />
               <Item icon="person.badge.key.fill" title="Staff" color="#F29933" onPress={() => go('/staff')} />
               <Item icon="globe" title="Online Booking" color="#66B3E6" onPress={() => stub('Online Booking')} />
               <Item icon="list.number" title="Waitlist" color="#E68099" onPress={() => stub('Waitlist')} />
-              <Item icon="square.and.arrow.down.on.square" title="Import Data" color="#33B399" onPress={() => stub('Import Data')} />
+              <Item icon="square.and.arrow.down.on.square" title="Import Data" color="#33B399" onPress={() => go('/import-data')} />
               <View style={[styles.divider, { backgroundColor: withOpacity(iOSColors.gray, 0.3), marginVertical: 8 }]} />
               <Item icon="gearshape.fill" title="Settings" color={iOSColors.gray} onPress={() => stub('Settings')} />
               <Item icon="rectangle.portrait.and.arrow.right" title="Logout" color={iOSColors.red} onPress={logout} />

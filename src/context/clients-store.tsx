@@ -10,7 +10,8 @@ import type { Client } from '@/models/client';
 
 export interface ClientsStore {
   clients: Client[];
-  addClient: (c: Omit<Client, 'id'>) => void;
+  /** Returns the created client (with its generated id). */
+  addClient: (c: Omit<Client, 'id'>) => Client;
   updateClient: (c: Client) => void;
   deleteClient: (id: string) => void;
   findClient: (id: string) => Client | undefined;
@@ -25,7 +26,11 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
   const value = useMemo<ClientsStore>(
     () => ({
       clients,
-      addClient: (c) => setClients((prev) => [...prev, { ...c, id: uuid() }]),
+      addClient: (c) => {
+        const created: Client = { ...c, id: uuid() };
+        setClients((prev) => [...prev, created]);
+        return created;
+      },
       updateClient: (c) =>
         setClients((prev) => prev.map((it) => (it.id === c.id ? c : it))),
       deleteClient: (id) => setClients((prev) => prev.filter((it) => it.id !== id)),
