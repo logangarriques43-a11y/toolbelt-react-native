@@ -80,7 +80,7 @@ export default function Dashboard() {
                 title="Payments"
                 value="Payments"
                 color={iOSColors.purple}
-                onPress={todo}
+                onPress={() => router.push('/payments')}
               />
             </View>
             <View style={styles.statRow}>

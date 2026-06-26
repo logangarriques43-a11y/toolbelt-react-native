@@ -6,7 +6,10 @@ import { AppointmentsProvider } from '@/context/appointments-store';
 import { BusinessSettingsProvider } from '@/context/business-settings-store';
 import { ClientsProvider } from '@/context/clients-store';
 import { ExpensesProvider } from '@/context/expenses-store';
+import { FeatureSetupProvider } from '@/context/feature-setup-store';
 import { InvoicesProvider } from '@/context/invoices-store';
+import { ProductsProvider } from '@/context/products-store';
+import { SalesProvider } from '@/context/sales-store';
 import { ServicesProvider } from '@/context/services-store';
 import { StaffProvider } from '@/context/staff-store';
 import { TimeOffProvider } from '@/context/time-off-store';
@@ -27,11 +30,17 @@ export default function AppLayout() {
               <AccountingProvider>
                 <ExpensesProvider>
                   <InvoicesProvider>
-                    <AppointmentsProvider>
-                      <AppointmentFormProvider>
-                        <Stack screenOptions={{ headerShown: false }} />
-                      </AppointmentFormProvider>
-                    </AppointmentsProvider>
+                    <ProductsProvider>
+                      <SalesProvider>
+                        <FeatureSetupProvider>
+                          <AppointmentsProvider>
+                            <AppointmentFormProvider>
+                              <Stack screenOptions={{ headerShown: false }} />
+                            </AppointmentFormProvider>
+                          </AppointmentsProvider>
+                        </FeatureSetupProvider>
+                      </SalesProvider>
+                    </ProductsProvider>
                   </InvoicesProvider>
                 </ExpensesProvider>
               </AccountingProvider>

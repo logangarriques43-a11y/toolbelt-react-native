@@ -16,6 +16,7 @@ import { Icon } from '@/components/icon';
 import { ScreenHeader } from '@/components/screen-header';
 import { useAccounting } from '@/context/accounting-store';
 import { useExpenses } from '@/context/expenses-store';
+import { useSales } from '@/context/sales-store';
 import { withOpacity } from '@/lib/color';
 import { useState } from 'react';
 import type { TransactionPeriod } from '@/models/transaction';
@@ -31,9 +32,10 @@ export default function FinancialOverview() {
   const router = useRouter();
   const acct = useAccounting();
   const exp = useExpenses();
+  const sales = useSales();
   const [period, setPeriod] = useState<TransactionPeriod>('This Month');
 
-  const income = acct.totalIncome(period);
+  const income = acct.totalIncome(period) + sales.revenue(period);
   const expenses = acct.totalExpenses(period) + exp.totalAmount(period);
   const net = income - expenses;
   const flowDenom = income + expenses;

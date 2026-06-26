@@ -1,10 +1,11 @@
 /**
  * Tax Dashboard — port of TaxDashboardView.swift.
  * Tax mode (manual rate vs Stripe auto), reporting period, tax summary, and a
- * monthly breakdown. Estimates are derived locally from recorded income
- * transactions + deductible expenses. Stripe Tax calculation, the
- * payment-method breakdown (needs sales/Phase 5), and AI Tax Analysis (backend)
- * are deferred.
+ * monthly breakdown. Derived locally from recorded income transactions + checkout
+ * sales (which carry their actual collected tax) + deductible expenses: a sale's
+ * own taxAmount is used when present, manual income falls back to the rate
+ * estimate. Stripe Tax calculation, the payment-method breakdown, and AI Tax
+ * Analysis (backend) are deferred.
  */
 
 import { useMemo, useState } from 'react';
@@ -16,6 +17,7 @@ import { Icon } from '@/components/icon';
 import { ScreenHeader } from '@/components/screen-header';
 import { useAccounting } from '@/context/accounting-store';
 import { useExpenses } from '@/context/expenses-store';
+import { useSales } from '@/context/sales-store';
 import { withOpacity } from '@/lib/color';
 import { iOSColors, lightShadow } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
@@ -50,6 +52,7 @@ export default function TaxDashboard() {
   const theme = useAppTheme();
   const { transactions } = useAccounting();
   const { expenses } = useExpenses();
+  const { sales } = useSales();
 
   const [autoCalculate, setAutoCalculate] = useState(false);
   const [rate, setRate] = useState('8.25');
@@ -57,28 +60,37 @@ export default function TaxDashboard() {
 
   const rateValue = Number(rate) || 0;
 
-  const { grossSales, estimatedTax, deductible, income } = useMemo(() => {
+  const { grossSales, estimatedTax, deductible, monthly } = useMemo(() => {
     const [start, end] = periodRange(period);
     const inRange = (iso: string) => {
       const t = new Date(iso).getTime();
       return t >= start && t <= end;
     };
-    const inc = transactions.filter((t) => t.category === 'Income' && inRange(t.date));
-    const gross = inc.reduce((s, t) => s + t.amount, 0);
-    const tax = gross * (rateValue / (100 + rateValue));
+    // Income events: manual income (tax = null → rate estimate) + sales (tax = its
+    // own collected amount, gross = the tax-inclusive total).
+    type Ev = { date: string; gross: number; tax: number | null };
+    const events: Ev[] = [
+      ...transactions.filter((t) => t.category === 'Income').map((t) => ({ date: t.date, gross: t.amount, tax: null })),
+      ...sales.map((s) => ({ date: s.date, gross: s.totalAmount, tax: s.taxAmount ?? 0 })),
+    ];
+    const taxOf = (e: Ev) => (e.tax != null ? e.tax : e.gross * (rateValue / (100 + rateValue)));
+    const inR = events.filter((e) => inRange(e.date));
+    const gross = inR.reduce((s, e) => s + e.gross, 0);
+    const tax = inR.reduce((s, e) => s + taxOf(e), 0);
     const ded = expenses.filter((e) => inRange(e.date) && e.isTaxDeductible).reduce((s, e) => s + e.amount, 0);
-    return { grossSales: gross, estimatedTax: tax, deductible: ded, income: inc };
-  }, [transactions, expenses, period, rateValue]);
 
-  const monthly = useMemo(() => {
-    const groups = new Map<string, number>();
-    for (const t of income) {
-      const d = new Date(t.date);
+    const groups = new Map<string, { gross: number; tax: number }>();
+    for (const e of inR) {
+      const d = new Date(e.date);
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      groups.set(key, (groups.get(key) ?? 0) + t.amount);
+      const g = groups.get(key) ?? { gross: 0, tax: 0 };
+      g.gross += e.gross;
+      g.tax += taxOf(e);
+      groups.set(key, g);
     }
-    return [...groups.entries()].sort((a, b) => (a[0] < b[0] ? 1 : -1));
-  }, [income]);
+    const byMonth = [...groups.entries()].sort((a, b) => (a[0] < b[0] ? 1 : -1));
+    return { grossSales: gross, estimatedTax: tax, deductible: ded, monthly: byMonth };
+  }, [transactions, sales, expenses, period, rateValue]);
 
   const exportReport = async () => {
     const lines = [
@@ -154,16 +166,15 @@ export default function TaxDashboard() {
           {monthly.length > 0 ? (
             <View style={[styles.card, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
               <Text style={[styles.cardLabel, { color: theme.secondaryText }]}>Monthly Breakdown</Text>
-              {monthly.map(([key, gross]) => {
-                const tax = gross * (rateValue / (100 + rateValue));
+              {monthly.map(([key, m]) => {
                 const monthIdx = Number(key.split('-')[1]) - 1;
                 return (
                   <View key={key} style={[styles.monthRow, { backgroundColor: withOpacity(PURPLE, 0.04) }]}>
                     <Text style={[styles.monthName, { color: theme.primaryText }]}>{MONTHS[monthIdx]}</Text>
                     <View style={styles.monthCols}>
-                      <MonthCol label="Gross" value={gross} color={PURPLE} />
-                      <MonthCol label="Tax" value={tax} color={iOSColors.green} />
-                      <MonthCol label="Net" value={gross - tax} color={TEAL} />
+                      <MonthCol label="Gross" value={m.gross} color={PURPLE} />
+                      <MonthCol label="Tax" value={m.tax} color={iOSColors.green} />
+                      <MonthCol label="Net" value={m.gross - m.tax} color={TEAL} />
                     </View>
                   </View>
                 );
