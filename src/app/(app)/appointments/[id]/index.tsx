@@ -25,6 +25,7 @@ import { ScreenHeader } from '@/components/screen-header';
 import { OptionSheet } from '@/components/sheets/option-sheet';
 import { StaffPickerSheet } from '@/components/sheets/staff-picker-sheet';
 import { useAppointments } from '@/context/appointments-store';
+import { usePermissions } from '@/context/permissions-store';
 import { useStaff } from '@/context/staff-store';
 import { defaultReminderMinutes, setDefaultReminderMinutes } from '@/lib/appointment-defaults';
 import { withOpacity } from '@/lib/color';
@@ -57,6 +58,8 @@ export default function AppointmentDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { appointments, updateAppointment, deleteAppointment } = useAppointments();
   const { staff } = useStaff();
+  const { can } = usePermissions();
+  const canEditStaff = can('editAppointments');
 
   const appt = appointments.find((a) => a.id === id);
   const assignedStaff = appt?.staffMemberId ? staff.find((s) => s.id === appt.staffMemberId) ?? null : null;
@@ -152,7 +155,8 @@ export default function AppointmentDetail() {
             <View style={styles.section}>
               <Text style={[styles.sectionTitle, { color: theme.primaryText }]}>Assigned Staff</Text>
               <Pressable
-                onPress={() => setStaffSheet(true)}
+                onPress={() => { if (canEditStaff) setStaffSheet(true); }}
+                disabled={!canEditStaff}
                 style={[styles.staffCard, { backgroundColor: theme.cardBackground }, cardShadow(theme)]}>
                 {assignedStaff ? (
                   <View style={[styles.staffAvatar, { backgroundColor: staffColor(assignedStaff) || STAFF_ORANGE }]}>
@@ -168,11 +172,13 @@ export default function AppointmentDetail() {
                     {assignedStaff ? assignedStaff.name : 'Unassigned'}
                   </Text>
                   <Text style={[styles.staffSub, { color: theme.secondaryText }]}>
-                    {assignedStaff ? 'Tap to change' : 'Tap to assign someone'}
+                    {assignedStaff
+                      ? (canEditStaff ? 'Tap to change' : 'Staff Member')
+                      : (canEditStaff ? 'Tap to assign someone' : 'Unassigned')}
                   </Text>
                 </View>
                 <Icon name="person.badge.key.fill" size={20} color={assignedStaff ? STAFF_ORANGE : theme.secondaryText} />
-                <Icon name="chevron.right" size={14} color={theme.secondaryText} />
+                {canEditStaff ? <Icon name="chevron.right" size={14} color={theme.secondaryText} /> : null}
               </Pressable>
             </View>
 

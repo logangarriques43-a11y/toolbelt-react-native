@@ -16,11 +16,13 @@ import { Icon } from '@/components/icon';
 import { ColorPickerSheet } from '@/components/sheets/color-picker-sheet';
 import { OptionSheet } from '@/components/sheets/option-sheet';
 import { StaffLunchBreaksSheet } from '@/components/staff/lunch-breaks-sheet';
+import { StaffPermissionsSheet } from '@/components/staff/permissions-sheet';
 import { StaffWorkingHoursSheet } from '@/components/staff/working-hours-sheet';
 import { useServices } from '@/context/services-store';
 import { useStaff } from '@/context/staff-store';
 import { withOpacity } from '@/lib/color';
 import { formatPhoneNumber } from '@/lib/phone';
+import { PERMISSIONS } from '@/models/permission';
 import { STAFF_ORANGE, staffInitials } from '@/models/staff';
 import { iOSColors, lightShadow } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
@@ -51,6 +53,9 @@ export function StaffForm({ editingId }: { editingId?: string }) {
   const [showColor, setShowColor] = useState(false);
   const [showHours, setShowHours] = useState(false);
   const [showLunch, setShowLunch] = useState(false);
+  const [showPermissions, setShowPermissions] = useState(false);
+
+  const enabledPermissions = editing ? PERMISSIONS.filter((p) => editing.permissions?.[p] === true).length : 0;
 
   const canSave = name.trim().length > 0 && role.trim().length > 0;
   const stub = (msg: string) => Alert.alert('Coming soon', msg);
@@ -79,6 +84,8 @@ export function StaffForm({ editingId }: { editingId?: string }) {
       // persist immediately); preserve whatever they saved.
       lunchBreaks: editing?.lunchBreaks ?? [],
       workingHours: editing?.workingHours ?? [],
+      // Permissions are edited in their own sheet (persists immediately).
+      permissions: editing?.permissions,
     };
     if (editing) updateStaff({ ...editing, ...base });
     else addStaff(base);
@@ -219,6 +226,28 @@ export function StaffForm({ editingId }: { editingId?: string }) {
               </View>
             </View>
           ) : null}
+
+          {/* Access & Permissions — existing staff only */}
+          {editing ? (
+            <View style={styles.servicesBlock}>
+              <View style={styles.servicesHead}>
+                <Icon name="lock.shield.fill" size={15} color={STAFF_ORANGE} />
+                <Text style={[styles.servicesTitle, { color: theme.primaryText }]}>Access & Permissions</Text>
+              </View>
+              <View style={[styles.card, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
+                <Pressable onPress={() => setShowPermissions(true)} style={styles.linkRow}>
+                  <Icon name="person.crop.circle.badge.checkmark" size={18} color={STAFF_ORANGE} />
+                  <View style={styles.linkText}>
+                    <Text style={[styles.linkTitle, { color: theme.primaryText }]}>Permissions</Text>
+                    <Text style={[styles.linkSub, { color: theme.secondaryText }]}>
+                      {enabledPermissions} of {PERMISSIONS.length} permissions enabled
+                    </Text>
+                  </View>
+                  <Icon name="chevron.right" size={14} color={theme.secondaryText} />
+                </Pressable>
+              </View>
+            </View>
+          ) : null}
         </ScrollView>
       </SafeAreaView>
 
@@ -228,6 +257,7 @@ export function StaffForm({ editingId }: { editingId?: string }) {
         <>
           <StaffWorkingHoursSheet visible={showHours} member={editing} onClose={() => setShowHours(false)} />
           <StaffLunchBreaksSheet visible={showLunch} member={editing} onClose={() => setShowLunch(false)} />
+          <StaffPermissionsSheet visible={showPermissions} member={editing} onClose={() => setShowPermissions(false)} />
         </>
       ) : null}
     </DashboardGradient>
