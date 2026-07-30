@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Icon } from '@/components/icon';
 import { useSession } from '@/context/session';
 import { withOpacity } from '@/lib/color';
+import { FeatureFlags } from '@/lib/feature-flags';
 import { displayNameFromEmail } from '@/lib/name';
 import { clientInitials } from '@/models/client';
 import { iOSColors } from '@/theme/tokens';
@@ -65,7 +66,8 @@ export function HamburgerMenu({ visible, onClose }: { visible: boolean; onClose:
               <Item icon="bubble.left.and.text.bubble.right.fill" title="AI Texting" color="#3380FF" onPress={() => go('/sms-conversations')} />
               <Item icon="person.badge.key.fill" title="Staff" color="#F29933" onPress={() => go('/staff')} />
               <Item icon="globe" title="Online Booking" color="#66B3E6" onPress={() => stub('Online Booking')} />
-              <Item icon="list.number" title="Waitlist" color="#E68099" onPress={() => stub('Waitlist')} />
+              {/* Waitlist — hidden for v1.0 (see FeatureFlags). */}
+              {FeatureFlags.waitlist ? <Item icon="list.number" title="Waitlist" color="#E68099" onPress={() => stub('Waitlist')} /> : null}
               <Item icon="square.and.arrow.down.on.square" title="Import Data" color="#33B399" onPress={() => go('/import-data')} />
               <View style={[styles.divider, { backgroundColor: withOpacity(iOSColors.gray, 0.3), marginVertical: 8 }]} />
               <Item icon="gearshape.fill" title="Settings" color={iOSColors.gray} onPress={() => stub('Settings')} />

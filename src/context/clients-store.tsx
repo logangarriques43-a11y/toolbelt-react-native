@@ -27,7 +27,7 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
     () => ({
       clients,
       addClient: (c) => {
-        const created: Client = { ...c, id: uuid() };
+        const created: Client = { ...c, id: uuid(), createdAt: c.createdAt ?? new Date().toISOString() };
         setClients((prev) => [...prev, created]);
         return created;
       },

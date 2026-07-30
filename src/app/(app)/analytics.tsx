@@ -1,8 +1,9 @@
 /**
  * Analytics — port of AnalyticsView.swift.
- * Period pills + metric-card sections. The Swift screen showed all zeros; here
- * the metrics we have local data for (clients, appointments, revenue) are
- * computed for real. SMS/invoice metrics remain 0 until those phases land.
+ * Period pills + metric-card sections, computed from live store data. The period
+ * pill filters appointments (by start) and clients (by createdAt); the
+ * appointment lifecycle status drives the Completed / Cancelled / No-Show cards.
+ * SMS/invoice metrics remain 0 until those integrations land.
  */
 
 import type { SFSymbol } from 'expo-symbols';
@@ -20,19 +21,38 @@ import { compactMoney } from '@/lib/compact-money';
 import { iOSColors, lightShadow } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
-const PERIODS = ['This Week', 'This Month', 'This Quarter', 'This Year'];
+type Period = 'This Week' | 'This Month' | 'This Quarter' | 'This Year';
+const PERIODS: Period[] = ['This Week', 'This Month', 'This Quarter', 'This Year'];
+const PERIOD_NOUN: Record<Period, string> = { 'This Week': 'Week', 'This Month': 'Month', 'This Quarter': 'Quarter', 'This Year': 'Year' };
+
+/** Start of the selected period (local time). */
+function periodStart(period: Period): Date {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  switch (period) {
+    case 'This Week': d.setDate(d.getDate() - d.getDay()); break; // back to Sunday
+    case 'This Month': d.setDate(1); break;
+    case 'This Quarter': d.setMonth(Math.floor(d.getMonth() / 3) * 3, 1); break;
+    case 'This Year': d.setMonth(0, 1); break;
+  }
+  return d;
+}
 
 export default function Analytics() {
   const theme = useAppTheme();
   const { clients } = useClients();
   const { appointments } = useAppointments();
-  const [period, setPeriod] = useState('This Month');
+  const [period, setPeriod] = useState<Period>('This Month');
 
-  const now = Date.now();
-  const completed = appointments.filter((a) => new Date(a.endTime).getTime() < now);
+  const start = periodStart(period).getTime();
+  const inPeriod = appointments.filter((a) => new Date(a.startTime).getTime() >= start);
+  const completed = inPeriod.filter((a) => a.status === 'completed');
+  const cancelled = inPeriod.filter((a) => a.status === 'cancelled');
+  const noShows = inPeriod.filter((a) => a.status === 'noShow');
   const revenue = completed.reduce((sum, a) => sum + a.price, 0);
-  const uniqueClients = new Set(appointments.map((a) => a.clientId)).size;
+  const uniqueClients = new Set(inPeriod.map((a) => a.clientId)).size;
   const avgPerClient = uniqueClients ? revenue / uniqueClients : 0;
+  const newClients = clients.filter((c) => c.createdAt != null && new Date(c.createdAt).getTime() >= start).length;
 
   return (
     <DashboardGradient>
@@ -62,12 +82,12 @@ export default function Analytics() {
 
           <SectionTitle title="Appointments" />
           <Grid>
-            <Metric title="Total Booked" value={String(appointments.length)} icon="calendar.badge.plus" color={iOSColors.blue} />
+            <Metric title="Total Booked" value={String(inPeriod.length)} icon="calendar.badge.plus" color={iOSColors.blue} />
             <Metric title="Completed" value={String(completed.length)} icon="checkmark.circle.fill" color={iOSColors.green} />
           </Grid>
           <Grid>
-            <Metric title="Cancelled" value="0" icon="xmark.circle.fill" color={iOSColors.red} />
-            <Metric title="No-Shows" value="0" icon="person.fill.xmark" color={iOSColors.orange} />
+            <Metric title="Cancelled" value={String(cancelled.length)} icon="xmark.circle.fill" color={iOSColors.red} />
+            <Metric title="No-Shows" value={String(noShows.length)} icon="person.fill.xmark" color={iOSColors.orange} />
           </Grid>
 
           <SectionTitle title="AI SMS" />
@@ -83,7 +103,7 @@ export default function Analytics() {
           <SectionTitle title="Clients" />
           <Grid>
             <Metric title="Total Clients" value={String(clients.length)} icon="person.2.fill" color={iOSColors.blue} />
-            <Metric title="New This Month" value="0" icon="person.badge.plus" color={iOSColors.green} />
+            <Metric title={`New This ${PERIOD_NOUN[period]}`} value={String(newClients)} icon="person.badge.plus" color={iOSColors.green} />
           </Grid>
         </ScrollView>
       </SafeAreaView>

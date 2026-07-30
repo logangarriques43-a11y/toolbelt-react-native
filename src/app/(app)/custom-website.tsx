@@ -3,7 +3,8 @@
  * Marketing/info screen with a hero, "what's included" list, and a CTA.
  */
 
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DashboardGradient } from '@/components/dashboard-gradient';
@@ -24,6 +25,7 @@ const INCLUDED = [
 
 export default function CustomWebsite() {
   const theme = useAppTheme();
+  const router = useRouter();
 
   return (
     <DashboardGradient>
@@ -51,7 +53,7 @@ export default function CustomWebsite() {
           </View>
 
           <Pressable
-            onPress={() => Alert.alert('Request a Quote', 'Our team will reach out within 24 hours.')}
+            onPress={() => router.push('/request-quote')}
             style={styles.cta}>
             <Text style={styles.ctaText}>Request a Quote</Text>
           </Pressable>

@@ -20,6 +20,8 @@ export interface Client {
   smsConsentGiven: boolean;
   smsConsentDate?: string;
   smsConsentMethod?: string;
+  /** ISO datetime the client was added — drives the "new this period" metric. */
+  createdAt?: string;
 }
 
 /** Two-letter initials from the name (mirrors `Client.initials`). */

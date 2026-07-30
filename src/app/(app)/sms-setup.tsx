@@ -11,6 +11,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 
+import { ConsentQRCard } from '@/components/sms/consent-qr-card';
 import { DashboardGradient } from '@/components/dashboard-gradient';
 import { Icon } from '@/components/icon';
 import { useSession } from '@/context/session';
@@ -149,6 +150,8 @@ export default function SMSSetup() {
                   Clients can text this number to book appointments. The AI will handle conversations and add bookings to your calendar.
                 </Text>
               )}
+              {/* In-person opt-in QR (placeholder until Online Booking supplies the consent URL). */}
+              <ConsentQRCard consentURL="" />
               <GradientButton label="View Conversations" onPress={() => router.replace('/sms-conversations')} />
               {step === 'alreadySetUp' && (
                 <Pressable onPress={() => { sms.release(); setStep('intro'); }}>
