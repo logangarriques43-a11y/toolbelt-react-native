@@ -16,11 +16,15 @@ import { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { DetectedServicesReviewSheet } from '@/components/import/detected-services-review-sheet';
 import { Icon } from '@/components/icon';
 import { OptionSheet } from '@/components/sheets/option-sheet';
 import { useAppointments } from '@/context/appointments-store';
 import { useClients } from '@/context/clients-store';
 import { useServices } from '@/context/services-store';
+import { useStaff } from '@/context/staff-store';
+import { useTimeOff } from '@/context/time-off-store';
+import { detect, uniqueProvider } from '@/lib/appointment-type-detector';
 import { withOpacity } from '@/lib/color';
 import {
   autoMapColumns,
@@ -35,6 +39,7 @@ import {
   importSummary,
   importTotal,
   type ColumnMapping,
+  type DetectedServiceGroup,
   type ImportDataCategory,
   type ImportFileType,
   type ImportResult,
@@ -43,6 +48,7 @@ import {
   type ParsedAppointment,
   type ParsedClient,
   type ParsedService,
+  type Resolution,
 } from '@/models/import-data';
 import { iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
@@ -73,6 +79,8 @@ export default function ImportData() {
   const clientsStore = useClients();
   const servicesStore = useServices();
   const appointmentsStore = useAppointments();
+  const { staff } = useStaff();
+  const timeOffStore = useTimeOff();
 
   const [step, setStep] = useState<ImportStep>('selectSource');
   const [fileType, setFileType] = useState<ImportFileType>('csv');
@@ -87,6 +95,60 @@ export default function ImportData() {
   const [result, setResult] = useState<ImportResult | null>(null);
   const [progress, setProgress] = useState(0);
   const [editingMapping, setEditingMapping] = useState<ColumnMapping | null>(null);
+  // Smart type detection (Sync-4) — groups + the review sheet over Preview.
+  const [detectedGroups, setDetectedGroups] = useState<DetectedServiceGroup[]>([]);
+  const [showReview, setShowReview] = useState(false);
+
+  // Run detection over freshly parsed appointments; when it finds structure,
+  // drop the derived service list (creation flows through resolutions) and
+  // surface the review sheet on top of Preview.
+  const applyDetection = (appts: ParsedAppointment[]) => {
+    const groups = detect(appts, servicesStore.services);
+    setDetectedGroups(groups);
+    if (groups.length > 0) {
+      setServices([]);
+      setShowReview(true);
+    }
+  };
+
+  // ── Detected-group edits (routed from the review sheet) ──
+  const setResolution = (groupId: string, resolution: Resolution) =>
+    setDetectedGroups((prev) => prev.map((g) => (g.id === groupId ? { ...g, resolution } : g)));
+  const setGroupStaff = (groupId: string, staffId: string | null) =>
+    setDetectedGroups((prev) => prev.map((g) => (g.id === groupId ? { ...g, assignedStaffId: staffId ?? undefined } : g)));
+  const setAllGroupStaff = (staffId: string | null) =>
+    setDetectedGroups((prev) => prev.map((g) => ({ ...g, assignedStaffId: staffId ?? undefined })));
+  const mergeGroup = (sourceId: string, targetId: string) =>
+    setDetectedGroups((prev) => {
+      const source = prev.find((g) => g.id === sourceId);
+      if (!source || sourceId === targetId) return prev;
+      return prev
+        .filter((g) => g.id !== sourceId)
+        .map((g) =>
+          g.id === targetId
+            ? {
+                ...g,
+                appointmentIds: [...g.appointmentIds, ...source.appointmentIds],
+                refinedClientNames: { ...source.refinedClientNames, ...g.refinedClientNames },
+              }
+            : g,
+        );
+    });
+  // Default each group's staff to the only active provider of its resolved service.
+  const prefillGroupStaff = () =>
+    setDetectedGroups((prev) =>
+      prev.map((g) => {
+        if (g.assignedStaffId) return g;
+        const r = g.resolution;
+        if (r.kind !== 'assignExisting') return g;
+        const only = uniqueProvider(r.serviceId, staff);
+        return only ? { ...g, assignedStaffId: only.id } : g;
+      }),
+    );
+  const keepOriginals = () => {
+    setDetectedGroups((prev) => prev.map((g) => ({ ...g, resolution: { kind: 'leaveAsIs' } })));
+    setShowReview(false);
+  };
 
   const selectedCount =
     clients.filter((c) => c.selected).length +
@@ -143,6 +205,7 @@ export default function ImportData() {
       setClients(parsed.clients);
       setServices(parsed.services);
       setAppointments(parsed.appointments);
+      applyDetection(parsed.appointments);
       setStep('preview');
     }
   };
@@ -168,6 +231,7 @@ export default function ImportData() {
       }
       setClients([...clientNames].map((n) => ({ id: `${n}`, name: n, phone: '', selected: true })));
       setServices([...serviceNames].map((n) => ({ id: `${n}`, name: n, price: 0, duration: 30, selected: true })));
+      applyDetection(appts);
     }
     setStep('preview');
   };
@@ -180,7 +244,7 @@ export default function ImportData() {
     const selServices = services.filter((s) => s.selected);
     const selAppts = appointments.filter((a) => a.selected);
     const total = selClients.length + selServices.length + selAppts.length;
-    const res: ImportResult = { clientsImported: 0, servicesImported: 0, appointmentsImported: 0, errors: [] };
+    const res: ImportResult = { clientsImported: 0, servicesImported: 0, appointmentsImported: 0, timeOffImported: 0, errors: [] };
     if (total === 0) {
       res.errors.push('No items selected for import.');
       setResult(res);
@@ -223,7 +287,7 @@ export default function ImportData() {
       await tick();
     }
 
-    // Services
+    // Services (empty when smart detection fired — creation flows via groups)
     let si = 0;
     for (const ps of selServices) {
       const key = ps.name.toLowerCase();
@@ -248,46 +312,175 @@ export default function ImportData() {
       await tick();
     }
 
+    // Resolve smart-detected types into per-appointment overrides.
+    const serviceOverride = new Map<string, { id: string; name: string; colorHex: string }>();
+    const clientNameOverride = new Map<string, string>();
+    const staffOverride = new Map<string, { id: string; name: string }>();
+    const timeOffApptIds = new Set<string>();
+    const skippedApptIds = new Set<string>();
+    for (const group of detectedGroups) {
+      const applyGroupStaff = () => {
+        if (!group.assignedStaffId) return;
+        const m = staff.find((s) => s.id === group.assignedStaffId);
+        if (m) for (const id of group.appointmentIds) staffOverride.set(id, { id: m.id, name: m.name });
+      };
+      if (group.resolution.kind === 'leaveAsIs') {
+        // Falls through to the raw find-or-create path below.
+      } else if (group.resolution.kind === 'convertToTimeOff') {
+        group.appointmentIds.forEach((id) => timeOffApptIds.add(id));
+        applyGroupStaff();
+        continue;
+      } else if (group.resolution.kind === 'skip') {
+        group.appointmentIds.forEach((id) => skippedApptIds.add(id));
+        continue;
+      } else {
+        let resolved: { id: string; name: string; colorHex: string } | null = null;
+        if (group.resolution.kind === 'assignExisting') {
+          const targetId = group.resolution.serviceId;
+          const svc = servicesStore.services.find((s) => s.id === targetId);
+          if (svc) resolved = { id: svc.id, name: svc.name, colorHex: svc.colorHex };
+        } else {
+          // createNew — find-or-create ONE service (median duration, max price).
+          const key = group.label.toLowerCase();
+          if (serviceLookup.has(key)) {
+            resolved = { id: serviceLookup.get(key)!, name: group.label, colorHex: serviceColor.get(key) ?? BLUE };
+          } else {
+            const members = appointments.filter((a) => group.appointmentIds.includes(a.id));
+            const durations = members
+              .map((a) => Math.round((new Date(a.endTime).getTime() - new Date(a.startTime).getTime()) / 60_000))
+              .filter((d) => d > 0)
+              .sort((x, y) => x - y);
+            const duration = durations.length === 0 ? 30 : durations[Math.floor(durations.length / 2)];
+            const price = members.reduce((mx, a) => Math.max(mx, a.price), 0);
+            const color = PALETTE[res.servicesImported % PALETTE.length];
+            const s = servicesStore.addService({
+              name: group.label,
+              colorHex: color,
+              price,
+              duration,
+              priceType: 'Fixed',
+              processingTime: 0,
+              blockTime: 0,
+              noDoubleBooking: false,
+              availableForOnlineBooking: true,
+            });
+            serviceLookup.set(key, s.id);
+            serviceColor.set(key, color);
+            res.servicesImported += 1;
+            resolved = { id: s.id, name: group.label, colorHex: color };
+          }
+        }
+        if (resolved) for (const id of group.appointmentIds) serviceOverride.set(id, resolved);
+      }
+      applyGroupStaff();
+      for (const [apptId, refined] of Object.entries(group.refinedClientNames)) clientNameOverride.set(apptId, refined);
+    }
+
     // Appointments
     for (const pa of selAppts) {
-      const ckey = pa.clientName.toLowerCase();
+      if (skippedApptIds.has(pa.id)) {
+        await tick();
+        continue;
+      }
+
+      // Personal calendar events → time off (scoped to the connected staff, or
+      // business-wide when none was chosen).
+      if (timeOffApptIds.has(pa.id)) {
+        const so = staffOverride.get(pa.id);
+        timeOffStore.addEvent({
+          title: pa.serviceName,
+          startTime: pa.startTime,
+          endTime: pa.endTime,
+          staffName: so?.name ?? '',
+          staffMemberId: so?.id,
+          isBusinessWide: !so,
+          status: 'approved',
+          requestedByStaff: false,
+          cancellationRequested: false,
+          colorHex: iOSColors.blue,
+          notes: pa.notes || undefined,
+          isAllDay: false,
+        });
+        res.timeOffImported += 1;
+        await tick();
+        continue;
+      }
+
+      // Prefer a client name split out of the title over "Unknown Client".
+      let clientName = pa.clientName;
+      const refined = clientNameOverride.get(pa.id);
+      if (refined && (clientName === '' || clientName === 'Unknown Client')) clientName = refined;
+
+      const ckey = clientName.toLowerCase();
       let clientId = clientLookup.get(ckey);
       if (!clientId) {
-        const c = clientsStore.addClient({ name: pa.clientName, phoneNumber: '', clientBlockTime: 0, smsConsentGiven: false });
+        const c = clientsStore.addClient({ name: clientName, phoneNumber: '', clientBlockTime: 0, smsConsentGiven: false });
         clientId = c.id;
         clientLookup.set(ckey, c.id);
       }
-      const skey = pa.serviceName.toLowerCase();
-      let serviceId = serviceLookup.get(skey);
+
       const durationMin = Math.max(1, Math.round((new Date(pa.endTime).getTime() - new Date(pa.startTime).getTime()) / 60_000));
-      if (!serviceId) {
-        const color = PALETTE[serviceLookup.size % PALETTE.length];
-        const s = servicesStore.addService({
-          name: pa.serviceName,
-          colorHex: color,
-          price: pa.price,
-          duration: durationMin,
-          priceType: 'Fixed',
-          processingTime: 0,
-          blockTime: 0,
-          noDoubleBooking: false,
-          availableForOnlineBooking: true,
-        });
-        serviceId = s.id;
-        serviceColor.set(skey, color);
+
+      // Smart-detected service first; otherwise find or create from the raw title.
+      let serviceId: string;
+      let serviceName: string;
+      let svcColor: string;
+      const ov = serviceOverride.get(pa.id);
+      if (ov) {
+        serviceId = ov.id;
+        serviceName = ov.name;
+        svcColor = ov.colorHex;
+      } else {
+        const skey = pa.serviceName.toLowerCase();
+        serviceName = pa.serviceName;
+        if (serviceLookup.has(skey)) {
+          serviceId = serviceLookup.get(skey)!;
+          svcColor = serviceColor.get(skey) ?? BLUE;
+        } else {
+          svcColor = PALETTE[serviceLookup.size % PALETTE.length];
+          const s = servicesStore.addService({
+            name: pa.serviceName,
+            colorHex: svcColor,
+            price: pa.price,
+            duration: durationMin,
+            priceType: 'Fixed',
+            processingTime: 0,
+            blockTime: 0,
+            noDoubleBooking: false,
+            availableForOnlineBooking: true,
+          });
+          serviceId = s.id;
+          serviceLookup.set(skey, s.id);
+          serviceColor.set(skey, svcColor);
+        }
       }
+
+      // Staff assignment, most-specific rule first: connected type → file's
+      // staff column (by name) → the only provider of the service.
+      let assigned = staffOverride.get(pa.id) ?? null;
+      if (!assigned && pa.staffName) {
+        const m = staff.find((s) => s.name.toLowerCase() === pa.staffName!.toLowerCase());
+        if (m) assigned = { id: m.id, name: m.name };
+      }
+      if (!assigned) {
+        const up = uniqueProvider(serviceId, staff);
+        if (up) assigned = { id: up.id, name: up.name };
+      }
+
       appointmentsStore.addAppointment({
         clientId,
-        clientName: pa.clientName,
+        clientName,
         serviceId,
-        serviceName: pa.serviceName,
-        serviceColor: serviceColor.get(skey) ?? BLUE,
+        serviceName,
+        serviceColor: svcColor,
         startTime: pa.startTime,
         endTime: pa.endTime,
         duration: durationMin,
         price: pa.price,
         processingTime: 0,
         blockTime: 0,
+        staffMemberId: assigned?.id,
+        staffMemberName: assigned?.name,
         reminderMinutesBefore: 0,
         status: 'scheduled',
         notes: pa.notes ?? '',
@@ -316,6 +509,8 @@ export default function ImportData() {
     setAppointments([]);
     setResult(null);
     setProgress(0);
+    setDetectedGroups([]);
+    setShowReview(false);
   };
 
   const goBack = () => {
@@ -401,6 +596,20 @@ export default function ImportData() {
           setMappings((prev) => prev.map((m) => (m.id === editingMapping.id ? { ...m, mappedField: field } : m)));
         }}
         onClose={() => setEditingMapping(null)}
+      />
+
+      <DetectedServicesReviewSheet
+        visible={showReview}
+        groups={detectedGroups}
+        services={servicesStore.services}
+        staff={staff}
+        onSetResolution={setResolution}
+        onMerge={mergeGroup}
+        onSetStaff={setGroupStaff}
+        onSetStaffAll={setAllGroupStaff}
+        onPrefillStaff={prefillGroupStaff}
+        onDone={() => setShowReview(false)}
+        onKeepOriginals={keepOriginals}
       />
     </SafeAreaView>
   );
@@ -731,6 +940,7 @@ function Complete({ result, onDone, onMore }: { result: ImportResult | null; onD
             {result.clientsImported > 0 && <ResultRow icon="person.3.fill" label="Clients" count={result.clientsImported} color={GREEN} />}
             {result.servicesImported > 0 && <ResultRow icon="list.clipboard.fill" label="Services" count={result.servicesImported} color={PURPLE} />}
             {result.appointmentsImported > 0 && <ResultRow icon="calendar.badge.plus" label="Appointments" count={result.appointmentsImported} color={BLUE} />}
+            {result.timeOffImported > 0 && <ResultRow icon="moon.zzz.fill" label="Time Off" count={result.timeOffImported} color={iOSColors.orange} />}
           </View>
         </>
       ) : (

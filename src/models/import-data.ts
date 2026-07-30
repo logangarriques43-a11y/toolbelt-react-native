@@ -127,11 +127,13 @@ export interface ImportResult {
   clientsImported: number;
   servicesImported: number;
   appointmentsImported: number;
+  /** Personal calendar events imported as time off (Sync-4 detection). */
+  timeOffImported: number;
   errors: string[];
 }
 
 export function importTotal(r: ImportResult): number {
-  return r.clientsImported + r.servicesImported + r.appointmentsImported;
+  return r.clientsImported + r.servicesImported + r.appointmentsImported + r.timeOffImported;
 }
 
 export function importSummary(r: ImportResult): string {
@@ -139,7 +141,63 @@ export function importSummary(r: ImportResult): string {
   if (r.clientsImported > 0) parts.push(`${r.clientsImported} client${r.clientsImported === 1 ? '' : 's'}`);
   if (r.servicesImported > 0) parts.push(`${r.servicesImported} service${r.servicesImported === 1 ? '' : 's'}`);
   if (r.appointmentsImported > 0) parts.push(`${r.appointmentsImported} appointment${r.appointmentsImported === 1 ? '' : 's'}`);
+  if (r.timeOffImported > 0) parts.push(`${r.timeOffImported} time off${r.timeOffImported === 1 ? '' : 's'}`);
   return parts.join(', ');
+}
+
+// ── Smart type detection (Sync-4) — port of DetectedServiceGroup / Resolution ──
+
+/** What the import should do with a detected appointment-type group. */
+export type Resolution =
+  /** Map every appointment in the group onto this existing service. */
+  | { kind: 'assignExisting'; serviceId: string }
+  /** Create one new service named after the label, then assign it. */
+  | { kind: 'createNew' }
+  /** Import raw titles as service names (pre-detection behavior). */
+  | { kind: 'leaveAsIs' }
+  /** Personal events → TIME OFF: block the schedule, no client/service/appt. */
+  | { kind: 'convertToTimeOff' }
+  /** Don't bring these events over at all. */
+  | { kind: 'skip' };
+
+/**
+ * One detected appointment type ("Massage") and every parsed appointment that
+ * matched it, plus the owner's chosen resolution + staff connection.
+ */
+export interface DetectedServiceGroup {
+  id: string;
+  /** Display label, e.g. "Massage" (most common original casing). */
+  label: string;
+  /** ParsedAppointment.ids in this group (mutable so groups can be merged). */
+  appointmentIds: string[];
+  /** Client names split out of titles, keyed by ParsedAppointment.id. */
+  refinedClientNames: Record<string, string>;
+  /** A representative raw title, shown so the owner can sanity-check. */
+  sampleTitle: string;
+  /** Local id of the best-matching existing service, when one was found. */
+  matchedServiceId?: string;
+  /** What the import should do with this group. */
+  resolution: Resolution;
+  /** Staff member the owner connected this type to (nil = fall back to rules). */
+  assignedStaffId?: string;
+}
+
+export function groupCount(g: DetectedServiceGroup): number {
+  return g.appointmentIds.length;
+}
+
+/** Short label for a group's current resolution (needs services for names). */
+export function resolutionLabel(g: DetectedServiceGroup, services: { id: string; name: string }[]): string {
+  switch (g.resolution.kind) {
+    case 'assignExisting': {
+      const name = services.find((s) => s.id === (g.resolution as { serviceId: string }).serviceId)?.name ?? 'service';
+      return `Use “${name}”`;
+    }
+    case 'createNew': return 'New service';
+    case 'leaveAsIs': return 'Keep as-is';
+    case 'convertToTimeOff': return 'Time off';
+    case 'skip': return "Don't import";
+  }
 }
 
 export type ImportStep = 'selectSource' | 'pickFile' | 'mapColumns' | 'preview' | 'importing' | 'complete';
