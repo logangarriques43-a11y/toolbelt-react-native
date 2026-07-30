@@ -60,6 +60,19 @@ function overlaps(aStart: Date, aEnd: Date, bStart: Date, bEnd: Date): boolean {
   return aStart < bEnd && aEnd > bStart;
 }
 
+/** Label for a time-off band on the calendar grid. */
+export function timeOffBandLabel(e: TimeOffEvent): string {
+  return e.isBusinessWide ? `Closed — ${e.title}` : `${e.staffName} off — ${e.title}`;
+}
+
+/** Confirmation-dialog message for cancelling/requesting-cancel a time off. */
+export function timeOffCancelMessage(e: TimeOffEvent, canManage: boolean): string {
+  const label = `${e.isBusinessWide ? 'Closed — ' : e.staffName + ' — '}${e.title}`;
+  if (canManage) return `${label} will be removed and the schedule reopened.`;
+  if (e.cancellationRequested) return `${label}: a cancellation request is already pending the owner's approval.`;
+  return `${label}: the owner will be asked to approve cancelling this time off.`;
+}
+
 /**
  * Approved time-off events that overlap the given calendar day and apply to the
  * viewer: business-wide always, per-staff only when filtered to that member.

@@ -14,14 +14,18 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { runOnJS } from 'react-native-reanimated';
 
 import { AppointmentBlock } from '@/components/schedule/appointment-block';
+import { TimeOffBand } from '@/components/schedule/time-off-band';
+import { usePermissions } from '@/context/permissions-store';
+import { useTimeOff } from '@/context/time-off-store';
 import { useWorkingHours } from '@/context/working-hours-store';
 import { withOpacity } from '@/lib/color';
 import {
-  GRID_HEIGHT, SLOT_HEIGHT, TIME_COL_WIDTH, blockHeight, calcOverlapLayout,
+  GRID_HEIGHT, PX_PER_MIN, SLOT_HEIGHT, TIME_COL_WIDTH, blockHeight, calcOverlapLayout,
   isToday, offsetForTime, timeSlotLabels,
 } from '@/lib/schedule-layout';
 import { effectiveHours, isEffectiveWorkingTime, staffTint } from '@/lib/staff-shading';
 import type { Appointment } from '@/models/appointment';
+import { blockingTimeOff } from '@/models/time-off';
 import type { StaffMember } from '@/models/staff';
 import { iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
@@ -47,10 +51,17 @@ export function SingleDayGrid({
 }) {
   const theme = useAppTheme();
   const { getSchedule } = useWorkingHours();
+  const { events: timeOffEvents, deleteEvent, updateEvent } = useTimeOff();
+  const { can } = usePermissions();
   const { width } = useWindowDimensions();
   const scrollRef = useRef<ScrollView>(null);
   const nonWorking = withOpacity(iOSColors.gray, 0.08);
   const eff = effectiveHours(date, getSchedule(date), selectedStaff);
+
+  const canManageTimeOff = can('manageTimeOff');
+  const dayStart = new Date(date); dayStart.setHours(0, 0, 0, 0);
+  const dayEnd = new Date(dayStart); dayEnd.setDate(dayEnd.getDate() + 1);
+  const timeOffBlocks = blockingTimeOff(timeOffEvents, date, selectedStaff?.id ?? undefined);
 
   const availableWidth = width - TIME_COL_WIDTH;
   const maxBlockWidth = availableWidth - 16;
@@ -105,6 +116,27 @@ export function SingleDayGrid({
               <View style={styles.indicatorLine} />
             </View>
           ) : null}
+
+          {/* Time-off blocked bands (drawn under appointments) */}
+          {timeOffBlocks.map((ev) => {
+            const bandStart = Math.max(new Date(ev.startTime).getTime(), dayStart.getTime());
+            const bandEnd = Math.min(new Date(ev.endTime).getTime(), dayEnd.getTime());
+            const startMin = (bandStart - dayStart.getTime()) / 60000;
+            const durationMin = Math.max((bandEnd - bandStart) / 60000, 20);
+            return (
+              <TimeOffBand
+                key={ev.id}
+                event={ev}
+                top={startMin * PX_PER_MIN}
+                left={TIME_COL_WIDTH + 8}
+                width={maxBlockWidth}
+                height={durationMin * PX_PER_MIN}
+                canManage={canManageTimeOff}
+                onDelete={() => deleteEvent(ev.id)}
+                onRequestCancel={() => updateEvent({ ...ev, cancellationRequested: true })}
+              />
+            );
+          })}
 
           {/* Appointment blocks */}
           {appointments.map((a) => {
