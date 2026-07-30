@@ -35,6 +35,7 @@ import {
   formattedDateFull,
   recalcEndTime,
 } from '@/lib/appointment-time';
+import { defaultReminderMinutes } from '@/lib/appointment-defaults';
 import { REMINDERS, reminderLabel } from '@/lib/reminders';
 import { priceDisplay } from '@/models/service';
 import { iOSColors, lightShadow } from '@/theme/tokens';
@@ -42,16 +43,17 @@ import { useAppTheme } from '@/theme/theme-context';
 
 const BLUE = iOSColors.blue;
 const PURPLE = '#B052DE';
+const shortTime = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit' });
 
 export default function CreateAppointment() {
   const theme = useAppTheme();
   const router = useRouter();
   const form = useAppointmentForm();
-  const { addAppointment } = useAppointments();
+  const { appointments, addAppointment } = useAppointments();
   const { staff } = useStaff();
   const { isWorkingTime } = useWorkingHours();
 
-  const [reminder, setReminder] = useState(1440);
+  const [reminder, setReminder] = useState(defaultReminderMinutes());
   const [notes, setNotes] = useState('');
   const [internalNotes, setInternalNotes] = useState('');
   const [location, setLocation] = useState('');
@@ -106,6 +108,8 @@ export default function CreateAppointment() {
     if (end <= start) return Alert.alert('Error', 'End time must be after start time');
 
     const mins = Math.round((end.getTime() - start.getTime()) / 60000);
+    const fmtTime = (iso: string) => shortTime.format(new Date(iso));
+
     const commit = () => {
       addAppointment({
         clientId: selectedClient.id,
@@ -132,6 +136,49 @@ export default function CreateAppointment() {
       router.back();
     };
 
+    // Runs after any working-hours override: hard-block a client double-book,
+    // then warn (with override) on a staff double-book. Time-off blocking is
+    // deferred to Sync-3 (no TimeOffManager wired into booking yet).
+    const afterHours = () => {
+      // A client can't be in two places at once — hard block, no override.
+      const clientClash = appointments.find(
+        (e) =>
+          e.clientId === selectedClient.id &&
+          e.status !== 'cancelled' &&
+          start < new Date(e.endTime) &&
+          end > new Date(e.startTime),
+      );
+      if (clientClash) {
+        Alert.alert(
+          'Client Unavailable',
+          `${selectedClient.name} already has ${clientClash.serviceName} from ${fmtTime(clientClash.startTime)} to ${fmtTime(clientClash.endTime)}. A client can't be booked for two overlapping appointments.`,
+        );
+        return;
+      }
+
+      // Staff double-booking — soft warning the owner can override.
+      if (selectedStaff) {
+        const conflict = appointments.find(
+          (e) =>
+            e.staffMemberId === selectedStaff.id &&
+            start < new Date(e.endTime) &&
+            end > new Date(e.startTime),
+        );
+        if (conflict) {
+          Alert.alert(
+            'Staff Scheduling Conflict',
+            `${selectedStaff.name} already has an appointment with ${conflict.clientName} from ${fmtTime(conflict.startTime)} to ${fmtTime(conflict.endTime)}. Do you want to double-book this time slot?`,
+            [
+              { text: 'Cancel', style: 'cancel' },
+              { text: 'Double-book', onPress: commit },
+            ],
+          );
+          return;
+        }
+      }
+      commit();
+    };
+
     const outside =
       !isWorkingTime(start, start.getHours(), start.getMinutes()) ||
       !isWorkingTime(end, end.getHours(), end.getMinutes());
@@ -141,12 +188,12 @@ export default function CreateAppointment() {
         'This appointment is scheduled outside of your working hours. Book it anyway?',
         [
           { text: 'Cancel', style: 'cancel' },
-          { text: 'Book Anyway', onPress: commit },
+          { text: 'Book Anyway', onPress: afterHours },
         ],
       );
       return;
     }
-    commit();
+    afterHours();
   };
 
   return (
@@ -333,6 +380,10 @@ export default function CreateAppointment() {
       <StaffPickerSheet
         visible={staffSheet} staff={staff} selectedId={selectedStaff?.id}
         onSelect={setSelectedStaff} onClose={() => setStaffSheet(false)}
+        serviceId={selectedService?.id}
+        start={combineDateTime(form.appointmentDate, form.startHour, form.startMinute, form.startIsPM)}
+        end={combineDateTime(form.appointmentDate, form.endHour, form.endMinute, form.endIsPM)}
+        appointments={appointments}
       />
     </DashboardGradient>
   );

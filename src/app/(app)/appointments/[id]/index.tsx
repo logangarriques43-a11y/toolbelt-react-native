@@ -1,26 +1,51 @@
 /**
  * Appointment Detail — port of AppointmentDetailView.swift.
  * Reached by tapping an appointment. Checkout / Reschedule / delete from here.
- * The Resources-Used (inventory) section is deferred to Phase 6 — shows the
- * empty state with an inert Track button. Send Message is a stub.
+ *
+ * Sync-2c-i additions (match current Swift source): a Status pill grid
+ * (Scheduled / Completed / Cancelled / No-show), an Assigned Staff card that
+ * reassigns via StaffPickerSheet, a tappable Reminder card that also sets the
+ * default for new appointments, a conditional Recurrence card, and a Details
+ * (notes / internal notes / location) section. Staff-reassignment permission
+ * gating (`.editAppointments`) is deferred to Sync-1b — anyone may reassign for
+ * now, matching create/edit. The Resources-Used (inventory) section shows its
+ * empty state with an inert Track button; Send Message is a stub.
  */
 
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { SFSymbol } from 'expo-symbols';
+import { useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DashboardGradient } from '@/components/dashboard-gradient';
 import { Icon } from '@/components/icon';
 import { ScreenHeader } from '@/components/screen-header';
+import { OptionSheet } from '@/components/sheets/option-sheet';
+import { StaffPickerSheet } from '@/components/sheets/staff-picker-sheet';
 import { useAppointments } from '@/context/appointments-store';
+import { useStaff } from '@/context/staff-store';
+import { defaultReminderMinutes, setDefaultReminderMinutes } from '@/lib/appointment-defaults';
 import { withOpacity } from '@/lib/color';
-import { reminderLabel } from '@/lib/reminders';
-import { appointmentTimeRange } from '@/models/appointment';
+import { REMINDERS, reminderLabel } from '@/lib/reminders';
+import {
+  APPOINTMENT_STATUSES,
+  appointmentTimeRange,
+  isRecurring,
+  recurrenceDisplayName,
+  statusDisplayName,
+  statusIcon,
+  statusTint,
+  type Appointment,
+  type AppointmentStatus,
+} from '@/models/appointment';
 import { clientInitials } from '@/models/client';
+import { staffColor, staffInitials, STAFF_ORANGE, type StaffMember } from '@/models/staff';
 import { Radius, cardShadow, iOSColors, lightShadow } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
+
+const STATUS_OPTIONS = APPOINTMENT_STATUSES.map((s) => ({ label: statusDisplayName(s), value: s }));
 
 const detailDateFmt = new Intl.DateTimeFormat('en-US', {
   weekday: 'long', month: 'short', day: 'numeric', year: 'numeric',
@@ -30,9 +55,28 @@ export default function AppointmentDetail() {
   const theme = useAppTheme();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { appointments, deleteAppointment } = useAppointments();
+  const { appointments, updateAppointment, deleteAppointment } = useAppointments();
+  const { staff } = useStaff();
 
   const appt = appointments.find((a) => a.id === id);
+  const assignedStaff = appt?.staffMemberId ? staff.find((s) => s.id === appt.staffMemberId) ?? null : null;
+
+  const [staffSheet, setStaffSheet] = useState(false);
+  const [reminderSheet, setReminderSheet] = useState(false);
+  const [statusSheet, setStatusSheet] = useState(false);
+
+  // Optimistic writes — flip the local model and push it through updateAppointment.
+  const setStatus = (status: AppointmentStatus) => {
+    if (appt) updateAppointment({ ...appt, status });
+  };
+  const applyReassign = (picked: StaffMember) => {
+    if (appt && picked.id !== appt.staffMemberId) {
+      updateAppointment({ ...appt, staffMemberId: picked.id, staffMemberName: picked.name });
+    }
+  };
+  const setReminder = (minutes: number) => {
+    if (appt) updateAppointment({ ...appt, reminderMinutesBefore: minutes });
+  };
 
   const confirmDelete = () =>
     Alert.alert(
@@ -94,6 +138,44 @@ export default function AppointmentDetail() {
               </View>
             </View>
 
+            {/* Status pills — mark Scheduled / Completed / Cancelled / No-show */}
+            <View style={styles.section}>
+              <Text style={[styles.sectionTitle, { color: theme.primaryText }]}>Status</Text>
+              <View style={styles.statusGrid}>
+                {APPOINTMENT_STATUSES.map((s) => (
+                  <StatusPill key={s} status={s} active={appt.status === s} onPress={() => setStatus(s)} />
+                ))}
+              </View>
+            </View>
+
+            {/* Assigned staff — tap to reassign */}
+            <View style={styles.section}>
+              <Text style={[styles.sectionTitle, { color: theme.primaryText }]}>Assigned Staff</Text>
+              <Pressable
+                onPress={() => setStaffSheet(true)}
+                style={[styles.staffCard, { backgroundColor: theme.cardBackground }, cardShadow(theme)]}>
+                {assignedStaff ? (
+                  <View style={[styles.staffAvatar, { backgroundColor: staffColor(assignedStaff) || STAFF_ORANGE }]}>
+                    <Text style={styles.staffAvatarText}>{staffInitials(assignedStaff.name)}</Text>
+                  </View>
+                ) : (
+                  <View style={[styles.staffAvatar, { backgroundColor: withOpacity(theme.secondaryText, 0.3) }]}>
+                    <Text style={styles.staffAvatarText}>—</Text>
+                  </View>
+                )}
+                <View style={styles.staffText}>
+                  <Text style={[styles.staffName, { color: assignedStaff ? theme.primaryText : theme.secondaryText }]}>
+                    {assignedStaff ? assignedStaff.name : 'Unassigned'}
+                  </Text>
+                  <Text style={[styles.staffSub, { color: theme.secondaryText }]}>
+                    {assignedStaff ? 'Tap to change' : 'Tap to assign someone'}
+                  </Text>
+                </View>
+                <Icon name="person.badge.key.fill" size={20} color={assignedStaff ? STAFF_ORANGE : theme.secondaryText} />
+                <Icon name="chevron.right" size={14} color={theme.secondaryText} />
+              </Pressable>
+            </View>
+
             {/* Service */}
             <View style={styles.section}>
               <Text style={[styles.sectionTitle, { color: theme.primaryText }]}>Service Details</Text>
@@ -112,9 +194,49 @@ export default function AppointmentDetail() {
 
             {/* Info cards */}
             <View style={styles.infoCards}>
-              <InfoCard icon="bell.fill" color={iOSColors.orange} title="Reminder" subtitle={reminderLabel(appt.reminderMinutesBefore)} />
-              <InfoCard icon="checkmark.circle.fill" color={iOSColors.green} title="Status" subtitle="Confirmed" />
+              <InfoCard
+                icon="bell.fill"
+                color={iOSColors.orange}
+                title="Reminder"
+                subtitle={appt.reminderMinutesBefore === 0 ? 'No reminder' : reminderLabel(appt.reminderMinutesBefore)}
+                onPress={() => setReminderSheet(true)}
+              />
+              <Pressable
+                onPress={() => setDefaultReminderMinutes(appt.reminderMinutesBefore)}
+                style={styles.defaultRow}>
+                <Icon
+                  name="checkmark.circle"
+                  size={14}
+                  color={defaultReminderMinutes() === appt.reminderMinutesBefore ? iOSColors.green : theme.secondaryText}
+                />
+                <Text style={[styles.defaultText, { color: theme.secondaryText }]}>
+                  {defaultReminderMinutes() === appt.reminderMinutesBefore
+                    ? 'Default for new appointments'
+                    : 'Set as default for new appointments'}
+                </Text>
+              </Pressable>
+
+              {appt.recurrenceFrequency ? (
+                <InfoCard
+                  icon="repeat"
+                  color={iOSColors.purple}
+                  title="Repeats"
+                  subtitle={recurrenceDisplayName(appt.recurrenceFrequency)}
+                  chevron={false}
+                />
+              ) : null}
+
+              <InfoCard
+                icon={statusIcon(appt.status)}
+                color={statusTint(appt.status)}
+                title="Status"
+                subtitle={statusDisplayName(appt.status)}
+                onPress={() => setStatusSheet(true)}
+              />
             </View>
+
+            {/* Details — notes / internal notes / location (shown only if present) */}
+            <NotesSection appointment={appt} />
 
             {/* Resources (deferred) */}
             <View style={styles.section}>
@@ -157,14 +279,110 @@ export default function AppointmentDetail() {
           </ScrollView>
         )}
       </SafeAreaView>
+
+      {appt ? (
+        <>
+          <StaffPickerSheet
+            visible={staffSheet}
+            staff={staff}
+            selectedId={assignedStaff?.id}
+            onSelect={applyReassign}
+            onClose={() => setStaffSheet(false)}
+            serviceId={appt.serviceId}
+            start={new Date(appt.startTime)}
+            end={new Date(appt.endTime)}
+            appointments={appointments}
+            excludeAppointmentId={appt.id}
+          />
+          <OptionSheet
+            visible={reminderSheet}
+            title="Reminder"
+            options={REMINDERS}
+            selected={appt.reminderMinutesBefore}
+            onSelect={setReminder}
+            onClose={() => setReminderSheet(false)}
+          />
+          <OptionSheet
+            visible={statusSheet}
+            title="Status"
+            options={STATUS_OPTIONS}
+            selected={appt.status}
+            onSelect={setStatus}
+            onClose={() => setStatusSheet(false)}
+          />
+        </>
+      ) : null}
     </DashboardGradient>
   );
 }
 
-function InfoCard({ icon, color, title, subtitle }: { icon: SFSymbol; color: string; title: string; subtitle: string }) {
+function StatusPill({ status, active, onPress }: { status: AppointmentStatus; active: boolean; onPress: () => void }) {
+  const tint = statusTint(status);
+  return (
+    <Pressable
+      onPress={onPress}
+      style={[
+        styles.statusPill,
+        {
+          backgroundColor: active ? tint : withOpacity(tint, 0.1),
+          borderColor: active ? 'transparent' : withOpacity(tint, 0.25),
+        },
+      ]}>
+      <Icon name={statusIcon(status)} size={14} color={active ? '#FFFFFF' : tint} />
+      <Text style={[styles.statusPillText, { color: active ? '#FFFFFF' : tint }]}>{statusDisplayName(status)}</Text>
+      {active ? <Icon name="checkmark" size={12} color="#FFFFFF" /> : null}
+    </Pressable>
+  );
+}
+
+type DetailRow = { icon: SFSymbol; color: string; title: string; value: string };
+
+function NotesSection({ appointment }: { appointment: Appointment }) {
+  const theme = useAppTheme();
+  const rows: DetailRow[] = [];
+  if (appointment.notes) rows.push({ icon: 'doc.text.fill', color: iOSColors.blue, title: 'Notes', value: appointment.notes });
+  if (appointment.internalNotes) rows.push({ icon: 'lock.doc.fill', color: iOSColors.gray, title: 'Internal Notes', value: appointment.internalNotes });
+  if (appointment.location) rows.push({ icon: 'mappin.circle.fill', color: iOSColors.red, title: 'Location', value: appointment.location });
+
+  if (rows.length === 0) return null;
+
+  return (
+    <View style={styles.section}>
+      <Text style={[styles.sectionTitle, { color: theme.primaryText }]}>Details</Text>
+      {rows.map((r) => (
+        <View key={r.title} style={[styles.detailRow, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
+          <Icon name={r.icon} size={18} color={r.color} />
+          <View style={styles.detailText}>
+            <Text style={[styles.detailTitle, { color: theme.secondaryText }]}>{r.title}</Text>
+            <Text style={[styles.detailValue, { color: theme.primaryText }]}>{r.value}</Text>
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+function InfoCard({
+  icon,
+  color,
+  title,
+  subtitle,
+  onPress,
+  chevron = true,
+}: {
+  icon: SFSymbol;
+  color: string;
+  title: string;
+  subtitle: string;
+  onPress?: () => void;
+  chevron?: boolean;
+}) {
   const theme = useAppTheme();
   return (
-    <View style={[styles.infoCard, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
+    <Pressable
+      onPress={onPress}
+      disabled={!onPress}
+      style={[styles.infoCard, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
       <View style={[styles.infoIcon, { backgroundColor: withOpacity(color, 0.15) }]}>
         <Icon name={icon} size={20} color={color} />
       </View>
@@ -172,8 +390,8 @@ function InfoCard({ icon, color, title, subtitle }: { icon: SFSymbol; color: str
         <Text style={[styles.infoTitle, { color: theme.primaryText }]}>{title}</Text>
         <Text style={[styles.infoSub, { color: theme.secondaryText }]}>{subtitle}</Text>
       </View>
-      <Icon name="chevron.right" size={14} color={withOpacity(iOSColors.gray, 0.5)} />
-    </View>
+      {chevron ? <Icon name="chevron.right" size={14} color={withOpacity(iOSColors.gray, 0.5)} /> : null}
+    </Pressable>
   );
 }
 
@@ -211,6 +429,21 @@ const styles = StyleSheet.create({
   infoText: { flex: 1, gap: 4 },
   infoTitle: { fontSize: 16, fontWeight: '600' },
   infoSub: { fontSize: 14 },
+  defaultRow: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 4 },
+  defaultText: { fontSize: 13 },
+  statusGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  statusPill: { flexGrow: 1, flexBasis: '45%', flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, paddingVertical: 12, borderRadius: 12, borderWidth: 1 },
+  statusPillText: { fontSize: 14, fontWeight: '600', flex: 1 },
+  staffCard: { flexDirection: 'row', alignItems: 'center', gap: 16, padding: 20, borderRadius: Radius.card },
+  staffAvatar: { width: 50, height: 50, borderRadius: 25, alignItems: 'center', justifyContent: 'center' },
+  staffAvatarText: { color: '#FFFFFF', fontSize: 20, fontWeight: '700' },
+  staffText: { flex: 1, gap: 4 },
+  staffName: { fontSize: 18, fontWeight: '600' },
+  staffSub: { fontSize: 14 },
+  detailRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 14, padding: 16, borderRadius: 12 },
+  detailText: { flex: 1, gap: 4 },
+  detailTitle: { fontSize: 13, fontWeight: '500' },
+  detailValue: { fontSize: 15 },
   resourceHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   trackBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   trackText: { color: '#6680F2', fontSize: 14, fontWeight: '600' },
