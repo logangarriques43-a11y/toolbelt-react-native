@@ -67,7 +67,7 @@ export function ScheduleHeader({
         <Pressable onPress={() => stub('The AI Assistant')}>
           <LinearGradient colors={Brand.gradient} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }} style={styles.aiBtn}>
             <Icon name="sparkles" size={11} color="#FFFFFF" />
-            <Text style={styles.aiText}>AI Assistant</Text>
+            <Text numberOfLines={1} allowFontScaling={false} style={styles.aiText}>AI Assistant</Text>
           </LinearGradient>
         </Pressable>
       </View>
@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
   month: { fontSize: 16, fontWeight: '700' },
   spacer: { flex: 1 },
   settingsBtn: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  aiBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, width: 110, height: 36, borderRadius: 18 },
+  aiBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, paddingHorizontal: 14, height: 36, borderRadius: 18 },
   aiText: { color: '#FFFFFF', fontSize: 11, fontWeight: '600' },
   dropdown: { padding: 16, gap: 4, shadowOpacity: 0.15, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
   dropdownTitle: { fontSize: 16, fontWeight: '600', textAlign: 'center', paddingTop: 4 },

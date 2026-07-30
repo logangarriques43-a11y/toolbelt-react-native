@@ -100,7 +100,7 @@ export function SingleDayGrid({
             const working = isEffectiveWorkingTime(eff, Math.floor(i / 2), (i % 2) * 30);
             return (
               <View key={i} style={[styles.slot, { borderTopColor: withOpacity(iOSColors.gray, 0.25) }]}>
-                <Text style={[styles.slotLabel, { color: theme.secondaryText }]}>{label}</Text>
+                <Text numberOfLines={1} allowFontScaling={false} style={[styles.slotLabel, { color: theme.secondaryText }]}>{label}</Text>
                 <View style={[styles.slotColumn, { borderLeftColor: theme.divider, backgroundColor: working ? 'transparent' : nonWorking }]} />
               </View>
             );
@@ -158,7 +158,7 @@ export function SingleDayGrid({
 
 const styles = StyleSheet.create({
   slot: { flexDirection: 'row', height: SLOT_HEIGHT, borderTopWidth: 1 },
-  slotLabel: { width: TIME_COL_WIDTH, fontSize: 11, fontWeight: '500', textAlign: 'center', textAlignVertical: 'center' },
+  slotLabel: { width: TIME_COL_WIDTH, fontSize: 10, fontWeight: '500', textAlign: 'center', textAlignVertical: 'center' },
   slotColumn: { flex: 1, borderLeftWidth: 1 },
   indicator: { position: 'absolute', left: 0, right: 0, height: 16, flexDirection: 'row', alignItems: 'center', zIndex: 100 },
   indicatorTimeWrap: { width: TIME_COL_WIDTH, alignItems: 'center' },

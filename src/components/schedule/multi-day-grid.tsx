@@ -114,7 +114,7 @@ export function MultiDayGrid({
               const minute = (i % 2) * 30;
               return (
                 <View key={i} style={[styles.slot, { borderTopColor: withOpacity(iOSColors.gray, 0.25) }]}>
-                  <Text style={[styles.slotLabel, { color: theme.secondaryText }]}>{label}</Text>
+                  <Text numberOfLines={1} allowFontScaling={false} style={[styles.slotLabel, { color: theme.secondaryText }]}>{label}</Text>
                   {dates.map((dd, c) => (
                     <View
                       key={c}
@@ -197,7 +197,7 @@ const styles = StyleSheet.create({
   headerNum: { fontSize: 16, fontWeight: '700' },
   headerName: { fontSize: 12, fontWeight: '500' },
   slot: { flexDirection: 'row', height: SLOT_HEIGHT, borderTopWidth: 1 },
-  slotLabel: { width: TIME_COL_WIDTH, fontSize: 11, fontWeight: '500', textAlign: 'center', textAlignVertical: 'center' },
+  slotLabel: { width: TIME_COL_WIDTH, fontSize: 10, fontWeight: '500', textAlign: 'center', textAlignVertical: 'center' },
   dayColumn: { flex: 1, borderLeftWidth: 1 },
   indicator: { position: 'absolute', left: 0, right: 0, height: 16, flexDirection: 'row', alignItems: 'center', zIndex: 100 },
   indicatorTimeWrap: { width: TIME_COL_WIDTH, alignItems: 'center' },

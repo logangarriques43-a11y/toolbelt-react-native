@@ -8,7 +8,10 @@ import type { Appointment } from '@/models/appointment';
 
 export const PX_PER_MIN = 2;
 export const SLOT_HEIGHT = 60;
-export const TIME_COL_WIDTH = 60;
+// Time-axis gutter. Wide enough for a full "10:00pm" label on one line across
+// platforms (Android renders text a touch wider than iOS). Shared by the day,
+// week, and 3-day grids so their axes line up.
+export const TIME_COL_WIDTH = 64;
 export const SLOT_COUNT = 48;
 export const GRID_HEIGHT = SLOT_COUNT * SLOT_HEIGHT; // 2880
 
