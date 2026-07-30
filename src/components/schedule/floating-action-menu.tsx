@@ -14,6 +14,8 @@ import { Icon } from '@/components/icon';
 import { iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
+const SPRING = { mass: 1, damping: 15, stiffness: 220 };
+
 export function FloatingActionMenu({
   onCreateAppointment,
   onTimeOff,
@@ -24,20 +26,26 @@ export function FloatingActionMenu({
   onInvoice: () => void;
 }) {
   const [open, setOpen] = useState(false);
+  // Holds the icon's rotation IN DEGREES. Spring the shared value itself, then
+  // format the rotate string from the resolved NUMBER — interpolating the
+  // withSpring() animation object into a template literal yields the string
+  // "[object Object]deg", which crashes Android's transform parser
+  // (convertToRadians → parseDouble). iOS silently ignored it.
   const rot = useSharedValue(0);
 
   const toggle = () => {
-    rot.value = open ? 0 : 1;
-    setOpen((o) => !o);
+    const next = !open;
+    rot.value = withSpring(next ? 45 : 0, SPRING);
+    setOpen(next);
   };
   const pick = (fn: () => void) => {
-    rot.value = 0;
+    rot.value = withSpring(0, SPRING);
     setOpen(false);
     fn();
   };
 
   const iconStyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${withSpring(rot.value * 45, { mass: 1, damping: 15, stiffness: 220 })}deg` }],
+    transform: [{ rotate: `${rot.value}deg` }],
   }));
 
   return (
