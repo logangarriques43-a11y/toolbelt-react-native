@@ -13,7 +13,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DashboardGradient } from '@/components/dashboard-gradient';
 import { Icon } from '@/components/icon';
+import { ColorPickerSheet } from '@/components/sheets/color-picker-sheet';
 import { OptionSheet } from '@/components/sheets/option-sheet';
+import { StaffLunchBreaksSheet } from '@/components/staff/lunch-breaks-sheet';
+import { StaffWorkingHoursSheet } from '@/components/staff/working-hours-sheet';
 import { useServices } from '@/context/services-store';
 import { useStaff } from '@/context/staff-store';
 import { withOpacity } from '@/lib/color';
@@ -43,7 +46,11 @@ export function StaffForm({ editingId }: { editingId?: string }) {
   const [email, setEmail] = useState(editing?.email ?? '');
   const [isActive, setIsActive] = useState(editing?.isActive ?? true);
   const [serviceIds, setServiceIds] = useState<Set<string>>(new Set(editing?.assignedServiceIds ?? []));
+  const [colorHex, setColorHex] = useState(editing?.colorHex ?? '');
   const [roleSheet, setRoleSheet] = useState(false);
+  const [showColor, setShowColor] = useState(false);
+  const [showHours, setShowHours] = useState(false);
+  const [showLunch, setShowLunch] = useState(false);
 
   const canSave = name.trim().length > 0 && role.trim().length > 0;
   const stub = (msg: string) => Alert.alert('Coming soon', msg);
@@ -67,6 +74,11 @@ export function StaffForm({ editingId }: { editingId?: string }) {
       isActive,
       isOwner: editing?.isOwner ?? false,
       assignedServiceIds: [...serviceIds],
+      colorHex,
+      // Working hours + lunch breaks are edited in their own sheets (which
+      // persist immediately); preserve whatever they saved.
+      lunchBreaks: editing?.lunchBreaks ?? [],
+      workingHours: editing?.workingHours ?? [],
     };
     if (editing) updateStaff({ ...editing, ...base });
     else addStaff(base);
@@ -169,10 +181,55 @@ export function StaffForm({ editingId }: { editingId?: string }) {
               </View>
             </View>
           ) : null}
+
+          {/* Schedule & calendar — existing staff only (needs a persisted member) */}
+          {editing ? (
+            <View style={styles.servicesBlock}>
+              <View style={styles.servicesHead}>
+                <Icon name="calendar" size={15} color={STAFF_ORANGE} />
+                <Text style={[styles.servicesTitle, { color: theme.primaryText }]}>Schedule & Calendar</Text>
+              </View>
+              <View style={[styles.card, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
+                <Pressable onPress={() => setShowColor(true)} style={styles.linkRow}>
+                  <View style={[styles.colorSwatch, { backgroundColor: colorHex || withOpacity(iOSColors.gray, 0.25), borderColor: theme.divider }]} />
+                  <View style={styles.linkText}>
+                    <Text style={[styles.linkTitle, { color: theme.primaryText }]}>Calendar Color</Text>
+                    <Text style={[styles.linkSub, { color: theme.secondaryText }]}>{colorHex ? 'Tints this person’s appointments' : 'No color — neutral cards'}</Text>
+                  </View>
+                  <Icon name="chevron.right" size={14} color={theme.secondaryText} />
+                </Pressable>
+                <Divider />
+                <Pressable onPress={() => setShowHours(true)} style={styles.linkRow}>
+                  <Icon name="clock" size={18} color={STAFF_ORANGE} />
+                  <View style={styles.linkText}>
+                    <Text style={[styles.linkTitle, { color: theme.primaryText }]}>Working Hours</Text>
+                    <Text style={[styles.linkSub, { color: theme.secondaryText }]}>{editing.workingHours.length ? 'Custom weekly hours set' : 'Follows business hours'}</Text>
+                  </View>
+                  <Icon name="chevron.right" size={14} color={theme.secondaryText} />
+                </Pressable>
+                <Divider />
+                <Pressable onPress={() => setShowLunch(true)} style={styles.linkRow}>
+                  <Icon name="fork.knife" size={18} color={STAFF_ORANGE} />
+                  <View style={styles.linkText}>
+                    <Text style={[styles.linkTitle, { color: theme.primaryText }]}>Lunch Breaks</Text>
+                    <Text style={[styles.linkSub, { color: theme.secondaryText }]}>{editing.lunchBreaks.length ? `${editing.lunchBreaks.length} day${editing.lunchBreaks.length === 1 ? '' : 's'} blocked` : 'No lunch breaks'}</Text>
+                  </View>
+                  <Icon name="chevron.right" size={14} color={theme.secondaryText} />
+                </Pressable>
+              </View>
+            </View>
+          ) : null}
         </ScrollView>
       </SafeAreaView>
 
       <OptionSheet visible={roleSheet} title="Role" options={ROLE_OPTIONS} selected={role} onSelect={setRole} onClose={() => setRoleSheet(false)} />
+      <ColorPickerSheet visible={showColor} selected={colorHex || STAFF_ORANGE} onSelect={setColorHex} onClose={() => setShowColor(false)} />
+      {editing ? (
+        <>
+          <StaffWorkingHoursSheet visible={showHours} member={editing} onClose={() => setShowHours(false)} />
+          <StaffLunchBreaksSheet visible={showLunch} member={editing} onClose={() => setShowLunch(false)} />
+        </>
+      ) : null}
     </DashboardGradient>
   );
 }
@@ -221,4 +278,9 @@ const styles = StyleSheet.create({
   serviceRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 12 },
   serviceDot: { width: 10, height: 10, borderRadius: 5 },
   serviceName: { flex: 1, fontSize: 15 },
+  linkRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 14 },
+  colorSwatch: { width: 20, height: 20, borderRadius: 10, borderWidth: 1 },
+  linkText: { flex: 1 },
+  linkTitle: { fontSize: 15, fontWeight: '500' },
+  linkSub: { fontSize: 12, marginTop: 2 },
 });

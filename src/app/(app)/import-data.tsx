@@ -289,6 +289,10 @@ export default function ImportData() {
         processingTime: 0,
         blockTime: 0,
         reminderMinutesBefore: 0,
+        status: 'scheduled',
+        notes: pa.notes ?? '',
+        internalNotes: '',
+        location: '',
       });
       res.appointmentsImported += 1;
       await tick();

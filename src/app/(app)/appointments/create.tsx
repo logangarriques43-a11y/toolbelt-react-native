@@ -123,6 +123,10 @@ export default function CreateAppointment() {
         staffMemberId: selectedStaff?.id,
         staffMemberName: selectedStaff?.name,
         reminderMinutesBefore: hasConsent ? reminder : 0,
+        status: 'scheduled',
+        notes: '',
+        internalNotes: '',
+        location: '',
       });
       form.reset();
       router.back();

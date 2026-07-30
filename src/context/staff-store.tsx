@@ -39,6 +39,9 @@ export function StaffProvider({ children }: { children: ReactNode }) {
         isActive: true,
         isOwner: true,
         assignedServiceIds: [],
+        colorHex: '',
+        lunchBreaks: [],
+        workingHours: [],
       };
       return [owner, ...prev];
     });
