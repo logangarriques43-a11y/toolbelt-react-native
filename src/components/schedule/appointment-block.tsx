@@ -10,6 +10,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Icon } from '@/components/icon';
 import { withOpacity } from '@/lib/color';
 import { PX_PER_MIN } from '@/lib/schedule-layout';
+import { STAFF_TINT_OPACITY } from '@/lib/staff-shading';
 import { appointmentTimeRange, type Appointment } from '@/models/appointment';
 import { iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
@@ -18,10 +19,13 @@ export function AppointmentBlock({
   appointment: a,
   width,
   onPress,
+  staffTint = null,
 }: {
   appointment: Appointment;
   width: number;
   onPress: () => void;
+  /** Assigned staff member's color; when set, tints the card body + border. */
+  staffTint?: string | null;
 }) {
   const theme = useAppTheme();
 
@@ -40,12 +44,27 @@ export function AppointmentBlock({
             height: apptH,
             width,
             backgroundColor: theme.cardBackground,
-            borderColor: withOpacity(a.serviceColor, 0.3),
+            borderColor: staffTint ? withOpacity(staffTint, 0.55) : withOpacity(a.serviceColor, 0.3),
             borderBottomLeftRadius: hasTail ? 0 : 8,
             borderBottomRightRadius: hasTail ? 0 : 8,
             shadowColor: theme.shadowColor,
           },
         ]}>
+        {staffTint ? (
+          <View
+            pointerEvents="none"
+            style={[
+              StyleSheet.absoluteFillObject,
+              {
+                backgroundColor: withOpacity(staffTint, STAFF_TINT_OPACITY),
+                borderTopLeftRadius: 8,
+                borderTopRightRadius: 8,
+                borderBottomLeftRadius: hasTail ? 0 : 8,
+                borderBottomRightRadius: hasTail ? 0 : 8,
+              },
+            ]}
+          />
+        ) : null}
         <View style={[styles.colorBar, { backgroundColor: a.serviceColor }]} />
         <View style={styles.textBlock}>
           <Text numberOfLines={1} style={[styles.client, { color: theme.primaryText }]}>{a.clientName}</Text>

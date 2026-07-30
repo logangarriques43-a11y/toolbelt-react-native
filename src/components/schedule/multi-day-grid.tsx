@@ -1,7 +1,8 @@
 /**
  * MultiDayGrid — N-column time grid for the Week (7) and 3-Day (3) views.
  * Port of WeeklyContent / WeeklyGridBackground / overlay (WeeklyScheduleGrid.swift),
- * parameterized over the date columns. Working-hours shading deferred (2d).
+ * parameterized over the date columns. Closed-hours shading dims non-working
+ * slots — per selected staff member's off-hours + lunch when one is filtered.
  */
 
 import { useEffect, useRef } from 'react';
@@ -17,7 +18,9 @@ import {
   GRID_HEIGHT, SLOT_HEIGHT, TIME_COL_WIDTH, blockHeight, calcOverlapLayout,
   isToday, offsetForTime, timeSlotLabels,
 } from '@/lib/schedule-layout';
+import { effectiveHours, isEffectiveWorkingTime, staffTint } from '@/lib/staff-shading';
 import type { Appointment } from '@/models/appointment';
+import type { StaffMember } from '@/models/staff';
 import { iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
@@ -31,18 +34,24 @@ export function MultiDayGrid({
   currentTime,
   onAppointmentPress,
   onSwipe,
+  selectedStaff = null,
+  staff = [],
 }: {
   dates: Date[];
   getAppointments: (date: Date) => Appointment[];
   currentTime: Date;
   onAppointmentPress: (a: Appointment) => void;
   onSwipe: (dir: -1 | 1) => void;
+  selectedStaff?: StaffMember | null;
+  staff?: StaffMember[];
 }) {
   const theme = useAppTheme();
-  const { isWorkingTime } = useWorkingHours();
+  const { getSchedule } = useWorkingHours();
   const { width } = useWindowDimensions();
   const scrollRef = useRef<ScrollView>(null);
   const nonWorking = withOpacity(iOSColors.gray, 0.08);
+  // Effective (staff-resolved) hours per column, computed once.
+  const effs = dates.map((d) => effectiveHours(d, getSchedule(d), selectedStaff));
 
   const dayCount = dates.length;
   const dayWidth = (width - TIME_COL_WIDTH) / dayCount;
@@ -102,7 +111,7 @@ export function MultiDayGrid({
                   {dates.map((dd, c) => (
                     <View
                       key={c}
-                      style={[styles.dayColumn, { borderLeftColor: theme.divider, backgroundColor: isWorkingTime(dd, hour, minute) ? 'transparent' : nonWorking }]}
+                      style={[styles.dayColumn, { borderLeftColor: theme.divider, backgroundColor: isEffectiveWorkingTime(effs[c], hour, minute) ? 'transparent' : nonWorking }]}
                     />
                   ))}
                 </View>
@@ -134,7 +143,7 @@ export function MultiDayGrid({
                 const left = TIME_COL_WIDTH + dayIndex * dayWidth + 2 + info.columnIndex * (bw + 2);
                 return (
                   <View key={a.id} style={{ position: 'absolute', top: offsetForTime(a.startTime), left, height: blockHeight(a) }}>
-                    <CompactAppointmentBlock appointment={a} width={bw} onPress={() => onAppointmentPress(a)} />
+                    <CompactAppointmentBlock appointment={a} width={bw} onPress={() => onAppointmentPress(a)} staffTint={staffTint(a, staff)} />
                   </View>
                 );
               });

@@ -5,10 +5,11 @@
  */
 
 import type { SFSymbol } from 'expo-symbols';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Icon } from '@/components/icon';
 import { withOpacity } from '@/lib/color';
+import { STAFF_ORANGE, staffInitials, type StaffMember } from '@/models/staff';
 import { iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
@@ -28,14 +29,22 @@ export function ViewSwitcherSheet({
   onSelect,
   onClose,
   onWorkingHours,
+  staff,
+  selectedStaffId = null,
+  onSelectStaff,
 }: {
   visible: boolean;
   selected: ScheduleViewType;
   onSelect: (v: ScheduleViewType) => void;
   onClose: () => void;
   onWorkingHours?: () => void;
+  /** When provided (with onSelectStaff), renders a "Staff" filter section. */
+  staff?: StaffMember[];
+  selectedStaffId?: string | null;
+  onSelectStaff?: (id: string | null) => void;
 }) {
   const theme = useAppTheme();
+  const showStaff = staff != null && onSelectStaff != null && staff.length > 0;
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -71,6 +80,26 @@ export function ViewSwitcherSheet({
           })}
         </View>
 
+        {showStaff ? (
+          <>
+            <View style={[styles.divider, { backgroundColor: theme.divider }]} />
+            <Text style={[styles.sectionLabel, { color: theme.secondaryText }]}>Staff</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.staffRow}>
+              <StaffChip label="All staff" initials="All" active={selectedStaffId == null} onPress={() => { onSelectStaff!(null); onClose(); }} />
+              {staff!.map((m) => (
+                <StaffChip
+                  key={m.id}
+                  label={m.name}
+                  initials={staffInitials(m.name)}
+                  color={m.colorHex || STAFF_ORANGE}
+                  active={selectedStaffId === m.id}
+                  onPress={() => { onSelectStaff!(m.id); onClose(); }}
+                />
+              ))}
+            </ScrollView>
+          </>
+        ) : null}
+
         {onWorkingHours ? (
           <>
             <View style={[styles.divider, { backgroundColor: theme.divider }]} />
@@ -93,8 +122,27 @@ export function ViewSwitcherSheet({
   );
 }
 
+function StaffChip({ label, initials, color, active, onPress }: { label: string; initials: string; color?: string; active: boolean; onPress: () => void }) {
+  const theme = useAppTheme();
+  const tint = color ?? iOSColors.blue;
+  return (
+    <Pressable onPress={onPress} style={styles.chip}>
+      <View style={[styles.chipAvatar, { backgroundColor: active ? tint : withOpacity(tint, 0.15), borderColor: active ? tint : 'transparent' }]}>
+        <Text style={[styles.chipInitials, { color: active ? '#FFFFFF' : tint }]} numberOfLines={1}>{initials}</Text>
+      </View>
+      <Text style={[styles.chipLabel, { color: active ? theme.primaryText : theme.secondaryText, fontWeight: active ? '700' : '500' }]} numberOfLines={1}>{label}</Text>
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.25)' },
+  sectionLabel: { fontSize: 12, fontWeight: '600', textTransform: 'uppercase', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 4 },
+  staffRow: { gap: 14, paddingHorizontal: 16, paddingVertical: 8 },
+  chip: { alignItems: 'center', gap: 4, width: 60 },
+  chipAvatar: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', borderWidth: 2 },
+  chipInitials: { fontSize: 14, fontWeight: '700' },
+  chipLabel: { fontSize: 11, textAlign: 'center' },
   sheet: { borderTopLeftRadius: 16, borderTopRightRadius: 16, paddingBottom: 32 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16 },
   title: { fontSize: 18, fontWeight: '700' },

@@ -3,8 +3,9 @@
  * blocks and a current-time indicator. Port of SingleDayContent /
  * SingleDayGridBackground / overlay (SingleDayScheduleGrid.swift).
  *
- * Working-hours shading is deferred (needs WorkingHoursManager, 2d) — all slots
- * render plain.
+ * Closed-hours shading dims non-working slots; when the calendar is filtered to
+ * one staff member (`selectedStaff`), it dims THAT person's off-hours + lunch.
+ * Appointment cards are tinted with their assigned staff member's color.
  */
 
 import { useEffect, useRef } from 'react';
@@ -19,7 +20,9 @@ import {
   GRID_HEIGHT, SLOT_HEIGHT, TIME_COL_WIDTH, blockHeight, calcOverlapLayout,
   isToday, offsetForTime, timeSlotLabels,
 } from '@/lib/schedule-layout';
+import { effectiveHours, isEffectiveWorkingTime, staffTint } from '@/lib/staff-shading';
 import type { Appointment } from '@/models/appointment';
+import type { StaffMember } from '@/models/staff';
 import { iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
@@ -31,18 +34,23 @@ export function SingleDayGrid({
   currentTime,
   onAppointmentPress,
   onSwipe,
+  selectedStaff = null,
+  staff = [],
 }: {
   date: Date;
   appointments: Appointment[];
   currentTime: Date;
   onAppointmentPress: (a: Appointment) => void;
   onSwipe: (dir: -1 | 1) => void;
+  selectedStaff?: StaffMember | null;
+  staff?: StaffMember[];
 }) {
   const theme = useAppTheme();
-  const { isWorkingTime } = useWorkingHours();
+  const { getSchedule } = useWorkingHours();
   const { width } = useWindowDimensions();
   const scrollRef = useRef<ScrollView>(null);
   const nonWorking = withOpacity(iOSColors.gray, 0.08);
+  const eff = effectiveHours(date, getSchedule(date), selectedStaff);
 
   const availableWidth = width - TIME_COL_WIDTH;
   const maxBlockWidth = availableWidth - 16;
@@ -78,7 +86,7 @@ export function SingleDayGrid({
         <View style={{ height: GRID_HEIGHT }}>
           {/* Background slots */}
           {LABELS.map((label, i) => {
-            const working = isWorkingTime(date, Math.floor(i / 2), (i % 2) * 30);
+            const working = isEffectiveWorkingTime(eff, Math.floor(i / 2), (i % 2) * 30);
             return (
               <View key={i} style={[styles.slot, { borderTopColor: withOpacity(iOSColors.gray, 0.25) }]}>
                 <Text style={[styles.slotLabel, { color: theme.secondaryText }]}>{label}</Text>
@@ -106,7 +114,7 @@ export function SingleDayGrid({
             const left = TIME_COL_WIDTH + 8 + info.columnIndex * (bw + 4);
             return (
               <View key={a.id} style={{ position: 'absolute', top: offsetForTime(a.startTime), left, height: blockHeight(a) }}>
-                <AppointmentBlock appointment={a} width={bw} onPress={() => onAppointmentPress(a)} />
+                <AppointmentBlock appointment={a} width={bw} onPress={() => onAppointmentPress(a)} staffTint={staffTint(a, staff)} />
               </View>
             );
           })}

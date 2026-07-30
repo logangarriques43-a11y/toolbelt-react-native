@@ -15,10 +15,13 @@ export function CompactAppointmentBlock({
   appointment: a,
   width,
   onPress,
+  staffTint = null,
 }: {
   appointment: Appointment;
   width: number;
   onPress: () => void;
+  /** Assigned staff member's color; when set, shows a slim left accent strip. */
+  staffTint?: string | null;
 }) {
   const apptH = a.duration * PX_PER_MIN;
   const procH = a.processingTime * PX_PER_MIN;
@@ -38,6 +41,7 @@ export function CompactAppointmentBlock({
             borderBottomRightRadius: hasTail ? 0 : 4,
           },
         ]}>
+        {staffTint ? <View pointerEvents="none" style={[styles.staffStrip, { backgroundColor: staffTint }]} /> : null}
         <Text numberOfLines={1} style={styles.client}>{a.clientName}</Text>
         {apptH > 30 ? (
           <Text numberOfLines={1} style={styles.service}>{a.serviceName}</Text>
@@ -82,6 +86,7 @@ export function CompactAppointmentBlock({
 
 const styles = StyleSheet.create({
   main: { paddingHorizontal: 4, paddingVertical: 3, borderTopLeftRadius: 4, borderTopRightRadius: 4, overflow: 'hidden' },
+  staffStrip: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 3 },
   client: { fontSize: 10, fontWeight: '600', color: '#FFFFFF' },
   service: { fontSize: 9, color: 'rgba(255,255,255,0.9)' },
   tail: { borderWidth: 1, overflow: 'hidden' },

@@ -23,6 +23,7 @@ import { ScheduleListView } from '@/components/schedule/schedule-list';
 import { SingleDayGrid } from '@/components/schedule/single-day-grid';
 import { ViewSwitcherSheet, type ScheduleViewType } from '@/components/schedule/view-switcher-sheet';
 import { useAppointments } from '@/context/appointments-store';
+import { useStaff } from '@/context/staff-store';
 import { withOpacity } from '@/lib/color';
 import { TIME_COL_WIDTH, addDays, isToday } from '@/lib/schedule-layout';
 import type { Appointment } from '@/models/appointment';
@@ -43,12 +44,20 @@ export default function Schedule() {
   const theme = useAppTheme();
   const router = useRouter();
   const { appointments, getAppointments } = useAppointments();
+  const { staff } = useStaff();
 
   const [viewType, setViewType] = useState<ScheduleViewType>('day');
   const [displayedDate, setDisplayedDate] = useState(new Date());
   const [currentTime, setCurrentTime] = useState(new Date());
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
+
+  // Calendar staff filter: null = all staff. Shading/tinting follow the pick.
+  const selectedStaff = selectedStaffId ? staff.find((m) => m.id === selectedStaffId) ?? null : null;
+  const byStaff = (a: Appointment) => !selectedStaffId || a.staffMemberId === selectedStaffId;
+  const staffAppointments = appointments.filter(byStaff);
+  const dayAppointments = (date: Date) => getAppointments(date).filter(byStaff);
 
   useEffect(() => {
     const t = setInterval(() => setCurrentTime(new Date()), 60_000);
@@ -87,22 +96,24 @@ export default function Schedule() {
             <View style={styles.gridArea}>
               <SingleDayGrid
                 date={displayedDate}
-                appointments={getAppointments(displayedDate)}
+                appointments={dayAppointments(displayedDate)}
                 currentTime={currentTime}
                 onAppointmentPress={openDetail}
                 onSwipe={(dir) => setDisplayedDate((d) => addDays(d, dir))}
+                selectedStaff={selectedStaff}
+                staff={staff}
               />
             </View>
           </>
         ) : viewType === 'schedule' ? (
           <View style={styles.gridArea}>
-            <ScheduleListView selectedDate={displayedDate} appointments={appointments} onAppointmentPress={openDetail} />
+            <ScheduleListView selectedDate={displayedDate} appointments={staffAppointments} onAppointmentPress={openDetail} />
           </View>
         ) : viewType === 'month' ? (
           <View style={styles.gridArea}>
             <MonthGrid
               month={displayedDate}
-              appointments={appointments}
+              appointments={staffAppointments}
               onMonthChange={(delta) => setDisplayedDate((d) => new Date(d.getFullYear(), d.getMonth() + delta, 1))}
               onDayTap={(date) => { setDisplayedDate(date); setViewType('day'); }}
               onAppointmentPress={openDetail}
@@ -112,10 +123,12 @@ export default function Schedule() {
           <View style={styles.gridArea}>
             <MultiDayGrid
               dates={viewType === 'week' ? weekDates(displayedDate) : threeDayDates(displayedDate)}
-              getAppointments={getAppointments}
+              getAppointments={dayAppointments}
               currentTime={currentTime}
               onAppointmentPress={openDetail}
               onSwipe={(dir) => setDisplayedDate((d) => addDays(d, dir * (viewType === 'week' ? 7 : 3)))}
+              selectedStaff={selectedStaff}
+              staff={staff}
             />
           </View>
         )}
@@ -142,6 +155,9 @@ export default function Schedule() {
         onSelect={setViewType}
         onClose={() => setSwitcherOpen(false)}
         onWorkingHours={() => router.push('/working-hours')}
+        staff={staff}
+        selectedStaffId={selectedStaffId}
+        onSelectStaff={setSelectedStaffId}
       />
     </DashboardGradient>
   );
