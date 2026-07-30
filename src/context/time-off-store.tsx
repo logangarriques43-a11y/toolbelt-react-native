@@ -10,6 +10,7 @@ import type { TimeOffEvent } from '@/models/time-off';
 export interface TimeOffStore {
   events: TimeOffEvent[];
   addEvent: (e: Omit<TimeOffEvent, 'id'>) => void;
+  updateEvent: (e: TimeOffEvent) => void;
   deleteEvent: (id: string) => void;
 }
 
@@ -22,6 +23,7 @@ export function TimeOffProvider({ children }: { children: ReactNode }) {
     () => ({
       events,
       addEvent: (e) => setEvents((prev) => [...prev, { ...e, id: uuid() }]),
+      updateEvent: (e) => setEvents((prev) => prev.map((it) => (it.id === e.id ? e : it))),
       deleteEvent: (id) => setEvents((prev) => prev.filter((it) => it.id !== id)),
     }),
     [events],

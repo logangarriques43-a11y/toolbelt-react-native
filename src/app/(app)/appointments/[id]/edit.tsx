@@ -25,7 +25,9 @@ import { useAppointments } from '@/context/appointments-store';
 import { useClients } from '@/context/clients-store';
 import { useServices } from '@/context/services-store';
 import { useStaff } from '@/context/staff-store';
+import { useTimeOff } from '@/context/time-off-store';
 import { useWorkingHours } from '@/context/working-hours-store';
+import { firstBlockingTimeOff } from '@/models/time-off';
 import { STAFF_ORANGE, type StaffMember } from '@/models/staff';
 import {
   combineDateTime, durationMinutes, formatDurationLabel, formattedDateFull, recalcEndTime,
@@ -54,6 +56,7 @@ export default function EditAppointment() {
   const { clients } = useClients();
   const { findService } = useServices();
   const { staff } = useStaff();
+  const { events: timeOffEvents } = useTimeOff();
   const { isWorkingTime } = useWorkingHours();
   const form = useAppointmentForm();
 
@@ -171,6 +174,17 @@ export default function EditAppointment() {
         Alert.alert(
           'Client Unavailable',
           `${appt.clientName} already has ${clientClash.serviceName} from ${fmtTime(clientClash.startTime)} to ${fmtTime(clientClash.endTime)}. A client can't be booked for two overlapping appointments.`,
+        );
+        return;
+      }
+
+      const off = firstBlockingTimeOff(timeOffEvents, start, end, selectedStaff?.id);
+      if (off) {
+        Alert.alert(
+          'Unavailable',
+          off.isBusinessWide
+            ? `The business is closed for ${off.title} during this time. Cancel the time off first, or pick another slot.`
+            : `${off.staffName} is on time off (${off.title}) during this time. Cancel the time off first, or choose a different staff member or slot.`,
         );
         return;
       }
