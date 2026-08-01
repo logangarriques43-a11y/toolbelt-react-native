@@ -225,7 +225,7 @@ function ChannelRow({ icon, iconColor, title, status, isLive, onPress }: Channel
   return (
     <Pressable onPress={onPress} style={styles.channelRow}>
       <View style={[styles.channelIcon, { backgroundColor: theme.iconBackground(iconColor) }]}>
-        <Icon name={icon} size={16} color={iconColor} />
+        <Icon name={icon} size={14} color={iconColor} />
       </View>
       <View style={styles.channelText}>
         <Text numberOfLines={1} style={[styles.channelTitle, { color: theme.primaryText }]}>{title}</Text>
@@ -262,8 +262,13 @@ function QuickAction({ icon, title, color, onPress }: QuickActionProps) {
       <View style={[styles.quickIcon, { backgroundColor: color }]}>
         <Icon name={icon} size={24} color="#FFFFFF" />
       </View>
-      <Text style={[styles.quickTitle, { color: theme.primaryText }]}>{title}</Text>
-      <View style={styles.quickSpacer} />
+      <Text
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.8}
+        style={[styles.quickTitle, { color: theme.primaryText }]}>
+        {title}
+      </Text>
       <Icon name="chevron.right" size={16} color={theme.chevronTint} />
     </Pressable>
   );
@@ -293,12 +298,12 @@ const styles = StyleSheet.create({
   channelsHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   channelsLabel: { fontSize: 14, fontWeight: '600' },
   channelsCard: { borderRadius: 14 },
-  channelRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 12 },
-  channelIcon: { width: 36, height: 36, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  channelText: { flex: 1, gap: 2 },
-  channelTitle: { fontSize: 16, fontWeight: '500' },
-  channelStatus: { fontSize: 12 },
-  channelDivider: { height: StyleSheet.hairlineWidth, marginLeft: 56 },
+  channelRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 8 },
+  channelIcon: { width: 30, height: 30, borderRadius: 7, alignItems: 'center', justifyContent: 'center' },
+  channelText: { flex: 1, gap: 1 },
+  channelTitle: { fontSize: 15, fontWeight: '500' },
+  channelStatus: { fontSize: 11 },
+  channelDivider: { height: StyleSheet.hairlineWidth, marginLeft: 50 },
   livePill: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999 },
   liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: iOSColors.green },
   liveText: { fontSize: 11, fontWeight: '600', color: iOSColors.green },
@@ -322,6 +327,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   quickIcon: { width: 50, height: 50, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  quickTitle: { fontSize: 18, fontWeight: '500' },
-  quickSpacer: { flex: 1 },
+  // flex:1 gives the label a bounded width (was a trailing spacer) so
+  // adjustsFontSizeToFit can shrink a long label ("Our Special Features") to fit.
+  quickTitle: { flex: 1, fontSize: 18, fontWeight: '500' },
 });
