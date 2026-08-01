@@ -262,11 +262,7 @@ function QuickAction({ icon, title, color, onPress }: QuickActionProps) {
       <View style={[styles.quickIcon, { backgroundColor: color }]}>
         <Icon name={icon} size={24} color="#FFFFFF" />
       </View>
-      <Text
-        numberOfLines={1}
-        adjustsFontSizeToFit
-        minimumFontScale={0.8}
-        style={[styles.quickTitle, { color: theme.primaryText }]}>
+      <Text numberOfLines={1} allowFontScaling={false} style={[styles.quickTitle, { color: theme.primaryText }]}>
         {title}
       </Text>
       <Icon name="chevron.right" size={16} color={theme.chevronTint} />
@@ -327,7 +323,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   quickIcon: { width: 50, height: 50, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  // flex:1 gives the label a bounded width (was a trailing spacer) so
-  // adjustsFontSizeToFit can shrink a long label ("Our Special Features") to fit.
-  quickTitle: { flex: 1, fontSize: 18, fontWeight: '500' },
+  // flex:1 bounds the width between the icon and chevron. One fixed size for
+  // every label (not per-button adjustsFontSizeToFit, which made them look
+  // inconsistent) — 15 keeps the longest label ("Custom Website Design") on one
+  // line even on narrow Android screens.
+  quickTitle: { flex: 1, fontSize: 15, fontWeight: '500' },
 });
