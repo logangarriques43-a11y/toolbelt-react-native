@@ -9,7 +9,7 @@
 
 import { useRouter } from 'expo-router';
 import type { SFSymbol } from 'expo-symbols';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DashboardGradient } from '@/components/dashboard-gradient';
@@ -18,6 +18,8 @@ import { Icon } from '@/components/icon';
 import { useClients } from '@/context/clients-store';
 import { useServices } from '@/context/services-store';
 import { useSession } from '@/context/session';
+import { useSMS } from '@/context/sms-store';
+import { withOpacity } from '@/lib/color';
 import { displayNameFromEmail } from '@/lib/name';
 import { Brand, Radius, cardShadow, iOSColors } from '@/theme/tokens';
 import { useAppTheme, type AppTheme } from '@/theme/theme-context';
@@ -28,8 +30,11 @@ export default function Dashboard() {
   const { account, signOut } = useSession();
   const { clients } = useClients();
   const { services } = useServices();
+  const { phoneNumber } = useSMS();
 
   const displayName = resolveDisplayName(account?.name, account?.email);
+  const smsActive = phoneNumber?.isActive === true;
+  const smsStatus = smsActive ? 'Existing customers can text your number' : 'Tap to set up AI texting';
 
   return (
     <DashboardGradient>
@@ -38,10 +43,10 @@ export default function Dashboard() {
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.headerText}>
-              <Text style={[styles.welcome, { color: theme.secondaryText }]}>Welcome Back!</Text>
-              <Text style={[styles.name, { color: theme.primaryText }]}>{displayName}</Text>
+              <Text allowFontScaling={false} style={[styles.welcome, { color: theme.secondaryText }]}>Welcome Back!</Text>
+              <Text numberOfLines={1} allowFontScaling={false} style={[styles.name, { color: theme.primaryText }]}>{displayName}</Text>
               {account?.businessName ? (
-                <Text style={[styles.business, { color: iOSColors.blue }]}>
+                <Text numberOfLines={1} style={[styles.business, { color: iOSColors.blue }]}>
                   {account.businessName}
                 </Text>
               ) : null}
@@ -59,6 +64,33 @@ export default function Dashboard() {
                   color={iOSColors.blue}
                 />
               </Pressable>
+            </View>
+          </View>
+
+          {/* Customer Channels — at-a-glance status for how clients can book. */}
+          <View style={styles.channels}>
+            <View style={styles.channelsHead}>
+              <Icon name="antenna.radiowaves.left.and.right" size={14} color={theme.secondaryText} />
+              <Text style={[styles.channelsLabel, { color: theme.secondaryText }]}>CUSTOMER CHANNELS</Text>
+            </View>
+            <View style={[styles.channelsCard, { backgroundColor: theme.cardBackground }, cardShadow(theme)]}>
+              <ChannelRow
+                icon="globe"
+                iconColor={iOSColors.indigo}
+                title="Online Booking"
+                status="Tap to set up your booking page"
+                isLive={false}
+                onPress={() => Alert.alert('Coming soon', 'Online Booking arrives in a later phase.')}
+              />
+              <View style={[styles.channelDivider, { backgroundColor: theme.divider }]} />
+              <ChannelRow
+                icon="bubble.left.and.text.bubble.right.fill"
+                iconColor={iOSColors.teal}
+                title="AI Texting"
+                status={smsStatus}
+                isLive={smsActive}
+                onPress={() => router.push('/sms-setup')}
+              />
             </View>
           </View>
 
@@ -178,6 +210,38 @@ function TripleButton({ icon, title, count, color, onPress }: TripleButtonProps)
   );
 }
 
+interface ChannelRowProps {
+  icon: SFSymbol;
+  iconColor: string;
+  title: string;
+  status: string;
+  isLive: boolean;
+  onPress: () => void;
+}
+
+/** One row of the Customer Channels card — port of customerChannelRow. */
+function ChannelRow({ icon, iconColor, title, status, isLive, onPress }: ChannelRowProps) {
+  const theme = useAppTheme();
+  return (
+    <Pressable onPress={onPress} style={styles.channelRow}>
+      <View style={[styles.channelIcon, { backgroundColor: theme.iconBackground(iconColor) }]}>
+        <Icon name={icon} size={16} color={iconColor} />
+      </View>
+      <View style={styles.channelText}>
+        <Text numberOfLines={1} style={[styles.channelTitle, { color: theme.primaryText }]}>{title}</Text>
+        <Text numberOfLines={1} style={[styles.channelStatus, { color: theme.secondaryText }]}>{status}</Text>
+      </View>
+      {isLive ? (
+        <View style={[styles.livePill, { backgroundColor: withOpacity(iOSColors.green, 0.12) }]}>
+          <View style={styles.liveDot} />
+          <Text style={styles.liveText}>Live</Text>
+        </View>
+      ) : null}
+      <Icon name="chevron.right" size={12} color={theme.chevronTint} />
+    </Pressable>
+  );
+}
+
 interface QuickActionProps {
   icon: SFSymbol;
   title: string;
@@ -225,6 +289,19 @@ const styles = StyleSheet.create({
   name: { fontSize: 32, fontWeight: '700' },
   business: { fontSize: 18 },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: 16 },
+  channels: { gap: 12, paddingHorizontal: 20 },
+  channelsHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  channelsLabel: { fontSize: 14, fontWeight: '600' },
+  channelsCard: { borderRadius: 14 },
+  channelRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 12 },
+  channelIcon: { width: 36, height: 36, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  channelText: { flex: 1, gap: 2 },
+  channelTitle: { fontSize: 16, fontWeight: '500' },
+  channelStatus: { fontSize: 12 },
+  channelDivider: { height: StyleSheet.hairlineWidth, marginLeft: 56 },
+  livePill: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999 },
+  liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: iOSColors.green },
+  liveText: { fontSize: 11, fontWeight: '600', color: iOSColors.green },
   grid: { gap: 20, paddingHorizontal: 20 },
   statRow: { flexDirection: 'row', gap: 16 },
   tripleRow: { flexDirection: 'row', borderRadius: Radius.card, overflow: 'hidden' },

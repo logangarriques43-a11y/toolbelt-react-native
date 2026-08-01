@@ -195,7 +195,8 @@ export const ICON_MAP: Record<string, [IconFamily, string]> = {
   'shippingbox': ['mci', 'package-variant-closed'],
   'shippingbox.fill': ['mci', 'package-variant'],
   'slider.horizontal.3': ['mci', 'tune'],
-  'sparkles': ['mci', 'star-four-points'],
+  'antenna.radiowaves.left.and.right': ['mci', 'broadcast'],
+  'sparkles': ['mat', 'auto-awesome'], // closer to SF sparkles than a single 4-point star
   'square.and.arrow.down': ['mci', 'tray-arrow-down'],
   'square.and.arrow.down.fill': ['mci', 'tray-arrow-down'],
   'square.and.arrow.down.on.square': ['mci', 'import'],

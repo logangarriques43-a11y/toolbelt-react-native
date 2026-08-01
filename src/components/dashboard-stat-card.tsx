@@ -41,8 +41,8 @@ export function DashboardStatCard({
       </View>
 
       <View style={styles.textBlock}>
-        <Text style={[styles.title, { color: theme.secondaryText }]}>{title}</Text>
-        <Text style={[styles.value, { color: theme.primaryText }]}>{value}</Text>
+        <Text allowFontScaling={false} style={[styles.title, { color: theme.secondaryText }]}>{title}</Text>
+        <Text allowFontScaling={false} numberOfLines={1} style={[styles.value, { color: theme.primaryText }]}>{value}</Text>
       </View>
     </Pressable>
   );
@@ -51,10 +51,15 @@ export function DashboardStatCard({
 const styles = StyleSheet.create({
   card: {
     flex: 1,
-    height: 130,
+    // minHeight (not a fixed height) so the card grows to fit its title on
+    // Android, where text renders wider and a long title ("Book Appointments",
+    // "Vendor Marketplace") would otherwise overflow the box and overlap the
+    // row below. Cards in a row stretch to the tallest, so they stay aligned.
+    minHeight: 130,
     padding: 20,
     borderRadius: Radius.card,
     justifyContent: 'space-between',
+    gap: 12,
   },
   iconRow: { flexDirection: 'row' },
   textBlock: { gap: 4 },
