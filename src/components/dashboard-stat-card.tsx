@@ -63,7 +63,10 @@ const styles = StyleSheet.create({
   },
   iconRow: { flexDirection: 'row' },
   textBlock: { gap: 4 },
-  title: { fontSize: 14 },
+  // Grey subtitle — smaller than the white label so a long title ("Vendor
+  // Marketplace", "Book Appointments") fits on one line inside the card on
+  // Android (where text renders wider than iOS).
+  title: { fontSize: 12 },
   value: { fontSize: 18, fontWeight: '700' },
   pressed: { opacity: 0.85 },
 });
