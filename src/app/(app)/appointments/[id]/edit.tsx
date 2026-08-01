@@ -249,7 +249,7 @@ export default function EditAppointment() {
           <Pressable onPress={() => router.back()} hitSlop={8} style={[styles.closeBtn, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
             <Icon name="xmark" size={18} color={theme.secondaryText} />
           </Pressable>
-          <Text numberOfLines={1} style={[styles.headerTitle, { color: theme.primaryText }]}>Edit appointment</Text>
+          <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.headerTitle, { color: theme.primaryText }]}>Edit appointment</Text>
           <Pressable onPress={save} style={styles.savePill}>
             <Text numberOfLines={1} style={styles.saveText}>Save</Text>
           </Pressable>
@@ -357,8 +357,8 @@ const styles = StyleSheet.create({
   missing: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16 },
   closeBtn: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { flex: 1, textAlign: 'center', marginHorizontal: 8, fontSize: 18, fontWeight: '700' },
-  savePill: { backgroundColor: iOSColors.blue, paddingHorizontal: 18, paddingVertical: 10, borderRadius: 20 },
+  headerTitle: { flex: 1, textAlign: 'center', marginHorizontal: 6, fontSize: 17, fontWeight: '700' },
+  savePill: { backgroundColor: iOSColors.blue, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20 },
   saveText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
   body: { paddingTop: 24, paddingBottom: 60, gap: 24 },
   readonlyCard: { flexDirection: 'row', alignItems: 'center', gap: 16, borderRadius: 12, padding: 16 },

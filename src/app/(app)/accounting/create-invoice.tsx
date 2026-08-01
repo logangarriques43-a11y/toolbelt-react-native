@@ -127,7 +127,7 @@ export default function CreateInvoice() {
           <Pressable onPress={() => router.back()} style={[styles.closeBtn, { backgroundColor: theme.cardBackground }, lightShadow(theme)]} hitSlop={8}>
             <Icon name="xmark" size={18} color={theme.secondaryText} />
           </Pressable>
-          <Text numberOfLines={1} style={[styles.headerTitle, { color: theme.primaryText }]}>New invoice</Text>
+          <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.headerTitle, { color: theme.primaryText }]}>New invoice</Text>
           <Pressable onPress={onSend} style={[styles.sendBtn, { backgroundColor: lineItems.length === 0 ? iOSColors.gray : iOSColors.blue }]}>
             <Text numberOfLines={1} style={styles.sendText}>Send</Text>
           </Pressable>
@@ -384,8 +384,8 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16 },
   closeBtn: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { flex: 1, textAlign: 'center', marginHorizontal: 8, fontSize: 18, fontWeight: '700' },
-  sendBtn: { paddingHorizontal: 18, paddingVertical: 10, borderRadius: 20 },
+  headerTitle: { flex: 1, textAlign: 'center', marginHorizontal: 6, fontSize: 17, fontWeight: '700' },
+  sendBtn: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20 },
   sendText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
   body: { paddingBottom: 40, gap: 20 },
   badgeRow: { paddingHorizontal: 16, paddingTop: 8 },
