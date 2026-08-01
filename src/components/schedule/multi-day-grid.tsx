@@ -6,8 +6,11 @@
  */
 
 import { useEffect, useRef } from 'react';
-import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+// ScrollView from gesture-handler so the horizontal day-swipe Pan and vertical
+// scroll cooperate on Android (RN's own ScrollView doesn't compose with RNGH
+// gestures there, which is why the grid didn't respond to drag on Android).
+import { Gesture, GestureDetector, ScrollView } from 'react-native-gesture-handler';
 import { runOnJS } from 'react-native-reanimated';
 
 import { CompactAppointmentBlock } from '@/components/schedule/compact-appointment-block';
@@ -98,8 +101,8 @@ export function MultiDayGrid({
             <View
               key={i}
               style={[styles.headerDay, { borderLeftColor: theme.divider, backgroundColor: today ? withOpacity(iOSColors.blue, 0.1) : 'transparent' }]}>
-              <Text style={[styles.headerNum, { color: today ? iOSColors.blue : theme.primaryText }]}>{dayNumFmt.format(d)}</Text>
-              <Text style={[styles.headerName, { color: today ? iOSColors.blue : theme.secondaryText }]}>{dayNameFmt.format(d).toUpperCase()}</Text>
+              <Text numberOfLines={1} allowFontScaling={false} style={[styles.headerNum, { color: today ? iOSColors.blue : theme.primaryText }]}>{dayNumFmt.format(d)}</Text>
+              <Text numberOfLines={1} allowFontScaling={false} style={[styles.headerName, { color: today ? iOSColors.blue : theme.secondaryText }]}>{dayNameFmt.format(d).toUpperCase()}</Text>
             </View>
           );
         })}
@@ -125,16 +128,15 @@ export function MultiDayGrid({
               );
             })}
 
-            {/* Current time indicator on today's column */}
+            {/* Current time indicator — one continuous line across the grid,
+                with the dot marking today's column. */}
             {todayIndex >= 0 ? (
               <View style={[styles.indicator, { top: indicatorY }]} pointerEvents="none">
                 <View style={styles.indicatorTimeWrap}>
-                  <Text style={styles.indicatorTime}>{indicatorTime}</Text>
+                  <Text numberOfLines={1} allowFontScaling={false} style={styles.indicatorTime}>{indicatorTime}</Text>
                 </View>
-                <View style={[styles.indicatorBar, { left: TIME_COL_WIDTH + todayIndex * dayWidth, width: dayWidth }]}>
-                  <View style={styles.indicatorDot} />
-                  <View style={styles.indicatorLine} />
-                </View>
+                <View style={styles.indicatorLine} />
+                <View style={[styles.indicatorDot, { position: 'absolute', top: 3, left: TIME_COL_WIDTH + todayIndex * dayWidth - 5 }]} />
               </View>
             ) : null}
 
@@ -195,14 +197,13 @@ const styles = StyleSheet.create({
   clockCol: { width: TIME_COL_WIDTH, alignItems: 'center', justifyContent: 'center' },
   headerDay: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 2, borderLeftWidth: 1 },
   headerNum: { fontSize: 16, fontWeight: '700' },
-  headerName: { fontSize: 12, fontWeight: '500' },
+  headerName: { fontSize: 11, fontWeight: '500' },
   slot: { flexDirection: 'row', height: SLOT_HEIGHT, borderTopWidth: 1 },
   slotLabel: { width: TIME_COL_WIDTH, fontSize: 10, fontWeight: '500', textAlign: 'center', textAlignVertical: 'center' },
   dayColumn: { flex: 1, borderLeftWidth: 1 },
   indicator: { position: 'absolute', left: 0, right: 0, height: 16, flexDirection: 'row', alignItems: 'center', zIndex: 100 },
   indicatorTimeWrap: { width: TIME_COL_WIDTH, alignItems: 'center' },
   indicatorTime: { fontSize: 10, fontWeight: '700', color: '#FFFFFF', backgroundColor: iOSColors.red, paddingHorizontal: 5, paddingVertical: 2, borderRadius: 999, overflow: 'hidden' },
-  indicatorBar: { position: 'absolute', flexDirection: 'row', alignItems: 'center' },
   indicatorDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: iOSColors.red },
   indicatorLine: { flex: 1, height: 2, backgroundColor: iOSColors.red },
 });

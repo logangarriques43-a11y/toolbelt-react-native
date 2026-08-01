@@ -66,7 +66,7 @@ export function MonthGrid({
     <View style={styles.root}>
       <View style={styles.dowRow}>
         {DOW.map((d, i) => (
-          <Text key={i} style={[styles.dow, { color: theme.secondaryText }]}>{d}</Text>
+          <Text key={i} numberOfLines={1} allowFontScaling={false} style={[styles.dow, { color: theme.secondaryText }]}>{d}</Text>
         ))}
       </View>
 
@@ -91,6 +91,8 @@ export function MonthGrid({
                     ]}>
                     <View style={[styles.dayNumWrap, today ? { backgroundColor: iOSColors.blue } : null]}>
                       <Text
+                        numberOfLines={1}
+                        allowFontScaling={false}
                         style={[
                           styles.dayNum,
                           { color: today ? '#FFFFFF' : inMonth ? theme.primaryText : withOpacity(iOSColors.gray, 0.5), fontWeight: today ? '700' : '500' },
@@ -132,8 +134,10 @@ const styles = StyleSheet.create({
   grid: { flex: 1 },
   weekRow: { flex: 1, flexDirection: 'row' },
   cell: { flex: 1, borderWidth: StyleSheet.hairlineWidth, paddingTop: 4, alignItems: 'center', gap: 4 },
-  dayNumWrap: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  dayNum: { fontSize: 14 },
+  // minWidth (not fixed width) + horizontal padding so two-digit dates (10–31)
+  // fit; a fixed-width box clips the Text to one digit on Android.
+  dayNumWrap: { minWidth: 24, height: 24, borderRadius: 12, paddingHorizontal: 5, alignItems: 'center', justifyContent: 'center' },
+  dayNum: { fontSize: 13 },
   dots: { flexDirection: 'row', flexWrap: 'wrap', gap: 3, paddingHorizontal: 4, justifyContent: 'center' },
   dot: { width: 7, height: 7, borderRadius: 3.5 },
   blocks: { alignSelf: 'stretch', gap: 2, paddingHorizontal: 2 },

@@ -9,8 +9,11 @@
  */
 
 import { useEffect, useRef } from 'react';
-import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+// ScrollView from gesture-handler so the horizontal day-swipe Pan and vertical
+// scroll cooperate on Android (RN's ScrollView doesn't compose with RNGH
+// gestures there — the grid otherwise ignores drag on Android).
+import { Gesture, GestureDetector, ScrollView } from 'react-native-gesture-handler';
 import { runOnJS } from 'react-native-reanimated';
 
 import { AppointmentBlock } from '@/components/schedule/appointment-block';
@@ -110,7 +113,7 @@ export function SingleDayGrid({
           {today ? (
             <View style={[styles.indicator, { top: indicatorY }]} pointerEvents="none">
               <View style={styles.indicatorTimeWrap}>
-                <Text style={styles.indicatorTime}>{indicatorTime}</Text>
+                <Text numberOfLines={1} allowFontScaling={false} style={styles.indicatorTime}>{indicatorTime}</Text>
               </View>
               <View style={styles.indicatorDot} />
               <View style={styles.indicatorLine} />
