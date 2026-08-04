@@ -26,9 +26,10 @@ export function ScreenHeader({
 
   return (
     <View style={styles.row}>
-      <Pressable onPress={back} hitSlop={8} style={styles.back}>
-        <Icon name="chevron.left" size={16} weight="semibold" color={iOSColors.blue} />
-        <Text style={styles.backText}>Back</Text>
+      {/* Home icon (matches the calendar top bar) but keeps BACK behavior —
+          onPress is router.back / onBack, NOT a jump to the dashboard route. */}
+      <Pressable onPress={back} hitSlop={8} style={styles.back} accessibilityLabel="Back">
+        <Icon name="house.fill" size={20} color={iOSColors.blue} />
       </Pressable>
 
       <Text
@@ -47,8 +48,7 @@ export function ScreenHeader({
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 16 },
-  back: { flexDirection: 'row', alignItems: 'center', gap: 4, minWidth: 64 },
-  backText: { color: iOSColors.blue, fontSize: 16, fontWeight: '600' },
+  back: { flexDirection: 'row', alignItems: 'center', minWidth: 64 },
   // Base 20 (down from 24) fits most titles; adjustsFontSizeToFit shrinks the
   // longest ("Our Special Features") to one line. marginHorizontal keeps a gap
   // so the title never touches the Back button / right action on Android.
