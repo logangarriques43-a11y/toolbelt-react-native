@@ -123,7 +123,9 @@ const styles = StyleSheet.create({
   cardBody: { flex: 1, gap: 6 },
   name: { fontSize: 18, fontWeight: '600' },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
-  meta: { fontSize: 14 },
+  // paddingRight so Android doesn't clip the trailing glyph of a value
+  // ("Fixed"->"Fixe", "Variable"->"Variabl") when it's measured content-width.
+  meta: { fontSize: 14, paddingRight: 2 },
   priceWrap: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   price: { fontSize: 20, fontWeight: '700' },
 });

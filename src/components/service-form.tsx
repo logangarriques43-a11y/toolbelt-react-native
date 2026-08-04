@@ -406,7 +406,9 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   rowText: { flex: 1, gap: 2 },
   rowCaption: { fontSize: 12 },
-  rowValue: { fontSize: 16 },
+  // flex:1 + a little right padding so the value takes the full card width and
+  // Android can't clip the trailing glyph ("Fixed"->"Fixe", "35 min"->"35").
+  rowValue: { fontSize: 16, flex: 1, paddingRight: 4 },
   colorDot: { width: 24, height: 24, borderRadius: 12 },
   priceRow: { flexDirection: 'row', gap: 12 },
   flex: { flex: 1, gap: 4 },
