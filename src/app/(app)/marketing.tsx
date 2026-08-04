@@ -4,7 +4,7 @@
  */
 
 import type { SFSymbol } from 'expo-symbols';
-import { StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DashboardGradient } from '@/components/dashboard-gradient';
@@ -28,7 +28,7 @@ export default function Marketing() {
     <DashboardGradient>
       <SafeAreaView style={styles.safe} edges={['top']}>
         <ScreenHeader title="Marketing" />
-        <View style={styles.body}>
+        <ScrollView contentContainerStyle={styles.body}>
           <Icon name="megaphone.fill" size={60} color={withOpacity(iOSColors.orange, 0.6)} />
           <Text style={[styles.title, { color: theme.primaryText }]}>Marketing</Text>
           <Text style={[styles.sub, { color: theme.secondaryText }]}>
@@ -49,7 +49,7 @@ export default function Marketing() {
               </View>
             ))}
           </View>
-        </View>
+        </ScrollView>
       </SafeAreaView>
     </DashboardGradient>
   );
@@ -57,7 +57,9 @@ export default function Marketing() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  body: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16, padding: 20 },
+  // flexGrow (not flex) inside a ScrollView: centers when it fits, scrolls when
+  // taller — so the content can't overflow up into the header on Android.
+  body: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', gap: 16, padding: 20 },
   title: { fontSize: 28, fontWeight: '700' },
   sub: { fontSize: 16, textAlign: 'center', paddingHorizontal: 20 },
   features: { alignSelf: 'stretch', gap: 12, marginTop: 8 },
