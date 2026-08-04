@@ -112,7 +112,7 @@ function StaffCard({ member, onPress }: { member: StaffMember; onPress: () => vo
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   searchBar: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14, marginHorizontal: 16, borderRadius: 12 },
-  searchInput: { flex: 1, fontSize: 15, padding: 0 },
+  searchInput: { flex: 1, fontSize: 15, paddingVertical: 4, textAlignVertical: 'center' },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16, padding: 40 },
   emptyTitle: { fontSize: 22, fontWeight: '700' },
   emptySub: { fontSize: 15, textAlign: 'center' },

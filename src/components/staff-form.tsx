@@ -269,7 +269,7 @@ function Row({ icon, label, children }: { icon: SFSymbol; label: string; childre
   return (
     <View style={styles.row}>
       <Icon name={icon} size={16} color={STAFF_ORANGE} />
-      <Text style={[styles.rowLabel, { color: theme.secondaryText }]}>{label}</Text>
+      <Text numberOfLines={1} allowFontScaling={false} style={[styles.rowLabel, { color: theme.secondaryText }]}>{label}</Text>
       {children}
     </View>
   );
@@ -296,8 +296,8 @@ const styles = StyleSheet.create({
   importText: { fontSize: 15, fontWeight: '500' },
   card: { marginHorizontal: 16, borderRadius: 14 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 14 },
-  rowLabel: { fontSize: 13, fontWeight: '500', width: 52 },
-  input: { flex: 1, fontSize: 16, padding: 0 },
+  rowLabel: { fontSize: 13, fontWeight: '500', width: 60 },
+  input: { flex: 1, fontSize: 16, paddingVertical: 4, textAlignVertical: 'center' },
   divider: { height: StyleSheet.hairlineWidth, marginLeft: 52 },
   activeRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 12 },
   activeLabel: { flex: 1, fontSize: 16 },

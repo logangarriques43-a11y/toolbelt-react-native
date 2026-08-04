@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
   timeAmpm: { fontSize: 14, fontWeight: '600' },
   durationRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   durationText: { fontSize: 14, fontWeight: '500' },
-  input: { flex: 1, fontSize: 16, padding: 0 },
+  input: { flex: 1, fontSize: 16, paddingVertical: 4, textAlignVertical: 'center' },
   breakdown: { borderWidth: 1, borderRadius: 12, padding: 16, gap: 10 },
   breakdownRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   breakdownDot: { width: 12, height: 12, borderRadius: 6 },

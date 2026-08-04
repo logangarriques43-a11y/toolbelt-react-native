@@ -147,7 +147,7 @@ export default function Payments() {
     <SafeAreaView style={[styles.safe, { backgroundColor: theme.background }]} edges={['top', 'bottom']}>
       {/* Header */}
       <View style={[styles.header, { backgroundColor: theme.cardBackground }]}>
-        <RoundButton icon="xmark" color={theme.secondaryText} onPress={() => router.back()} />
+        <RoundButton icon="house.fill" color={iOSColors.blue} onPress={() => router.back()} />
         <Text style={[styles.headerTitle, { color: theme.primaryText }]}>{section}</Text>
         <RoundButton
           icon="trash"
@@ -231,7 +231,7 @@ export default function Payments() {
           return (
             <Pressable key={s} style={styles.navItem} onPress={() => setSection(s)}>
               <Icon name={icon} size={20} color={active ? BRAND_BLUE : iOSColors.gray} />
-              <Text style={[styles.navLabel, { color: active ? BRAND_BLUE : iOSColors.gray }]}>{s}</Text>
+              <Text numberOfLines={1} allowFontScaling={false} style={[styles.navLabel, { color: active ? BRAND_BLUE : iOSColors.gray }]}>{s}</Text>
             </Pressable>
           );
         })}
@@ -354,8 +354,8 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     paddingBottom: 4,
   },
-  navItem: { flex: 1, alignItems: 'center', gap: 4 },
-  navLabel: { fontSize: 10, fontWeight: '500' },
+  navItem: { flex: 1, alignItems: 'center', gap: 4, paddingHorizontal: 2 },
+  navLabel: { fontSize: 9, fontWeight: '500' },
   placeholder: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, paddingHorizontal: 40 },
   placeholderTitle: { fontSize: 18, fontWeight: '700' },
   placeholderSub: { fontSize: 14, textAlign: 'center' },

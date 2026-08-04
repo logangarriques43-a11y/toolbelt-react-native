@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 10,
     padding: 16, marginHorizontal: 16, borderRadius: 10, borderWidth: 1,
   },
-  searchInput: { flex: 1, fontSize: 16, padding: 0 },
+  searchInput: { flex: 1, fontSize: 16, paddingVertical: 4, textAlignVertical: 'center' },
   addBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
     padding: 16, marginHorizontal: 16, borderRadius: 12,

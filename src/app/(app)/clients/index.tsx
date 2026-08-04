@@ -114,7 +114,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     borderRadius: 12,
   },
-  searchInput: { flex: 1, fontSize: 16, padding: 0 },
+  searchInput: { flex: 1, fontSize: 16, paddingVertical: 4, textAlignVertical: 'center' },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16, padding: 24 },
   emptyTitle: { fontSize: 24, fontWeight: '700' },
   emptySub: { fontSize: 16, textAlign: 'center' },

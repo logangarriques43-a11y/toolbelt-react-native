@@ -300,7 +300,7 @@ const styles = StyleSheet.create({
   fieldLabel: { fontSize: 13, fontWeight: '500' },
   required: { fontSize: 13, fontWeight: '700', color: REQUIRED_RED },
   fieldContent: { paddingLeft: 26 },
-  input: { fontSize: 16, padding: 0 },
+  input: { fontSize: 16, paddingVertical: 4, textAlignVertical: 'center' },
   notes: { minHeight: 72, textAlignVertical: 'top' },
   divider: { height: StyleSheet.hairlineWidth, marginLeft: 52 },
   hint: { fontSize: 12, paddingHorizontal: 16, paddingBottom: 12 },

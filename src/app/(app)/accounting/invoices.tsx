@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   controls: { gap: 12, paddingTop: 12 },
   search: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, marginHorizontal: 16, borderRadius: 12 },
-  searchInput: { flex: 1, fontSize: 15, padding: 0 },
+  searchInput: { flex: 1, fontSize: 15, paddingVertical: 4, textAlignVertical: 'center' },
   pills: { gap: 10, paddingHorizontal: 16 },
   pill: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, borderWidth: 1 },
   pillText: { fontSize: 14, fontWeight: '500' },

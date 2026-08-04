@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   body: { padding: 16, gap: 16, paddingBottom: 40 },
   search: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: 12 },
-  searchInput: { flex: 1, fontSize: 16, padding: 0 },
+  searchInput: { flex: 1, fontSize: 16, paddingVertical: 4, textAlignVertical: 'center' },
   section: { fontSize: 18, fontWeight: '700', paddingHorizontal: 4, paddingTop: 4 },
   card: { borderRadius: 16 },
   divider: { height: StyleSheet.hairlineWidth, marginLeft: 16 },

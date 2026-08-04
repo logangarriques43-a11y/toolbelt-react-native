@@ -403,7 +403,7 @@ const styles = StyleSheet.create({
   fieldValue: { fontSize: 16, fontWeight: '500' },
   fieldSub: { fontSize: 14 },
   fieldPlaceholder: { flex: 1, fontSize: 16, fontWeight: '500' },
-  fieldInput: { flex: 1, fontSize: 16, padding: 0 },
+  fieldInput: { flex: 1, fontSize: 16, paddingVertical: 4, textAlignVertical: 'center' },
   lineHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   addItem: { fontSize: 14, fontWeight: '500' },
   itemCard: { flexDirection: 'row', alignItems: 'center', gap: 16, padding: 16, borderRadius: 12 },

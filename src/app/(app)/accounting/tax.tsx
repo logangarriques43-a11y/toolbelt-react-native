@@ -235,7 +235,7 @@ const styles = StyleSheet.create({
   modeSub: { fontSize: 13 },
   rateRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 12, borderRadius: 10 },
   rateLabel: { fontSize: 14 },
-  rateInput: { fontSize: 14, fontWeight: '600', textAlign: 'right', minWidth: 80, padding: 0 },
+  rateInput: { fontSize: 14, fontWeight: '600', textAlign: 'right', minWidth: 80, paddingVertical: 4, textAlignVertical: 'center' },
   periods: { gap: 8 },
   period: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 16 },
   periodText: { fontSize: 13, fontWeight: '500' },

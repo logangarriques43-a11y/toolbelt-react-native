@@ -66,8 +66,7 @@ export default function Inventory() {
         {/* Header */}
         <View style={[styles.header, { backgroundColor: withOpacity(theme.cardBackground, 0.7) }]}>
           <Pressable onPress={() => router.back()} style={styles.back} hitSlop={8}>
-            <Icon name="chevron.left" size={16} color={iOSColors.blue} weight="semibold" />
-            <Text style={[styles.backText, { color: iOSColors.blue }]}>Back</Text>
+            <Icon name="house.fill" size={20} color={iOSColors.blue} />
           </Pressable>
           <Text style={[styles.headerTitle, { color: theme.primaryText }]}>Inventory</Text>
           <View style={styles.headerActions}>

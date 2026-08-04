@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
   cardLabel: { fontSize: 14, fontWeight: '600' },
   amountBox: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 16, borderRadius: 12 },
   dollar: { fontSize: 28, fontWeight: '700' },
-  amountInput: { flex: 1, fontSize: 28, fontWeight: '700', padding: 0 },
+  amountInput: { flex: 1, fontSize: 28, fontWeight: '700', paddingVertical: 4, textAlignVertical: 'center' },
   fieldLabel: { fontSize: 13, marginBottom: -4 },
   catRow: { gap: 8 },
   catPill: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20 },
