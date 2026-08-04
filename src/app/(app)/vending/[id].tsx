@@ -65,8 +65,7 @@ export default function VendorDetail() {
         {/* Header */}
         <View style={styles.header}>
           <Pressable onPress={() => router.back()} style={styles.back} hitSlop={8}>
-            <Icon name="chevron.left" size={16} color={iOSColors.blue} weight="medium" />
-            <Text style={[styles.backText, { color: iOSColors.blue }]}>Back</Text>
+            <Icon name="house.fill" size={20} color={iOSColors.blue} />
           </Pressable>
           <Pressable onPress={() => vendors.toggleFavorite(vendor.id)} hitSlop={8}>
             <Icon name={fav ? 'star.fill' : 'star'} size={20} color={iOSColors.orange} weight="semibold" />

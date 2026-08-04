@@ -10,7 +10,7 @@
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { DashboardGradient } from '@/components/dashboard-gradient';
 import { FloatingActionMenu } from '@/components/schedule/floating-action-menu';
@@ -43,6 +43,7 @@ const threeDayDates = (d: Date) => Array.from({ length: 3 }, (_, i) => addDays(d
 export default function Schedule() {
   const theme = useAppTheme();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { appointments, getAppointments } = useAppointments();
   const { staff } = useStaff();
 
@@ -135,7 +136,7 @@ export default function Schedule() {
 
         {/* Today button (all calendar views) */}
         {!today && viewType !== 'schedule' ? (
-          <Pressable onPress={() => setDisplayedDate(new Date())} style={styles.todayBtn}>
+          <Pressable onPress={() => setDisplayedDate(new Date())} style={[styles.todayBtn, { bottom: insets.bottom + 30 }]}>
             <Text style={styles.todayText}>Today</Text>
           </Pressable>
         ) : null}

@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
   month: { fontSize: 16, fontWeight: '700' },
   spacer: { flex: 1 },
   settingsBtn: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  aiBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, paddingHorizontal: 14, height: 36, borderRadius: 18 },
+  aiBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, paddingHorizontal: 14, height: 36, borderRadius: 18, marginRight: 8 },
   aiText: { color: '#FFFFFF', fontSize: 11, fontWeight: '600' },
   dropdown: { padding: 16, gap: 4, shadowOpacity: 0.15, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
   dropdownTitle: { fontSize: 16, fontWeight: '600', textAlign: 'center', paddingTop: 4 },

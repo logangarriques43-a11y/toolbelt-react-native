@@ -11,7 +11,7 @@ import { useRouter } from 'expo-router';
 import type { SFSymbol } from 'expo-symbols';
 import { useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/icon';
 import { useAppointments } from '@/context/appointments-store';
@@ -68,6 +68,7 @@ function initials(name: string): string {
 export default function Messages() {
   const theme = useAppTheme();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { appointments } = useAppointments();
   const { clients } = useClients();
 
@@ -120,7 +121,7 @@ export default function Messages() {
       </View>
 
       {/* Compose FAB */}
-      <Pressable style={styles.fab} onPress={() => setCompose({ open: true })}>
+      <Pressable style={[styles.fab, { bottom: insets.bottom + 24 }]} onPress={() => setCompose({ open: true })}>
         <LinearGradient colors={[BLUE, PURPLE]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.fabFill}>
           <Icon name="square.and.pencil" size={22} color="#FFFFFF" weight="semibold" />
         </LinearGradient>

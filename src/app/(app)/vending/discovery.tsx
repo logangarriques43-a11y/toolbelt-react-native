@@ -52,8 +52,7 @@ export default function VendorDiscovery() {
     <SafeAreaView style={[styles.safe, { backgroundColor: theme.background }]} edges={['top']}>
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} style={styles.back} hitSlop={8}>
-          <Icon name="chevron.left" size={16} color={iOSColors.blue} weight="medium" />
-          <Text style={[styles.backText, { color: iOSColors.blue }]}>Back</Text>
+          <Icon name="house.fill" size={20} color={iOSColors.blue} />
         </Pressable>
         <Text style={[styles.headerTitle, { color: theme.primaryText }]}>Find Vendors</Text>
         <View style={styles.back} />

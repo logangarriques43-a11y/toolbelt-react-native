@@ -8,6 +8,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import type { SFSymbol } from 'expo-symbols';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
 import { Icon } from '@/components/icon';
@@ -25,6 +26,7 @@ export function FloatingActionMenu({
   onTimeOff: () => void;
   onInvoice: () => void;
 }) {
+  const insets = useSafeAreaInsets();
   const [open, setOpen] = useState(false);
   // Holds the icon's rotation IN DEGREES. Spring the shared value itself, then
   // format the rotate string from the resolved NUMBER — interpolating the
@@ -49,7 +51,7 @@ export function FloatingActionMenu({
   }));
 
   return (
-    <View style={styles.wrap} pointerEvents="box-none">
+    <View style={[styles.wrap, { bottom: insets.bottom + 24 }]} pointerEvents="box-none">
       {open ? (
         <View style={styles.menu}>
           <CompactButton icon="calendar.badge.plus" title="Appointment" color={iOSColors.blue} onPress={() => pick(onCreateAppointment)} />

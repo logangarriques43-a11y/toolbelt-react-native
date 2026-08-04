@@ -41,7 +41,7 @@ export default function VendorHub() {
             <Text style={[styles.subtitle, { color: theme.secondaryText }]}>Connect with vendors & suppliers</Text>
           </View>
           <Pressable onPress={() => router.back()} hitSlop={8}>
-            <Icon name="xmark.circle.fill" size={28} color={theme.secondaryText} />
+            <Icon name="house.fill" size={20} color={iOSColors.blue} />
           </Pressable>
         </View>
 

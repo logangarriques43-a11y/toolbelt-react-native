@@ -9,6 +9,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import type { SFSymbol } from 'expo-symbols';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/icon';
 import type {
@@ -69,6 +70,7 @@ interface CheckoutProps {
 
 export function Checkout(props: CheckoutProps) {
   const theme = useAppTheme();
+  const insets = useSafeAreaInsets();
   const { tab } = props;
 
   return (
@@ -115,7 +117,7 @@ export function Checkout(props: CheckoutProps) {
 
         {tab !== 'Keypad' && (
           <Pressable
-            style={[styles.layoutToggle, { backgroundColor: theme.cardBackground }]}
+            style={[styles.layoutToggle, { backgroundColor: theme.cardBackground, bottom: insets.bottom + 16 }]}
             onPress={props.onToggleLayout}>
             <LayoutToggleGlyph active={tab === 'Services' ? props.showServiceList : props.showProductList} />
           </Pressable>

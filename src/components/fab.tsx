@@ -5,6 +5,7 @@
 
 import { LinearGradient } from 'expo-linear-gradient';
 import { Pressable, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/icon';
 import { iOSColors } from '@/theme/tokens';
@@ -18,10 +19,12 @@ export function Fab({
   colors?: readonly [string, string, ...string[]];
   shadowColor?: string;
 }) {
+  // Lift above the Android on-screen nav/gesture bar.
+  const insets = useSafeAreaInsets();
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => [styles.wrap, { shadowColor }, pressed ? styles.pressed : null]}>
+      style={({ pressed }) => [styles.wrap, { bottom: insets.bottom + 24, shadowColor }, pressed ? styles.pressed : null]}>
       <LinearGradient colors={colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.circle}>
         <Icon name="plus" size={24} weight="bold" color="#FFFFFF" />
       </LinearGradient>
