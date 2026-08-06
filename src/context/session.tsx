@@ -15,7 +15,10 @@
  * is in-memory until an auth backend + secure storage land in a later phase.
  */
 
-import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
+import { onAuthStateChanged, signOut as firebaseSignOut } from 'firebase/auth';
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+
+import { auth } from '@/lib/firebase';
 
 export interface Account {
   name: string;
@@ -38,6 +41,9 @@ interface SessionState {
 
 export interface Session extends SessionState {
   gate: Gate;
+  /** True until Firebase's first auth-state callback resolves (avoids a
+   *  login-screen flash before a persisted session is restored). */
+  initializing: boolean;
   signIn: (account: Account) => void;
   signOut: () => void;
   /** Merge updates into the signed-in account (Edit Profile / Business Info). */
@@ -73,15 +79,41 @@ function resolveGate(s: SessionState): Gate {
 
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<SessionState>(INITIAL);
+  const [initializing, setInitializing] = useState(true);
+
+  // Firebase is the source of truth for auth. On sign-in (or a persisted
+  // session restored on reload) we hydrate the account and mark onboarding
+  // complete so the gate opens straight to the app — the stubbed 2FA/payout
+  // onboarding is bypassed for now (real 2FA is a later phase).
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        const name = user.displayName || (user.email ? user.email.split('@')[0] : 'Business Owner');
+        setState({
+          account: { name, email: user.email ?? undefined, isBusinessOwner: true },
+          twoFactorSetupComplete: true,
+          twoFactorVerified: true,
+          payoutComplete: false,
+          payoutSkipped: true,
+        });
+      } else {
+        setState(INITIAL);
+      }
+      setInitializing(false);
+    });
+    return unsub;
+  }, []);
 
   const value = useMemo<Session>(
     () => ({
       ...state,
+      initializing,
       gate: resolveGate(state),
       signIn: (account) =>
-        // login() resets twoFactorVerified to false (Router.login).
-        setState({ ...INITIAL, account }),
-      signOut: () => setState(INITIAL),
+        setState({ ...INITIAL, account, twoFactorSetupComplete: true, twoFactorVerified: true, payoutSkipped: true }),
+      signOut: () => {
+        void firebaseSignOut(auth); // onAuthStateChanged then resets state
+      },
       updateAccount: (updates) =>
         setState((s) => (s.account ? { ...s, account: { ...s.account, ...updates } } : s)),
       completeTwoFactorSetup: () =>
@@ -90,7 +122,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       completePayout: () => setState((s) => ({ ...s, payoutComplete: true })),
       skipPayout: () => setState((s) => ({ ...s, payoutSkipped: true })),
     }),
-    [state],
+    [state, initializing],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

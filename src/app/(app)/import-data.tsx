@@ -272,7 +272,7 @@ export default function ImportData() {
     for (const pc of selClients) {
       const key = pc.name.toLowerCase();
       if (!clientLookup.has(key)) {
-        const c = clientsStore.addClient({
+        const c = await clientsStore.addClient({
           name: pc.name,
           phoneNumber: pc.phone,
           email: pc.email,
@@ -414,7 +414,7 @@ export default function ImportData() {
       const ckey = clientName.toLowerCase();
       let clientId = clientLookup.get(ckey);
       if (!clientId) {
-        const c = clientsStore.addClient({ name: clientName, phoneNumber: '', clientBlockTime: 0, smsConsentGiven: false });
+        const c = await clientsStore.addClient({ name: clientName, phoneNumber: '', clientBlockTime: 0, smsConsentGiven: false });
         clientId = c.id;
         clientLookup.set(ckey, c.id);
       }

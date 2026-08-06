@@ -67,9 +67,11 @@ export function ClientForm({ editingId }: { editingId?: string }) {
 
   const [smsConsent, setSmsConsent] = useState(editing?.smsConsentGiven ?? false);
 
+  const [saving, setSaving] = useState(false);
   const canSave = name.trim().length > 0 && phone.trim().length > 0;
 
-  const save = () => {
+  const save = async () => {
+    if (saving) return;
     if (!name.trim()) return Alert.alert('Error', 'Please enter a client name');
     if (!phone.trim()) return Alert.alert('Error', 'Please enter a phone number');
 
@@ -89,12 +91,19 @@ export function ClientForm({ editingId }: { editingId?: string }) {
       smsConsentMethod: smsConsent ? editing?.smsConsentMethod ?? 'staff_collected' : undefined,
     };
 
-    if (editing) {
-      updateClient({ ...editing, ...base });
-    } else {
-      addClient(base);
+    setSaving(true);
+    try {
+      if (editing) {
+        await updateClient({ ...editing, ...base });
+      } else {
+        await addClient(base);
+      }
+      router.back();
+    } catch (e) {
+      Alert.alert('Could not save', e instanceof Error ? e.message : 'Please try again.');
+    } finally {
+      setSaving(false);
     }
-    router.back();
   };
 
   const stub = (msg: string) => Alert.alert('Coming soon', msg);
@@ -111,7 +120,7 @@ export function ClientForm({ editingId }: { editingId?: string }) {
           <Text style={[styles.headerTitle, { color: theme.primaryText }]}>
             {editing ? 'Edit Client' : 'New Client'}
           </Text>
-          <Pressable onPress={save} disabled={!canSave}>
+          <Pressable onPress={save} disabled={!canSave || saving}>
             <Text style={[styles.saveCapsule, { backgroundColor: canSave ? iOSColors.blue : withOpacity(iOSColors.gray, 0.4) }]}>
               Save
             </Text>

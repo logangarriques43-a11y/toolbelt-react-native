@@ -20,7 +20,10 @@ import { ErrorBanner } from '@/components/error-banner';
 import { GradientButton } from '@/components/gradient-button';
 import { Icon } from '@/components/icon';
 import { TitleBadge } from '@/components/title-badge';
-import { useSession } from '@/context/session';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+
+import { firebaseAuthErrorMessage } from '@/lib/auth-errors';
+import { auth } from '@/lib/firebase';
 import { withOpacity } from '@/lib/color';
 import { Brand, iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
@@ -31,8 +34,6 @@ const SYMBOL_RE = /[0-9!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/;
 export default function Register() {
   const theme = useAppTheme();
   const router = useRouter();
-  const { signIn } = useSession();
-
   const [name, setName] = useState('');
   const [businessName, setBusinessName] = useState('');
   const [phone, setPhone] = useState('');
@@ -40,13 +41,15 @@ export default function Register() {
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const hasMinLength = password.length >= 8;
   const hasCapital = /[A-Z]/.test(password);
   const hasNumberOrSymbol = SYMBOL_RE.test(password);
   const passwordsMatch = confirm.length > 0 && password === confirm;
 
-  const register = () => {
+  const register = async () => {
+    if (loading) return;
     setError('');
     if (!name) return setError('Please enter your name');
     if (!businessName) return setError('Please enter your business name');
@@ -58,7 +61,17 @@ export default function Register() {
       return setError('Password must contain at least one number or symbol');
     if (!passwordsMatch) return setError("Passwords don't match");
 
-    signIn({ name, email, businessName, isBusinessOwner: true });
+    setLoading(true);
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
+      await updateProfile(cred.user, { displayName: name });
+      // onAuthStateChanged (SessionProvider) advances the gate. (businessName is
+      // captured client-side for now; persisting it to the backend is a later PR.)
+    } catch (e) {
+      setError(firebaseAuthErrorMessage(e));
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -166,7 +179,7 @@ export default function Register() {
           ) : null}
 
           <View style={styles.section}>
-            <GradientButton title="Create Account" onPress={register} />
+            <GradientButton title={loading ? 'Creating…' : 'Create Account'} onPress={register} />
           </View>
 
           <View style={styles.bottomRow}>

@@ -13,6 +13,8 @@ import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { signInWithEmailAndPassword } from 'firebase/auth';
+
 import { AuthField } from '@/components/auth-field';
 import { BackHeader } from '@/components/back-header';
 import { DashboardGradient } from '@/components/dashboard-gradient';
@@ -20,8 +22,8 @@ import { ErrorBanner } from '@/components/error-banner';
 import { GradientButton } from '@/components/gradient-button';
 import { Icon } from '@/components/icon';
 import { TitleBadge } from '@/components/title-badge';
-import { useSession } from '@/context/session';
-import { displayNameFromEmail } from '@/lib/name';
+import { firebaseAuthErrorMessage } from '@/lib/auth-errors';
+import { auth } from '@/lib/firebase';
 import { withOpacity } from '@/lib/color';
 import { Brand, iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
@@ -31,25 +33,32 @@ const EMAIL_RE = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
 export default function Login() {
   const theme = useAppTheme();
   const router = useRouter();
-  const { signIn } = useSession();
 
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const login = () => {
+  const login = async () => {
+    if (loading) return;
     setError('');
     const id = identifier.trim();
-    if (!id) return setError('Please enter your email or phone number');
-    if (id.includes('@') && !EMAIL_RE.test(id))
-      return setError('Please enter a valid email address');
+    if (!id) return setError('Please enter your email');
+    // Email/password only for now (phone auth is a later phase).
+    if (!id.includes('@')) return setError('Please sign in with your email address for now');
+    if (!EMAIL_RE.test(id)) return setError('Please enter a valid email address');
     if (!password) return setError('Please enter your password');
-    if (password.length < 6) return setError('Password must be at least 6 characters');
 
-    // Stub: real Firebase sign-in is deferred. Mirror the account-resolution end
-    // state (sign in as a business owner) so the gate advances.
-    const name = id.includes('@') ? displayNameFromEmail(id) : 'Business Owner';
-    signIn({ name, email: id.includes('@') ? id : undefined, isBusinessOwner: true });
+    setLoading(true);
+    try {
+      // Real Firebase sign-in against the same project the Swift app uses;
+      // onAuthStateChanged (SessionProvider) then advances the gate.
+      await signInWithEmailAndPassword(auth, id, password);
+    } catch (e) {
+      setError(firebaseAuthErrorMessage(e));
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -97,7 +106,7 @@ export default function Login() {
           ) : null}
 
           <View style={styles.section}>
-            <GradientButton title="Sign In" onPress={login} />
+            <GradientButton title={loading ? 'Signing In…' : 'Sign In'} onPress={login} />
           </View>
 
           <View style={styles.dividerRow}>
