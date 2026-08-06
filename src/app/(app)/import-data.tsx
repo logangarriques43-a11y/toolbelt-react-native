@@ -293,7 +293,7 @@ export default function ImportData() {
       const key = ps.name.toLowerCase();
       if (!serviceLookup.has(key)) {
         const color = ps.colorHex || PALETTE[si % PALETTE.length];
-        const s = servicesStore.addService({
+        const s = await servicesStore.addService({
           name: ps.name,
           colorHex: color,
           price: ps.price,
@@ -353,7 +353,7 @@ export default function ImportData() {
             const duration = durations.length === 0 ? 30 : durations[Math.floor(durations.length / 2)];
             const price = members.reduce((mx, a) => Math.max(mx, a.price), 0);
             const color = PALETTE[res.servicesImported % PALETTE.length];
-            const s = servicesStore.addService({
+            const s = await servicesStore.addService({
               name: group.label,
               colorHex: color,
               price,
@@ -438,7 +438,7 @@ export default function ImportData() {
           svcColor = serviceColor.get(skey) ?? BLUE;
         } else {
           svcColor = PALETTE[serviceLookup.size % PALETTE.length];
-          const s = servicesStore.addService({
+          const s = await servicesStore.addService({
             name: pa.serviceName,
             colorHex: svcColor,
             price: pa.price,

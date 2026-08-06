@@ -82,12 +82,14 @@ export function ServiceForm({ editingId }: { editingId?: string }) {
 
   const [colorSheet, setColorSheet] = useState(false);
   const [priceTypeSheet, setPriceTypeSheet] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [timeSheet, setTimeSheet] = useState<TimeTarget>(null);
 
   const totalMinutes =
     durH * 60 + durM + (addProcessing ? procH * 60 + procM : 0) + (blockExtra ? blockH * 60 + blockM : 0);
 
-  const save = () => {
+  const save = async () => {
+    if (saving) return;
     if (!name.trim()) return Alert.alert('Error', 'Please enter a service name');
     const durationValue = durH * 60 + durM;
     if (durationValue <= 0) return Alert.alert('Error', 'Please select a duration');
@@ -117,12 +119,19 @@ export function ServiceForm({ editingId }: { editingId?: string }) {
       availableForOnlineBooking: onlineBooking,
     };
 
-    if (editing) {
-      updateService({ ...editing, ...base });
-    } else {
-      addService(base);
+    setSaving(true);
+    try {
+      if (editing) {
+        await updateService({ ...editing, ...base });
+      } else {
+        await addService(base);
+      }
+      router.back();
+    } catch (e) {
+      Alert.alert('Could not save', e instanceof Error ? e.message : 'Please try again.');
+    } finally {
+      setSaving(false);
     }
-    router.back();
   };
 
   const timeProps = (() => {
@@ -149,7 +158,7 @@ export function ServiceForm({ editingId }: { editingId?: string }) {
           <Text style={[styles.headerTitle, { color: theme.primaryText }]}>
             {editing ? 'Edit Service' : 'Add Service'}
           </Text>
-          <Pressable onPress={save} style={styles.saveBtn}>
+          <Pressable onPress={save} disabled={saving} style={styles.saveBtn}>
             <Text style={styles.saveText}>Save</Text>
           </Pressable>
         </View>
