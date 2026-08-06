@@ -108,27 +108,28 @@ export function StaffWorkingHoursSheet({ visible, member, onClose }: { visible: 
     });
   };
 
-  const save = () => {
-    if (!useCustom) {
-      updateStaff({ ...member, workingHours: [] });
-      finish();
-      return;
-    }
+  const save = async () => {
     const days: StaffWorkingDay[] = [];
-    for (const d of WEEKDAYS) {
-      const draft = drafts[d.num];
-      if (draft.working) {
-        if (draft.startHour * 60 + draft.startMinute >= draft.endHour * 60 + draft.endMinute) {
-          Alert.alert('Invalid Hours', `${d.label}'s end time must be after its start time.`);
-          return;
+    if (useCustom) {
+      for (const d of WEEKDAYS) {
+        const draft = drafts[d.num];
+        if (draft.working) {
+          if (draft.startHour * 60 + draft.startMinute >= draft.endHour * 60 + draft.endMinute) {
+            Alert.alert('Invalid Hours', `${d.label}'s end time must be after its start time.`);
+            return;
+          }
+          days.push({ weekday: d.num, isWorkingDay: true, startHour: draft.startHour, startMinute: draft.startMinute, endHour: draft.endHour, endMinute: draft.endMinute });
+        } else {
+          days.push({ weekday: d.num, isWorkingDay: false, startHour: 0, startMinute: 0, endHour: 0, endMinute: 0 });
         }
-        days.push({ weekday: d.num, isWorkingDay: true, startHour: draft.startHour, startMinute: draft.startMinute, endHour: draft.endHour, endMinute: draft.endMinute });
-      } else {
-        days.push({ weekday: d.num, isWorkingDay: false, startHour: 0, startMinute: 0, endHour: 0, endMinute: 0 });
       }
     }
-    updateStaff({ ...member, workingHours: days });
-    finish();
+    try {
+      await updateStaff({ ...member, workingHours: days });
+      finish();
+    } catch (e) {
+      Alert.alert('Could not save', e instanceof Error ? e.message : 'Please try again.');
+    }
   };
 
   const finish = () => {

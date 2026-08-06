@@ -93,7 +93,7 @@ export function StaffLunchBreaksSheet({ visible, member, onClose }: { visible: b
     });
   };
 
-  const save = () => {
+  const save = async () => {
     const breaks: StaffLunchBreak[] = [];
     for (const d of WEEKDAYS) {
       const draft = drafts[d.num];
@@ -104,9 +104,13 @@ export function StaffLunchBreaksSheet({ visible, member, onClose }: { visible: b
       }
       breaks.push({ weekday: d.num, startHour: draft.startHour, startMinute: draft.startMinute, endHour: draft.endHour, endMinute: draft.endMinute });
     }
-    updateStaff({ ...member, lunchBreaks: breaks });
-    setSaved(true);
-    setTimeout(onClose, 1000);
+    try {
+      await updateStaff({ ...member, lunchBreaks: breaks });
+      setSaved(true);
+      setTimeout(onClose, 1000);
+    } catch (e) {
+      Alert.alert('Could not save', e instanceof Error ? e.message : 'Please try again.');
+    }
   };
 
   const editDraft = editing ? drafts[editing.weekday] : undefined;

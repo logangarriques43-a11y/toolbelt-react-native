@@ -5,7 +5,7 @@
  */
 
 import { useEffect, useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DashboardGradient } from '@/components/dashboard-gradient';
@@ -41,9 +41,13 @@ export function StaffPermissionsSheet({
     setStates(next);
   };
 
-  const save = () => {
-    updateStaff({ ...member, permissions: states });
-    onClose();
+  const save = async () => {
+    try {
+      await updateStaff({ ...member, permissions: states });
+      onClose();
+    } catch (e) {
+      Alert.alert('Could not save', e instanceof Error ? e.message : 'Please try again.');
+    }
   };
 
   return (

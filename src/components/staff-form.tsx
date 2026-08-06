@@ -56,6 +56,7 @@ export function StaffForm({ editingId }: { editingId?: string }) {
   const [showHours, setShowHours] = useState(false);
   const [showLunch, setShowLunch] = useState(false);
   const [showPermissions, setShowPermissions] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const enabledPermissions = editing ? PERMISSIONS.filter((p) => editing.permissions?.[p] === true).length : 0;
 
@@ -70,7 +71,8 @@ export function StaffForm({ editingId }: { editingId?: string }) {
       return next;
     });
 
-  const save = () => {
+  const save = async () => {
+    if (saving) return;
     if (!name.trim()) return Alert.alert('Error', 'Please enter a name');
     if (!role.trim()) return Alert.alert('Error', 'Please enter a role');
     const base = {
@@ -89,9 +91,16 @@ export function StaffForm({ editingId }: { editingId?: string }) {
       // Permissions are edited in their own sheet (persists immediately).
       permissions: editing?.permissions,
     };
-    if (editing) updateStaff({ ...editing, ...base });
-    else addStaff(base);
-    router.back();
+    setSaving(true);
+    try {
+      if (editing) await updateStaff({ ...editing, ...base });
+      else await addStaff(base);
+      router.back();
+    } catch (e) {
+      Alert.alert('Could not save', e instanceof Error ? e.message : 'Please try again.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -104,7 +113,7 @@ export function StaffForm({ editingId }: { editingId?: string }) {
             <Text style={styles.backText}>Back</Text>
           </Pressable>
           <Text style={[styles.headerTitle, { color: theme.primaryText }]}>{editing ? 'Edit Staff' : 'Add Staff'}</Text>
-          <Pressable onPress={save} disabled={!canSave}>
+          <Pressable onPress={save} disabled={!canSave || saving}>
             <Text style={[styles.savePill, { backgroundColor: canSave ? STAFF_ORANGE : withOpacity(iOSColors.gray, 0.4) }]}>Save</Text>
           </Pressable>
         </View>
