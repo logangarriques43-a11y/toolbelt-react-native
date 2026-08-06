@@ -14,6 +14,8 @@ import { useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { KeyboardAvoidingForm } from '@/components/keyboard-avoiding-form';
+
 import { DashboardGradient } from '@/components/dashboard-gradient';
 import { Icon } from '@/components/icon';
 import { ScreenHeader } from '@/components/screen-header';
@@ -45,6 +47,7 @@ export default function RequestQuote() {
   return (
     <DashboardGradient>
       <SafeAreaView style={styles.safe} edges={['top']}>
+        <KeyboardAvoidingForm>
         <ScreenHeader title="Request a Quote" />
 
         {state === 'sent' ? (
@@ -98,6 +101,7 @@ export default function RequestQuote() {
             <Text style={[styles.note, { color: theme.secondaryText }]}>Our team will reach out within 24 hours</Text>
           </ScrollView>
         )}
+        </KeyboardAvoidingForm>
       </SafeAreaView>
     </DashboardGradient>
   );

@@ -6,7 +6,7 @@
  */
 
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { DashboardGradient } from '@/components/dashboard-gradient';
 import { withOpacity } from '@/lib/color';
@@ -41,12 +41,16 @@ export function ColorPickerSheet({
   colors?: string[];
 }) {
   const theme = useAppTheme();
+  // Read the inset in the component body (the app tree). SafeAreaView returns 0
+  // inside a Modal's separate view hierarchy, so we apply the top inset to the
+  // header manually to keep Cancel/Done below the status bar.
+  const insets = useSafeAreaInsets();
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
       <DashboardGradient>
-        <SafeAreaView style={styles.safe} edges={['top']}>
-          <View style={styles.header}>
+        <View style={styles.safe}>
+          <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
             <Pressable onPress={onClose} hitSlop={8}>
               <Text style={[styles.cancel, { color: theme.secondaryText }]}>Cancel</Text>
             </Pressable>
@@ -88,7 +92,7 @@ export function ColorPickerSheet({
               />
             </View>
           </ScrollView>
-        </SafeAreaView>
+        </View>
       </DashboardGradient>
     </Modal>
   );

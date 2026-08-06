@@ -20,6 +20,8 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { KeyboardAvoidingForm } from '@/components/keyboard-avoiding-form';
+
 import {
   BLUE, DateButton, DurationRow, FieldRow, InputRow, PURPLE, Section, TimeCard,
 } from '@/components/appointment-bits';
@@ -164,6 +166,7 @@ export default function TimeOff() {
   return (
     <DashboardGradient>
       <SafeAreaView style={styles.safe} edges={['top']}>
+        <KeyboardAvoidingForm>
         <View style={[styles.header, { backgroundColor: theme.cardBackground }]}>
           <Pressable onPress={() => router.back()} hitSlop={8} style={[styles.closeBtn, { backgroundColor: theme.cardBackground }]}>
             <Icon name="xmark" size={16} color={theme.secondaryText} />
@@ -273,6 +276,7 @@ export default function TimeOff() {
             </Section>
           ) : null}
         </ScrollView>
+        </KeyboardAvoidingForm>
       </SafeAreaView>
 
       <DatePickerSheet visible={sheet === 'date'} date={date} onChange={setDate} onClose={() => setSheet(null)} />

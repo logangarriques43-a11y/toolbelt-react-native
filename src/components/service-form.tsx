@@ -22,6 +22,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { KeyboardAvoidingForm } from '@/components/keyboard-avoiding-form';
+
 import { DashboardGradient } from '@/components/dashboard-gradient';
 import { Icon } from '@/components/icon';
 import { ColorPickerSheet } from '@/components/sheets/color-picker-sheet';
@@ -150,6 +152,7 @@ export function ServiceForm({ editingId }: { editingId?: string }) {
   return (
     <DashboardGradient>
       <SafeAreaView style={styles.safe} edges={['top']}>
+        <KeyboardAvoidingForm>
         {/* Header */}
         <View style={[styles.header, { backgroundColor: withOpacity(theme.cardBackground, 0.9) }]}>
           <Pressable onPress={() => router.back()} hitSlop={8}>
@@ -346,6 +349,7 @@ export function ServiceForm({ editingId }: { editingId?: string }) {
             </View>
           </View>
         </ScrollView>
+        </KeyboardAvoidingForm>
       </SafeAreaView>
 
       <ColorPickerSheet

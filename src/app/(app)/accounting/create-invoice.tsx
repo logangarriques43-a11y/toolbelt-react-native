@@ -11,6 +11,8 @@ import { Alert, Modal, Pressable, ScrollView, Share, StyleSheet, Switch, Text, T
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { KeyboardAvoidingForm } from '@/components/keyboard-avoiding-form';
+
 import { InvoicePreview } from '@/components/accounting/invoice-preview';
 import { DashboardGradient } from '@/components/dashboard-gradient';
 import { Icon } from '@/components/icon';
@@ -123,6 +125,7 @@ export default function CreateInvoice() {
   return (
     <DashboardGradient>
       <SafeAreaView style={styles.safe} edges={['top']}>
+        <KeyboardAvoidingForm>
         <View style={[styles.header, { backgroundColor: withOpacity(theme.cardBackground, 0.9) }]}>
           <Pressable onPress={() => router.back()} style={[styles.closeBtn, { backgroundColor: theme.cardBackground }, lightShadow(theme)]} hitSlop={8}>
             <Icon name="xmark" size={18} color={theme.secondaryText} />
@@ -255,6 +258,7 @@ export default function CreateInvoice() {
             <Text style={[styles.previewText, { color: theme.primaryText }]}>Preview Invoice</Text>
           </Pressable>
         </ScrollView>
+        </KeyboardAvoidingForm>
       </SafeAreaView>
 
       <AddItemSheet visible={addItem} onClose={() => setAddItem(false)} onAdd={(item) => { setLineItems((p) => [...p, item]); setAddItem(false); }} />

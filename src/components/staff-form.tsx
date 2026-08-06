@@ -11,6 +11,8 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { KeyboardAvoidingForm } from '@/components/keyboard-avoiding-form';
+
 import { DashboardGradient } from '@/components/dashboard-gradient';
 import { Icon } from '@/components/icon';
 import { ColorPickerSheet } from '@/components/sheets/color-picker-sheet';
@@ -95,6 +97,7 @@ export function StaffForm({ editingId }: { editingId?: string }) {
   return (
     <DashboardGradient>
       <SafeAreaView style={styles.safe} edges={['top']}>
+        <KeyboardAvoidingForm>
         <View style={[styles.header, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
           <Pressable onPress={() => router.back()} hitSlop={8} style={styles.back}>
             <Icon name="chevron.left" size={16} weight="semibold" color={iOSColors.blue} />
@@ -249,6 +252,7 @@ export function StaffForm({ editingId }: { editingId?: string }) {
             </View>
           ) : null}
         </ScrollView>
+        </KeyboardAvoidingForm>
       </SafeAreaView>
 
       <OptionSheet visible={roleSheet} title="Role" options={ROLE_OPTIONS} selected={role} onSelect={setRole} onClose={() => setRoleSheet(false)} />

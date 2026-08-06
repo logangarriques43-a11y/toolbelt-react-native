@@ -24,6 +24,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { KeyboardAvoidingForm } from '@/components/keyboard-avoiding-form';
+
 import { Icon } from '@/components/icon';
 import { TimeWheelSheet } from '@/components/sheets/time-wheel-sheet';
 import { useClients } from '@/context/clients-store';
@@ -111,6 +113,7 @@ export function ClientForm({ editingId }: { editingId?: string }) {
   return (
     <View style={[styles.root, { backgroundColor: theme.background }]}>
       <SafeAreaView style={styles.safe} edges={['top']}>
+        <KeyboardAvoidingForm>
         {/* Header */}
         <View style={[styles.header, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
           <Pressable onPress={() => router.back()} hitSlop={8} style={styles.back}>
@@ -228,6 +231,7 @@ export function ClientForm({ editingId }: { editingId?: string }) {
             <Text style={{ color: theme.secondaryText }}> Required fields</Text>
           </View>
         </ScrollView>
+        </KeyboardAvoidingForm>
       </SafeAreaView>
 
       <TimeWheelSheet
