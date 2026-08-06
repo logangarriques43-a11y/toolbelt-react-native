@@ -6,9 +6,6 @@
  * - Unwraps the response defensively: some domains return `{ status, data }`,
  *   others (e.g. /clients) return bare JSON — `json.data ?? json` handles both.
  * - Maps errors to a typed ApiError (401 unauthorized, 403 2fa_required, other).
- *
- * TEMPORARY: logs each request + response status in __DEV__ so the create/list
- * flow is visible in the console. Remove the console.log lines once verified.
  */
 
 import { API_BASE_URL } from '@/config/api';
@@ -54,8 +51,6 @@ async function request<T>(method: string, path: string, opts: RequestOptions = {
   if (opts.body !== undefined) headers['Content-Type'] = 'application/json';
   if (token) headers.Authorization = `Bearer ${token}`;
 
-  if (__DEV__) console.log(`[api] → ${method} ${path}`, opts.body ?? '', token ? '(auth)' : '(NO TOKEN)');
-
   let res: Response;
   try {
     res = await fetch(url, {
@@ -64,14 +59,11 @@ async function request<T>(method: string, path: string, opts: RequestOptions = {
       body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
     });
   } catch (e) {
-    if (__DEV__) console.log(`[api] ✗ ${method} ${path} network error`, e);
     throw new ApiError(0, e instanceof Error ? e.message : 'Network request failed', 'network');
   }
 
   const text = await res.text();
   const json = text ? safeParse(text) : null;
-
-  if (__DEV__) console.log(`[api] ← ${method} ${path} ${res.status}`, json ?? text);
 
   if (!res.ok) {
     if (res.status === 401) throw new ApiError(401, 'Unauthorized — please sign in again.', 'unauthorized', json);
