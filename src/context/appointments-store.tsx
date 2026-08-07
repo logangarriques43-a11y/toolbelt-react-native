@@ -100,19 +100,23 @@ export function AppointmentsProvider({ children }: { children: ReactNode }) {
     },
   });
 
-  // DELETE — optimistically remove; roll back on error.
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => deleteAppointmentApi(id),
-    onMutate: (id) => {
-      const prev = read();
-      write(prev.filter((a) => a.id !== id));
-      return { prev };
-    },
-    onError: (err, _id, ctx) => {
-      if (ctx) write(ctx.prev);
-      alertFailure('delete', err);
-    },
-  });
+  // DELETE — optimistically remove, fire the real backend DELETE (auth token
+  // attached by api-client), then invalidate so the list reconciles against
+  // the server. A direct awaited call (rather than useMutation.mutate) leaves
+  // no doubt the request actually goes out even though the caller navigates
+  // away in the same tick. Roll back + alert if the DELETE fails.
+  const deleteAppointment = (id: string) => {
+    const prev = read();
+    write(prev.filter((a) => a.id !== id));
+    deleteAppointmentApi(id)
+      .then(() => {
+        qc.invalidateQueries({ queryKey: APPOINTMENTS_QUERY_KEY });
+      })
+      .catch((err) => {
+        write(prev);
+        alertFailure('delete', err);
+      });
+  };
 
   const appointments = query.data ?? [];
 
@@ -121,7 +125,7 @@ export function AppointmentsProvider({ children }: { children: ReactNode }) {
       appointments,
       addAppointment: (a) => createMutation.mutate(a),
       updateAppointment: (a) => updateMutation.mutate(a),
-      deleteAppointment: (id) => deleteMutation.mutate(id),
+      deleteAppointment,
       getAppointments: (date) =>
         appointments.filter((a) => sameDay(new Date(a.startTime), date)),
       getUpcoming: (limit = 5) => {
