@@ -16,11 +16,11 @@
 
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { KeyboardAvoidingForm } from '@/components/keyboard-avoiding-form';
+import { KeyboardAwareForm } from '@/components/keyboard-aware-form';
 
 import {
   BLUE, DateButton, DurationRow, FieldRow, InputRow, PURPLE, Section, TimeCard,
@@ -166,7 +166,6 @@ export default function TimeOff() {
   return (
     <DashboardGradient>
       <SafeAreaView style={styles.safe} edges={['top']}>
-        <KeyboardAvoidingForm>
         <View style={[styles.header, { backgroundColor: theme.cardBackground }]}>
           <Pressable onPress={() => router.back()} hitSlop={8} style={[styles.closeBtn, { backgroundColor: theme.cardBackground }]}>
             <Icon name="xmark" size={16} color={theme.secondaryText} />
@@ -179,7 +178,7 @@ export default function TimeOff() {
           </Pressable>
         </View>
 
-        <ScrollView contentContainerStyle={styles.body}>
+        <KeyboardAwareForm contentContainerStyle={styles.body}>
           <Section label="Title">
             <InputRow icon="pencil" placeholder="e.g. Lunch break, Vacation" value={title} onChangeText={setTitle} />
           </Section>
@@ -275,8 +274,7 @@ export default function TimeOff() {
               ))}
             </Section>
           ) : null}
-        </ScrollView>
-        </KeyboardAvoidingForm>
+        </KeyboardAwareForm>
       </SafeAreaView>
 
       <DatePickerSheet visible={sheet === 'date'} date={date} onChange={setDate} onClose={() => setSheet(null)} />

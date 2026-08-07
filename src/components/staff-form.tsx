@@ -8,10 +8,10 @@
 import { useRouter } from 'expo-router';
 import type { SFSymbol } from 'expo-symbols';
 import { useMemo, useState, type ReactNode } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { KeyboardAvoidingForm } from '@/components/keyboard-avoiding-form';
+import { KeyboardAwareForm } from '@/components/keyboard-aware-form';
 
 import { DashboardGradient } from '@/components/dashboard-gradient';
 import { Icon } from '@/components/icon';
@@ -106,7 +106,6 @@ export function StaffForm({ editingId }: { editingId?: string }) {
   return (
     <DashboardGradient>
       <SafeAreaView style={styles.safe} edges={['top']}>
-        <KeyboardAvoidingForm>
         <View style={[styles.header, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
           <Pressable onPress={() => router.back()} hitSlop={8} style={styles.back}>
             <Icon name="chevron.left" size={16} weight="semibold" color={iOSColors.blue} />
@@ -118,7 +117,7 @@ export function StaffForm({ editingId }: { editingId?: string }) {
           </Pressable>
         </View>
 
-        <ScrollView contentContainerStyle={styles.body}>
+        <KeyboardAwareForm contentContainerStyle={styles.body}>
           {/* Photo (deferred) */}
           <View style={styles.photoBlock}>
             <Pressable onPress={() => stub('Photo picker arrives in a later phase.')} style={[styles.photoCircle, { backgroundColor: withOpacity(STAFF_ORANGE, 0.15) }]}>
@@ -260,8 +259,7 @@ export function StaffForm({ editingId }: { editingId?: string }) {
               </View>
             </View>
           ) : null}
-        </ScrollView>
-        </KeyboardAvoidingForm>
+        </KeyboardAwareForm>
       </SafeAreaView>
 
       <OptionSheet visible={roleSheet} title="Role" options={ROLE_OPTIONS} selected={role} onSelect={setRole} onClose={() => setRoleSheet(false)} />

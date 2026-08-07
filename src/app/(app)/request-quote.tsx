@@ -11,10 +11,10 @@
 
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { KeyboardAvoidingForm } from '@/components/keyboard-avoiding-form';
+import { KeyboardAwareForm } from '@/components/keyboard-aware-form';
 
 import { DashboardGradient } from '@/components/dashboard-gradient';
 import { Icon } from '@/components/icon';
@@ -47,7 +47,6 @@ export default function RequestQuote() {
   return (
     <DashboardGradient>
       <SafeAreaView style={styles.safe} edges={['top']}>
-        <KeyboardAvoidingForm>
         <ScreenHeader title="Request a Quote" />
 
         {state === 'sent' ? (
@@ -63,7 +62,7 @@ export default function RequestQuote() {
             </Pressable>
           </View>
         ) : (
-          <ScrollView contentContainerStyle={styles.body}>
+          <KeyboardAwareForm contentContainerStyle={styles.body}>
             {/* Sending as (read-only) */}
             <View style={[styles.card, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
               <Text style={[styles.cardLabel, { color: theme.secondaryText }]}>Sending as</Text>
@@ -99,9 +98,8 @@ export default function RequestQuote() {
               <Text style={styles.sendText}>{state === 'sending' ? 'Sending…' : 'Send Request'}</Text>
             </Pressable>
             <Text style={[styles.note, { color: theme.secondaryText }]}>Our team will reach out within 24 hours</Text>
-          </ScrollView>
+          </KeyboardAwareForm>
         )}
-        </KeyboardAvoidingForm>
       </SafeAreaView>
     </DashboardGradient>
   );

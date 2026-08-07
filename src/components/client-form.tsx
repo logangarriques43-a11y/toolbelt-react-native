@@ -12,19 +12,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import type { SFSymbol } from 'expo-symbols';
 import { useMemo, useState, type ReactNode } from 'react';
-import {
-  Alert,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Switch,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Alert, Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { KeyboardAvoidingForm } from '@/components/keyboard-avoiding-form';
+import { KeyboardAwareForm } from '@/components/keyboard-aware-form';
 
 import { Icon } from '@/components/icon';
 import { TimeWheelSheet } from '@/components/sheets/time-wheel-sheet';
@@ -113,7 +104,6 @@ export function ClientForm({ editingId }: { editingId?: string }) {
   return (
     <View style={[styles.root, { backgroundColor: theme.background }]}>
       <SafeAreaView style={styles.safe} edges={['top']}>
-        <KeyboardAvoidingForm>
         {/* Header */}
         <View style={[styles.header, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
           <Pressable onPress={() => router.back()} hitSlop={8} style={styles.back}>
@@ -130,7 +120,7 @@ export function ClientForm({ editingId }: { editingId?: string }) {
           </Pressable>
         </View>
 
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.body}>
+        <KeyboardAwareForm contentContainerStyle={styles.body}>
           {/* Photo (deferred) */}
           <View style={styles.photoBlock}>
             <Pressable onPress={() => stub('Photo picker is coming with a later phase.')}>
@@ -230,8 +220,7 @@ export function ClientForm({ editingId }: { editingId?: string }) {
             <Text style={{ color: REQUIRED_RED }}>*</Text>
             <Text style={{ color: theme.secondaryText }}> Required fields</Text>
           </View>
-        </ScrollView>
-        </KeyboardAvoidingForm>
+        </KeyboardAwareForm>
       </SafeAreaView>
 
       <TimeWheelSheet

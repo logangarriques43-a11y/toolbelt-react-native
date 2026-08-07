@@ -10,19 +10,10 @@
 import { useRouter } from 'expo-router';
 import type { SFSymbol } from 'expo-symbols';
 import { useMemo, useState } from 'react';
-import {
-  Alert,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Switch,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Alert, Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { KeyboardAvoidingForm } from '@/components/keyboard-avoiding-form';
+import { KeyboardAwareForm } from '@/components/keyboard-aware-form';
 
 import { DashboardGradient } from '@/components/dashboard-gradient';
 import { Icon } from '@/components/icon';
@@ -152,7 +143,6 @@ export function ServiceForm({ editingId }: { editingId?: string }) {
   return (
     <DashboardGradient>
       <SafeAreaView style={styles.safe} edges={['top']}>
-        <KeyboardAvoidingForm>
         {/* Header */}
         <View style={[styles.header, { backgroundColor: withOpacity(theme.cardBackground, 0.9) }]}>
           <Pressable onPress={() => router.back()} hitSlop={8}>
@@ -166,7 +156,7 @@ export function ServiceForm({ editingId }: { editingId?: string }) {
           </Pressable>
         </View>
 
-        <ScrollView contentContainerStyle={styles.body}>
+        <KeyboardAwareForm contentContainerStyle={styles.body}>
           {/* Basic info */}
           <View style={styles.section}>
             <View style={styles.fieldBlock}>
@@ -348,8 +338,7 @@ export function ServiceForm({ editingId }: { editingId?: string }) {
               />
             </View>
           </View>
-        </ScrollView>
-        </KeyboardAvoidingForm>
+        </KeyboardAwareForm>
       </SafeAreaView>
 
       <ColorPickerSheet

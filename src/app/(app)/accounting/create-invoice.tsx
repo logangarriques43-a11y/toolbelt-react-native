@@ -11,7 +11,7 @@ import { Alert, Modal, Pressable, ScrollView, Share, StyleSheet, Switch, Text, T
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { KeyboardAvoidingForm } from '@/components/keyboard-avoiding-form';
+import { KeyboardAwareForm } from '@/components/keyboard-aware-form';
 
 import { InvoicePreview } from '@/components/accounting/invoice-preview';
 import { DashboardGradient } from '@/components/dashboard-gradient';
@@ -125,7 +125,6 @@ export default function CreateInvoice() {
   return (
     <DashboardGradient>
       <SafeAreaView style={styles.safe} edges={['top']}>
-        <KeyboardAvoidingForm>
         <View style={[styles.header, { backgroundColor: withOpacity(theme.cardBackground, 0.9) }]}>
           <Pressable onPress={() => router.back()} style={[styles.closeBtn, { backgroundColor: theme.cardBackground }, lightShadow(theme)]} hitSlop={8}>
             <Icon name="xmark" size={18} color={theme.secondaryText} />
@@ -136,7 +135,7 @@ export default function CreateInvoice() {
           </Pressable>
         </View>
 
-        <ScrollView contentContainerStyle={styles.body}>
+        <KeyboardAwareForm contentContainerStyle={styles.body}>
           {/* Invoice number badge */}
           <View style={styles.badgeRow}>
             <View style={[styles.badge, { backgroundColor: withOpacity(iOSColors.green, 0.1) }]}>
@@ -257,8 +256,7 @@ export default function CreateInvoice() {
             <Icon name="eye.fill" size={16} color={theme.primaryText} />
             <Text style={[styles.previewText, { color: theme.primaryText }]}>Preview Invoice</Text>
           </Pressable>
-        </ScrollView>
-        </KeyboardAvoidingForm>
+        </KeyboardAwareForm>
       </SafeAreaView>
 
       <AddItemSheet visible={addItem} onClose={() => setAddItem(false)} onAdd={(item) => { setLineItems((p) => [...p, item]); setAddItem(false); }} />
