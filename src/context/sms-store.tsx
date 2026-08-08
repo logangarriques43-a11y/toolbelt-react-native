@@ -16,10 +16,13 @@ import { Alert } from 'react-native';
 
 import {
   escalateConversation,
+  getSmsAnalytics,
   listConversations,
   listMessages,
   listPhoneNumbers,
   sendSmsReply,
+  type SmsAnalytics,
+  type SmsAnalyticsPeriod,
 } from '@/api/sms';
 import { ApiError } from '@/lib/api-client';
 import { uuid } from '@/lib/id';
@@ -165,4 +168,13 @@ export function useConversationMessages(conversationId: string): {
     enabled: !!conversationId,
   });
   return { messages: query.data ?? [], isLoading: query.isLoading };
+}
+
+/** Period-scoped SMS analytics counts (null while loading / on error). */
+export function useSmsAnalytics(period: SmsAnalyticsPeriod): SmsAnalytics | null {
+  const query = useQuery({
+    queryKey: ['sms', 'analytics', period],
+    queryFn: () => getSmsAnalytics(period),
+  });
+  return query.data ?? null;
 }

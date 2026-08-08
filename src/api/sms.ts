@@ -117,3 +117,25 @@ export async function listPhoneNumbers(): Promise<SMSPhoneNumber[]> {
   const res = await api.get<{ phoneNumbers: PhoneNumberDTO[] }>('/phone-numbers');
   return (res.phoneNumbers ?? []).map(fromPhoneNumber);
 }
+
+export type SmsAnalyticsPeriod = 'week' | 'month' | 'quarter' | 'year';
+
+/** GET /sms/analytics counts. Field names are already camelCase on the wire. */
+export interface SmsAnalytics {
+  totalConversations: number;
+  totalMessagesInbound: number;
+  totalMessagesOutbound: number;
+  appointmentsBooked: number;
+  escalatedConversations?: number;
+  escalationRate: number;
+  estimatedCost: number;
+}
+
+/**
+ * SMS counts for the business, period-scoped to match the analytics pills
+ * (the backend's period math mirrors the app's). Returns zeros when the
+ * business has no provisioned number.
+ */
+export async function getSmsAnalytics(period: SmsAnalyticsPeriod): Promise<SmsAnalytics> {
+  return api.get<SmsAnalytics>('/sms/analytics', { period });
+}

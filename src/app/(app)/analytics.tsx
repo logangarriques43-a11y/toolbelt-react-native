@@ -3,7 +3,8 @@
  * Period pills + metric-card sections, computed from live store data. The period
  * pill filters appointments (by start) and clients (by createdAt); the
  * appointment lifecycle status drives the Completed / Cancelled / No-Show cards.
- * SMS/invoice metrics remain 0 until those integrations land.
+ * Invoice cards come from the invoices store (created this period); AI SMS cards
+ * come from the backend /sms/analytics endpoint, period-scoped to match the pills.
  */
 
 import type { SFSymbol } from 'expo-symbols';
@@ -16,14 +17,19 @@ import { Icon } from '@/components/icon';
 import { ScreenHeader } from '@/components/screen-header';
 import { useAppointments } from '@/context/appointments-store';
 import { useClients } from '@/context/clients-store';
+import { useInvoices } from '@/context/invoices-store';
+import { useSmsAnalytics } from '@/context/sms-store';
 import { withOpacity } from '@/lib/color';
 import { compactMoney } from '@/lib/compact-money';
+import { invoiceTotalDue } from '@/models/invoice';
+import type { SmsAnalyticsPeriod } from '@/api/sms';
 import { iOSColors, lightShadow } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
 type Period = 'This Week' | 'This Month' | 'This Quarter' | 'This Year';
 const PERIODS: Period[] = ['This Week', 'This Month', 'This Quarter', 'This Year'];
 const PERIOD_NOUN: Record<Period, string> = { 'This Week': 'Week', 'This Month': 'Month', 'This Quarter': 'Quarter', 'This Year': 'Year' };
+const PERIOD_API: Record<Period, SmsAnalyticsPeriod> = { 'This Week': 'week', 'This Month': 'month', 'This Quarter': 'quarter', 'This Year': 'year' };
 
 /** Start of the selected period (local time). */
 function periodStart(period: Period): Date {
@@ -42,7 +48,9 @@ export default function Analytics() {
   const theme = useAppTheme();
   const { clients } = useClients();
   const { appointments } = useAppointments();
+  const { invoices } = useInvoices();
   const [period, setPeriod] = useState<Period>('This Month');
+  const sms = useSmsAnalytics(PERIOD_API[period]);
 
   const start = periodStart(period).getTime();
   const inPeriod = appointments.filter((a) => new Date(a.startTime).getTime() >= start);
@@ -53,6 +61,14 @@ export default function Analytics() {
   const uniqueClients = new Set(inPeriod.map((a) => a.clientId)).size;
   const avgPerClient = uniqueClients ? revenue / uniqueClients : 0;
   const newClients = clients.filter((c) => c.createdAt != null && new Date(c.createdAt).getTime() >= start).length;
+
+  // Invoices created this period: "sent" counts anything dispatched (sent or
+  // paid); "pending" is the total still owed on sent-but-unpaid invoices.
+  const invoicesInPeriod = invoices.filter((i) => new Date(i.createdAt).getTime() >= start);
+  const invoicesSent = invoicesInPeriod.filter((i) => i.status === 'sent' || i.status === 'paid').length;
+  const pendingAmount = invoicesInPeriod
+    .filter((i) => i.status === 'sent')
+    .reduce((sum, i) => sum + invoiceTotalDue(i), 0);
 
   return (
     <DashboardGradient>
@@ -76,8 +92,8 @@ export default function Analytics() {
             <Metric title="Avg per Client" value={compactMoney(avgPerClient)} icon="person.fill" color={iOSColors.blue} />
           </Grid>
           <Grid>
-            <Metric title="Invoices Sent" value="0" icon="doc.text.fill" color={iOSColors.purple} />
-            <Metric title="Pending" value="$0" icon="clock.fill" color={iOSColors.orange} />
+            <Metric title="Invoices Sent" value={String(invoicesSent)} icon="doc.text.fill" color={iOSColors.purple} />
+            <Metric title="Pending" value={compactMoney(pendingAmount)} icon="clock.fill" color={iOSColors.orange} />
           </Grid>
 
           <SectionTitle title="Appointments" />
@@ -92,12 +108,12 @@ export default function Analytics() {
 
           <SectionTitle title="AI SMS" />
           <Grid>
-            <Metric title="Messages Sent" value="0" icon="arrow.up.message.fill" color={iOSColors.teal} />
-            <Metric title="Messages Received" value="0" icon="arrow.down.message.fill" color={iOSColors.blue} />
+            <Metric title="Messages Sent" value={String(sms?.totalMessagesOutbound ?? 0)} icon="arrow.up.message.fill" color={iOSColors.teal} />
+            <Metric title="Messages Received" value={String(sms?.totalMessagesInbound ?? 0)} icon="arrow.down.message.fill" color={iOSColors.blue} />
           </Grid>
           <Grid>
-            <Metric title="Conversations" value="0" icon="bubble.left.and.text.bubble.right.fill" color={iOSColors.purple} />
-            <Metric title="AI Booked" value="0" icon="sparkles" color={iOSColors.orange} />
+            <Metric title="Conversations" value={String(sms?.totalConversations ?? 0)} icon="bubble.left.and.text.bubble.right.fill" color={iOSColors.purple} />
+            <Metric title="AI Booked" value={String(sms?.appointmentsBooked ?? 0)} icon="sparkles" color={iOSColors.orange} />
           </Grid>
 
           <SectionTitle title="Clients" />
