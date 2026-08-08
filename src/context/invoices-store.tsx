@@ -22,7 +22,9 @@ import {
   createInvoice,
   deleteInvoice as deleteInvoiceApi,
   listInvoices,
+  sendInvoice as sendInvoiceApi,
   updateInvoice as updateInvoiceApi,
+  type SendInvoiceResult,
 } from '@/api/invoices';
 import { ApiError } from '@/lib/api-client';
 import { uuid } from '@/lib/id';
@@ -34,6 +36,10 @@ export interface InvoicesStore {
   invoices: Invoice[];
   nextInvoiceNumber: number;
   addInvoice: (inv: Omit<Invoice, 'id' | 'createdAt'>) => Invoice;
+  /** Create and AWAIT the backend id (needed before any /:id sub-action). */
+  createInvoiceAsync: (inv: Omit<Invoice, 'id' | 'createdAt'>) => Promise<Invoice>;
+  /** Email the invoice via the backend's Postmark send; marks it sent locally. */
+  sendInvoice: (id: string) => Promise<SendInvoiceResult>;
   updateInvoice: (inv: Invoice) => void;
   deleteInvoice: (id: string) => void;
   setStatus: (id: string, status: InvoiceStatus) => void;
@@ -96,6 +102,29 @@ export function InvoicesProvider({ children }: { children: ReactNode }) {
     return created;
   };
 
+  // Awaited create — used by the send flow, which needs the real backend id
+  // before it can hit /invoices/:id/send. Keeps the local input (invoiceName,
+  // line-item ids) rather than the lossy server row; throws if the POST fails
+  // (nothing is left in the cache in that case).
+  const createInvoiceAsync = async (
+    input: Omit<Invoice, 'id' | 'createdAt'>,
+  ): Promise<Invoice> => {
+    const saved = await createInvoice(input);
+    const row: Invoice = { ...input, id: saved.id, createdAt: new Date().toISOString() };
+    write([...read(), row]);
+    return row;
+  };
+
+  // Postmark send for an already-created invoice. On success, flip the cached
+  // row to 'sent' so the list reflects it (the backend stamps sentAt; RN's UI
+  // is status-driven). Throws ApiError on precondition failures (no email,
+  // sender settings incomplete, Postmark not configured) for the caller to show.
+  const sendInvoice = async (id: string): Promise<SendInvoiceResult> => {
+    const result = await sendInvoiceApi(id);
+    write(read().map((i) => (i.id === id ? { ...i, status: 'sent' } : i)));
+    return result;
+  };
+
   const deleteInvoice = (id: string) => {
     const prev = read();
     write(prev.filter((i) => i.id !== id));
@@ -112,6 +141,8 @@ export function InvoicesProvider({ children }: { children: ReactNode }) {
       invoices,
       nextInvoiceNumber: invoices.reduce((m, i) => Math.max(m, i.invoiceNumber), 0) + 1,
       addInvoice,
+      createInvoiceAsync,
+      sendInvoice,
       updateInvoice: (inv) => updateMutation.mutate(inv),
       deleteInvoice,
       setStatus: (id, status) => {

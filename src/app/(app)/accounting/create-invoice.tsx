@@ -7,7 +7,7 @@
 
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Share, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -21,6 +21,7 @@ import { useClients } from '@/context/clients-store';
 import { useInvoices } from '@/context/invoices-store';
 import { useServices } from '@/context/services-store';
 import { useSession } from '@/context/session';
+import { ApiError } from '@/lib/api-client';
 import { withOpacity } from '@/lib/color';
 import { uuid } from '@/lib/id';
 import type { Client } from '@/models/client';
@@ -44,9 +45,10 @@ function plus30(): string {
 export default function CreateInvoice() {
   const theme = useAppTheme();
   const router = useRouter();
-  const { nextInvoiceNumber, addInvoice } = useInvoices();
+  const { nextInvoiceNumber, addInvoice, createInvoiceAsync, sendInvoice } = useInvoices();
   const { clients } = useClients();
   const { account } = useSession();
+  const [sending, setSending] = useState(false);
 
   const [invoiceName, setInvoiceName] = useState('');
   const [client, setClient] = useState<Client | null>(null);
@@ -92,27 +94,49 @@ export default function CreateInvoice() {
     router.back();
   };
 
-  const send = async () => {
+  // Create the invoice, then dispatch a server-side Postmark email (mirrors the
+  // iOS saveAndSendInvoice flow). The invoice is created as a draft first; the
+  // /send call flips it to sent on success. If create succeeds but the email
+  // fails (e.g. Sender Settings not set up), the draft stays saved and we
+  // navigate back with the backend's reason.
+  const sendEmail = async () => {
     if (lineItems.length === 0) return Alert.alert('Add a line item', 'Please add at least one line item.');
-    addInvoice(build('sent'));
-    const summary = [
-      `${displayName} — ${businessName}`,
-      client?.name ? `Bill to: ${client.name}` : '',
-      ...lineItems.map((i) => `${i.quantity} × ${i.description || 'Item'} — ${usd.format(lineItemTotal(i))}`),
-      `Total due: ${usd.format(total)}`,
-    ].filter(Boolean).join('\n');
-    try {
-      await Share.share({ title: displayName, message: summary });
-    } catch {
-      // cancelled
+    const to = email.trim();
+    if (!to) {
+      return Alert.alert(
+        'Add an email',
+        client
+          ? 'No email attached to this client. Add one to the client or type an email above.'
+          : 'Please enter an email address to send the invoice.',
+      );
     }
-    router.back();
+
+    setSending(true);
+    let saved;
+    try {
+      saved = await createInvoiceAsync(build('draft'));
+    } catch (err) {
+      setSending(false);
+      const message = err instanceof ApiError ? err.message : 'Please check your connection and try again.';
+      return Alert.alert("Couldn't save invoice", message);
+    }
+    try {
+      const result = await sendInvoice(saved.id);
+      router.back();
+      Alert.alert('Invoice sent', `Emailed to ${result.recipient ?? to}.`);
+    } catch (err) {
+      router.back();
+      const message = err instanceof ApiError ? err.message : 'Please check your connection and try again.';
+      Alert.alert('Saved as draft — email not sent', message);
+    } finally {
+      setSending(false);
+    }
   };
 
   const onSend = () => {
     if (lineItems.length === 0) return Alert.alert('Add a line item', 'Please add at least one line item.');
     Alert.alert('Send invoice', undefined, [
-      { text: 'Send (Share link)', onPress: send },
+      { text: 'Send via email', onPress: sendEmail },
       { text: 'Save as Draft', onPress: saveDraft },
       { text: 'Cancel', style: 'cancel' },
     ]);
@@ -132,8 +156,8 @@ export default function CreateInvoice() {
             <Icon name="xmark" size={18} color={theme.secondaryText} />
           </Pressable>
           <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.headerTitle, { color: theme.primaryText }]}>New invoice</Text>
-          <Pressable onPress={onSend} style={[styles.sendBtn, { backgroundColor: lineItems.length === 0 ? iOSColors.gray : iOSColors.blue }]}>
-            <Text numberOfLines={1} style={styles.sendText}>Send</Text>
+          <Pressable onPress={onSend} disabled={sending || lineItems.length === 0} style={[styles.sendBtn, { backgroundColor: sending || lineItems.length === 0 ? iOSColors.gray : iOSColors.blue }]}>
+            <Text numberOfLines={1} style={styles.sendText}>{sending ? 'Sending…' : 'Send'}</Text>
           </Pressable>
         </View>
 

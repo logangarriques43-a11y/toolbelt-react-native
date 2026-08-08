@@ -111,3 +111,25 @@ export async function updateInvoice(inv: Invoice): Promise<Invoice> {
 export async function deleteInvoice(id: string): Promise<void> {
   await api.del(`/invoices/${id}`);
 }
+
+/** Result of a server-side Postmark send. */
+export interface SendInvoiceResult {
+  sent: boolean;
+  sentAt?: string;
+  recipient?: string;
+  postmarkMessageId?: string | null;
+  paymentLinkUrl?: string | null;
+}
+
+/**
+ * Dispatch the invoice by email via the backend's Postmark integration
+ * (`POST /invoices/:id/send`, no body). The invoice must already exist, so
+ * callers create it first, then send. The backend enforces preconditions with
+ * distinct errors surfaced as ApiError.message:
+ * - 400 no email address on the invoice
+ * - 409 SENDER_SETTINGS_INCOMPLETE (business name + address not set up)
+ * - 503 POSTMARK_NOT_CONFIGURED / 502 Postmark send failure
+ */
+export async function sendInvoice(id: string): Promise<SendInvoiceResult> {
+  return api.post<SendInvoiceResult>(`/invoices/${id}/send`);
+}
