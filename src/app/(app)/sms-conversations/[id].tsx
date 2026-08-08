@@ -13,7 +13,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 import { DashboardGradient } from '@/components/dashboard-gradient';
 import { Icon } from '@/components/icon';
-import { useSMS } from '@/context/sms-store';
+import { useConversationMessages, useSMS } from '@/context/sms-store';
 import { withOpacity } from '@/lib/color';
 import { conversationDisplayName, formatPhone, SMS_STATUS_COLORS, type SMSMessage } from '@/models/sms';
 import { iOSColors, lightShadow } from '@/theme/tokens';
@@ -30,6 +30,7 @@ export default function SMSConversationDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const sms = useSMS();
   const conversation = sms.conversationById(id);
+  const { messages } = useConversationMessages(id);
   const [reply, setReply] = useState('');
 
   if (!conversation) {
@@ -47,7 +48,6 @@ export default function SMSConversationDetail() {
     );
   }
 
-  const messages = sms.messagesFor(conversation.id);
   const color = SMS_STATUS_COLORS[conversation.status];
   const canSend = reply.trim().length > 0;
 
