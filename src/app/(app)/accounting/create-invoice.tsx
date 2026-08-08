@@ -7,7 +7,7 @@
 
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Modal, Pressable, ScrollView, Share, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Share, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -19,10 +19,12 @@ import { Icon } from '@/components/icon';
 import { DatePickerSheet } from '@/components/sheets/date-picker-sheet';
 import { useClients } from '@/context/clients-store';
 import { useInvoices } from '@/context/invoices-store';
+import { useServices } from '@/context/services-store';
 import { useSession } from '@/context/session';
 import { withOpacity } from '@/lib/color';
 import { uuid } from '@/lib/id';
 import type { Client } from '@/models/client';
+import type { Service } from '@/models/service';
 import {
   invoiceDisplayName, invoiceSubtotal, invoiceTaxAmount, invoiceTotalDue, lineItemTotal,
   type Invoice, type InvoiceLineItem, type InvoiceStatus,
@@ -297,8 +299,15 @@ function Field({
 
 /* ---------- sheets ---------- */
 
+// Full-screen, keyboard-aware modal (matching the Swift InvoiceAddLineItemSheet
+// and the RecordTransactionSheet pattern): a top-anchored header + a
+// KeyboardAwareForm body that scrolls the focused input above the keyboard.
+// Replaces the old bottom-anchored transparent sheet, whose fields the keyboard
+// covered and whose backdrop dismissed the sheet mid-entry. Adds a
+// "Select from your services" picker that prefills description + unit price.
 function AddItemSheet({ visible, onClose, onAdd }: { visible: boolean; onClose: () => void; onAdd: (item: InvoiceLineItem) => void }) {
   const theme = useAppTheme();
+  const { services } = useServices();
   const [description, setDescription] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [unitPrice, setUnitPrice] = useState('');
@@ -306,31 +315,77 @@ function AddItemSheet({ visible, onClose, onAdd }: { visible: boolean; onClose: 
   const reset = () => { setDescription(''); setQuantity(1); setUnitPrice(''); };
   const valid = description.trim().length > 0 && Number(unitPrice) > 0;
 
+  const selectService = (s: Service) => {
+    setDescription(s.name);
+    setUnitPrice(s.price.toFixed(2));
+  };
+
+  const add = () => {
+    if (!valid) return;
+    onAdd({ id: uuid(), description: description.trim(), quantity, unitPrice: Number(unitPrice) });
+    reset();
+  };
+
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose} />
-      <View style={[styles.sheet, { backgroundColor: theme.cardBackground }]}>
-        <Text style={[styles.sheetTitle, { color: theme.primaryText }]}>Add line item</Text>
-        <TextInput value={description} onChangeText={setDescription} placeholder="Description" placeholderTextColor={theme.tertiaryText} style={[styles.sheetInput, { backgroundColor: theme.inputBackground, color: theme.primaryText }]} />
-        <View style={styles.sheetRow}>
-          <Text style={[styles.sheetLabel, { color: theme.secondaryText }]}>Quantity</Text>
-          <View style={styles.stepper}>
-            <Pressable onPress={() => setQuantity((q) => Math.max(1, q - 1))} style={[styles.stepBtn, { backgroundColor: theme.inputBackground }]}><Icon name="minus" size={16} color={theme.primaryText} /></Pressable>
-            <Text style={[styles.stepValue, { color: theme.primaryText }]}>{quantity}</Text>
-            <Pressable onPress={() => setQuantity((q) => q + 1)} style={[styles.stepBtn, { backgroundColor: theme.inputBackground }]}><Icon name="plus" size={16} color={theme.primaryText} /></Pressable>
+    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
+      <DashboardGradient>
+        <SafeAreaView style={styles.safe} edges={['top']}>
+          <View style={[styles.header, { backgroundColor: withOpacity(theme.cardBackground, 0.9) }]}>
+            <Pressable onPress={onClose} style={[styles.closeBtn, { backgroundColor: theme.cardBackground }, lightShadow(theme)]} hitSlop={8}>
+              <Icon name="xmark" size={18} color={theme.secondaryText} />
+            </Pressable>
+            <Text style={[styles.headerTitle, { color: theme.primaryText }]}>Add item</Text>
+            <Pressable onPress={add} disabled={!valid} style={[styles.sendBtn, { backgroundColor: valid ? iOSColors.blue : iOSColors.gray }]}>
+              <Text style={styles.sendText}>Add</Text>
+            </Pressable>
           </View>
-        </View>
-        <View style={styles.sheetRow}>
-          <Text style={[styles.sheetLabel, { color: theme.secondaryText }]}>Unit price</Text>
-          <TextInput value={unitPrice} onChangeText={(t) => setUnitPrice(t.replace(/[^0-9.]/g, ''))} placeholder="0.00" placeholderTextColor={theme.tertiaryText} keyboardType="decimal-pad" style={[styles.priceInput, { backgroundColor: theme.inputBackground, color: theme.primaryText }]} />
-        </View>
-        <Pressable
-          onPress={() => { if (valid) { onAdd({ id: uuid(), description: description.trim(), quantity, unitPrice: Number(unitPrice) }); reset(); } }}
-          disabled={!valid}
-          style={[styles.sheetSave, { backgroundColor: iOSColors.blue, opacity: valid ? 1 : 0.5 }]}>
-          <Text style={styles.sheetSaveText}>Add Item</Text>
-        </Pressable>
-      </View>
+
+          <KeyboardAwareForm contentContainerStyle={styles.body}>
+            {services.length > 0 ? (
+              <View style={styles.section}>
+                <Text style={[styles.sectionLabel, { color: theme.secondaryText }]}>Select from your services</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.chipRow}>
+                  {services.map((s) => {
+                    const selected = description === s.name;
+                    return (
+                      <Pressable
+                        key={s.id}
+                        onPress={() => selectService(s)}
+                        style={[styles.serviceChip, { backgroundColor: selected ? withOpacity(iOSColors.blue, 0.12) : theme.cardBackground, borderColor: selected ? iOSColors.blue : withOpacity(iOSColors.gray, 0.2) }]}>
+                        <Text style={[styles.serviceChipName, { color: theme.primaryText }]} numberOfLines={1}>{s.name}</Text>
+                        <Text style={styles.serviceChipPrice}>{usd.format(s.price)}</Text>
+                      </Pressable>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+            ) : null}
+
+            <Section label="Description">
+              <Field icon="doc.text.fill" iconColor={iOSColors.blue} placeholder="Item description..." value={description} onChangeText={setDescription} />
+            </Section>
+
+            <View style={styles.section}>
+              <Text style={[styles.sectionLabel, { color: theme.secondaryText }]}>Quantity</Text>
+              <View style={[styles.fieldCard, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
+                <Icon name="number" size={18} color={iOSColors.purple} />
+                <View style={styles.stepperInline}>
+                  <Pressable onPress={() => setQuantity((q) => Math.max(1, q - 1))} style={[styles.stepBtn, { backgroundColor: theme.inputBackground }]}><Icon name="minus" size={16} color={theme.primaryText} /></Pressable>
+                  <Text style={[styles.stepValue, { color: theme.primaryText }]}>{quantity}</Text>
+                  <Pressable onPress={() => setQuantity((q) => q + 1)} style={[styles.stepBtn, { backgroundColor: theme.inputBackground }]}><Icon name="plus" size={16} color={theme.primaryText} /></Pressable>
+                </View>
+              </View>
+            </View>
+
+            <Section label="Unit price">
+              <View style={[styles.fieldCard, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
+                <Icon name="dollarsign" size={18} color={iOSColors.green} />
+                <TextInput value={unitPrice} onChangeText={(t) => setUnitPrice(t.replace(/[^0-9.]/g, ''))} placeholder="0.00" placeholderTextColor={theme.tertiaryText} keyboardType="decimal-pad" style={[styles.fieldInput, { color: theme.primaryText }]} />
+              </View>
+            </Section>
+          </KeyboardAwareForm>
+        </SafeAreaView>
+      </DashboardGradient>
     </Modal>
   );
 }
@@ -341,19 +396,21 @@ function TaxSheet({ visible, current, onClose, onApply }: { visible: boolean; cu
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose} />
-      <View style={[styles.sheet, { backgroundColor: theme.cardBackground }]}>
-        <Text style={[styles.sheetTitle, { color: theme.primaryText }]}>Tax rate</Text>
-        <View style={styles.sheetRow}>
-          <Text style={[styles.sheetLabel, { color: theme.secondaryText }]}>Rate (%)</Text>
-          <TextInput value={rate} onChangeText={(t) => setRate(t.replace(/[^0-9.]/g, ''))} placeholder="0.00" placeholderTextColor={theme.tertiaryText} keyboardType="decimal-pad" style={[styles.priceInput, { backgroundColor: theme.inputBackground, color: theme.primaryText }]} />
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <View style={[styles.sheet, { backgroundColor: theme.cardBackground }]}>
+          <Text style={[styles.sheetTitle, { color: theme.primaryText }]}>Tax rate</Text>
+          <View style={styles.sheetRow}>
+            <Text style={[styles.sheetLabel, { color: theme.secondaryText }]}>Rate (%)</Text>
+            <TextInput value={rate} onChangeText={(t) => setRate(t.replace(/[^0-9.]/g, ''))} placeholder="0.00" placeholderTextColor={theme.tertiaryText} keyboardType="decimal-pad" style={[styles.priceInput, { backgroundColor: theme.inputBackground, color: theme.primaryText }]} />
+          </View>
+          <Pressable onPress={() => onApply(rate ? Number(rate) : null)} style={[styles.sheetSave, { backgroundColor: iOSColors.blue }]}>
+            <Text style={styles.sheetSaveText}>Apply</Text>
+          </Pressable>
+          <Pressable onPress={() => onApply(null)} style={styles.sheetClear}>
+            <Text style={[styles.sheetClearText, { color: iOSColors.red }]}>Remove tax</Text>
+          </Pressable>
         </View>
-        <Pressable onPress={() => onApply(rate ? Number(rate) : null)} style={[styles.sheetSave, { backgroundColor: iOSColors.blue }]}>
-          <Text style={styles.sheetSaveText}>Apply</Text>
-        </Pressable>
-        <Pressable onPress={() => onApply(null)} style={styles.sheetClear}>
-          <Text style={[styles.sheetClearText, { color: iOSColors.red }]}>Remove tax</Text>
-        </Pressable>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -430,15 +487,19 @@ const styles = StyleSheet.create({
   notifyText: { fontSize: 15, fontWeight: '500' },
   previewBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginHorizontal: 16, paddingVertical: 14, borderRadius: 12, borderWidth: 1 },
   previewText: { fontSize: 16, fontWeight: '600' },
+  // add-item service picker
+  chipRow: { gap: 10, paddingVertical: 2 },
+  serviceChip: { minWidth: 120, gap: 4, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10, borderWidth: 1.5 },
+  serviceChipName: { fontSize: 14, fontWeight: '600' },
+  serviceChipPrice: { fontSize: 13, fontWeight: '500', color: iOSColors.green },
+  stepperInline: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 16 },
   // sheets
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' },
   sheet: { padding: 20, borderTopLeftRadius: 20, borderTopRightRadius: 20, gap: 16 },
   clientSheet: { maxHeight: '70%' },
   sheetTitle: { fontSize: 18, fontWeight: '700' },
-  sheetInput: { fontSize: 16, padding: 12, borderRadius: 10 },
   sheetRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   sheetLabel: { fontSize: 15 },
-  stepper: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   stepBtn: { width: 36, height: 36, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   stepValue: { fontSize: 18, fontWeight: '600', minWidth: 24, textAlign: 'center' },
   priceInput: { fontSize: 16, padding: 12, borderRadius: 10, minWidth: 120, textAlign: 'right' },
