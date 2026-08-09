@@ -6,32 +6,65 @@
  * screens that exist navigate; the rest show "coming soon" (later batches/phases).
  */
 
+import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import type { SFSymbol } from 'expo-symbols';
-import { type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { deleteAccount as deleteAccountApi } from '@/api/account';
 import { Icon } from '@/components/icon';
 import { ScreenHeader } from '@/components/screen-header';
 import { useBusinessSettings } from '@/context/business-settings-store';
 import { useSession } from '@/context/session';
+import { ApiError } from '@/lib/api-client';
 import { reminderTimingLabel } from '@/models/business-settings';
 import { iOSColors, lightShadow } from '@/theme/tokens';
 import type { ThemeMode } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
 const BASE = 'https://toolbelt-backend-dtvy.onrender.com';
+const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
 
 export default function Settings() {
   const theme = useAppTheme();
   const router = useRouter();
   const { signOut } = useSession();
   const s = useBusinessSettings();
+  const [deleting, setDeleting] = useState(false);
 
   const soon = (label: string) => Alert.alert('Coming soon', `${label} arrives in a later phase.`);
   const open = (path: string) => WebBrowser.openBrowserAsync(`${BASE}/${path}`);
+
+  // Store-required in-app account deletion: confirm, call the backend purge
+  // route, then sign out on success (which unmounts this screen via the auth
+  // state listener). Errors keep the user signed in with an explanation.
+  const runDeleteAccount = async () => {
+    setDeleting(true);
+    try {
+      await deleteAccountApi();
+      signOut();
+    } catch (err) {
+      setDeleting(false);
+      const message =
+        err instanceof ApiError ? err.message : 'Please check your connection and try again.';
+      Alert.alert("Couldn't delete account", message);
+    }
+  };
+
+  const confirmDeleteAccount = () => {
+    if (deleting) return;
+    Alert.alert(
+      'Delete Account',
+      'This permanently deletes your ToolBelt account and all associated data — clients, appointments, invoices, and messages. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete Account', style: 'destructive', onPress: runDeleteAccount },
+      ],
+    );
+  };
 
   return (
     <View style={[styles.root, { backgroundColor: theme.background }]}>
@@ -139,9 +172,17 @@ export default function Settings() {
             <Row icon="shield.checkered" title="Two-Factor Authentication" color={iOSColors.green} onPress={() => router.push('/security')} />
             <Divider />
             <Row icon="rectangle.portrait.and.arrow.right" title="Log Out" color={iOSColors.red} onPress={signOut} />
+            <Divider />
+            <Row
+              icon="trash.fill"
+              title={deleting ? 'Deleting Account…' : 'Delete Account'}
+              subtitle="Permanently delete your account and data"
+              color={iOSColors.red}
+              onPress={confirmDeleteAccount}
+            />
           </Section>
 
-          <Text style={[styles.version, { color: theme.secondaryText }]}>ToolBelt v1.0.0</Text>
+          <Text style={[styles.version, { color: theme.secondaryText }]}>ToolBelt v{APP_VERSION}</Text>
         </ScrollView>
       </SafeAreaView>
     </View>
