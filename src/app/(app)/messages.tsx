@@ -14,6 +14,7 @@ import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/icon';
+import { KeyboardAwareForm } from '@/components/keyboard-aware-form';
 import { useAppointments } from '@/context/appointments-store';
 import { useClients } from '@/context/clients-store';
 import { withOpacity } from '@/lib/color';
@@ -428,7 +429,7 @@ function ComposeSheet({ open, contact, onClose, onSend }: { open: boolean; conta
           <Text style={[styles.headerTitle, { color: theme.primaryText }]}>New Message</Text>
           <Text style={[styles.cancel, styles.hidden]}>Cancel</Text>
         </View>
-        <ScrollView contentContainerStyle={styles.composeBody}>
+        <KeyboardAwareForm contentContainerStyle={styles.composeBody}>
           <Text style={[styles.composeLabel, { color: theme.secondaryText }]}>To:</Text>
           {contact ? (
             <View style={[styles.recipientCard, { backgroundColor: theme.cardBackground }]}>
@@ -459,7 +460,7 @@ function ComposeSheet({ open, contact, onClose, onSend }: { open: boolean; conta
 
           <Text style={[styles.composeLabel, { color: theme.secondaryText }]}>Message:</Text>
           <TextInput value={message} onChangeText={setMessage} placeholder="Type your message here..." placeholderTextColor={withOpacity(iOSColors.gray, 0.4)} multiline style={[styles.messageInput, { backgroundColor: theme.cardBackground, color: theme.primaryText }]} />
-        </ScrollView>
+        </KeyboardAwareForm>
         <View style={styles.composeFooter}>
           <Pressable
             disabled={!message.trim()}

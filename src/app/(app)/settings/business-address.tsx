@@ -5,11 +5,12 @@
 
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DashboardGradient } from '@/components/dashboard-gradient';
 import { Icon } from '@/components/icon';
+import { KeyboardAwareForm } from '@/components/keyboard-aware-form';
 import { ScreenHeader } from '@/components/screen-header';
 import { useBusinessSettings } from '@/context/business-settings-store';
 import type { BusinessAddress } from '@/models/business-settings';
@@ -33,7 +34,7 @@ export default function BusinessAddressScreen() {
     <DashboardGradient>
       <SafeAreaView style={styles.safe} edges={['top']}>
         <ScreenHeader title="Business Address" />
-        <ScrollView contentContainerStyle={styles.body}>
+        <KeyboardAwareForm contentContainerStyle={styles.body}>
           <View style={[styles.iconCircle, { backgroundColor: theme.iconBackground(iOSColors.red) }]}>
             <Icon name="mappin.circle.fill" size={30} color={iOSColors.red} />
           </View>
@@ -52,7 +53,7 @@ export default function BusinessAddressScreen() {
           <Pressable onPress={save} style={[styles.save, { backgroundColor: iOSColors.red }]}>
             <Text style={styles.saveText}>Save Address</Text>
           </Pressable>
-        </ScrollView>
+        </KeyboardAwareForm>
       </SafeAreaView>
     </DashboardGradient>
   );

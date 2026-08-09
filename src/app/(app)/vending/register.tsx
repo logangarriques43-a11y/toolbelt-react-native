@@ -12,6 +12,7 @@ import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/icon';
+import { KeyboardAwareForm } from '@/components/keyboard-aware-form';
 import { useVendors } from '@/context/vendor-store';
 import { withOpacity } from '@/lib/color';
 import { DEFAULT_VENDOR_CATEGORIES, VENDOR_TYPES, type VendorType } from '@/models/vendor';
@@ -124,7 +125,7 @@ export default function VendorRegister() {
         <View style={styles.flex} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.body}>
+      <KeyboardAwareForm contentContainerStyle={styles.body}>
         <View style={styles.intro}>
           <Icon name="storefront.fill" size={40} color={iOSColors.green} />
           <Text style={[styles.introTitle, { color: theme.primaryText }]}>{editing ? 'Edit Your Listing' : 'Register Your Business'}</Text>
@@ -220,7 +221,7 @@ export default function VendorRegister() {
           <Icon name="checkmark.shield.fill" size={16} color="#FFFFFF" />
           <Text style={styles.submitText}>{editing ? 'Save Changes' : 'Submit for Verification'}</Text>
         </Pressable>
-      </ScrollView>
+      </KeyboardAwareForm>
     </SafeAreaView>
   );
 }

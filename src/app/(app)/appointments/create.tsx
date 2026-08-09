@@ -11,11 +11,12 @@
 import { useRouter } from 'expo-router';
 import type { SFSymbol } from 'expo-symbols';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DashboardGradient } from '@/components/dashboard-gradient';
 import { Icon } from '@/components/icon';
+import { KeyboardAwareForm } from '@/components/keyboard-aware-form';
 import { DatePickerSheet } from '@/components/sheets/date-picker-sheet';
 import { OptionSheet } from '@/components/sheets/option-sheet';
 import { StaffPickerSheet } from '@/components/sheets/staff-picker-sheet';
@@ -226,7 +227,7 @@ export default function CreateAppointment() {
           </Pressable>
         </View>
 
-        <ScrollView contentContainerStyle={styles.body}>
+        <KeyboardAwareForm contentContainerStyle={styles.body}>
           {/* Client */}
           <Section label="Client">
             <Row onPress={() => router.push('/appointments/select-client')}>
@@ -374,7 +375,7 @@ export default function CreateAppointment() {
           <Section label="Location">
             <InputRow icon="mappin.circle.fill" placeholder="Enter address..." value={location} onChangeText={setLocation} />
           </Section>
-        </ScrollView>
+        </KeyboardAwareForm>
       </SafeAreaView>
 
       <DatePickerSheet visible={dateSheet} date={form.appointmentDate} onChange={form.setAppointmentDate} onClose={() => setDateSheet(false)} />

@@ -10,10 +10,11 @@ import { LinearGradient } from 'expo-linear-gradient';
 import type { SFSymbol } from 'expo-symbols';
 import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
-import { Alert, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { Alert, Modal, Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DashboardGradient } from '@/components/dashboard-gradient';
+import { KeyboardAwareForm } from '@/components/keyboard-aware-form';
 import { Icon } from '@/components/icon';
 import { BRAND_BLUE, BRAND_PURPLE } from '@/components/payments/checkout';
 import { ColorPickerSheet } from '@/components/sheets/color-picker-sheet';
@@ -133,7 +134,7 @@ export function AddProductSheet({
             <View style={styles.roundBtn} />
           </View>
 
-          <ScrollView contentContainerStyle={styles.body}>
+          <KeyboardAwareForm contentContainerStyle={styles.body}>
             {/* Preview */}
             <View style={styles.previewWrap}>
               <View style={[styles.previewCard, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
@@ -274,7 +275,7 @@ export function AddProductSheet({
                 <Text style={[styles.deleteText, { color: iOSColors.red }]}>Delete Product</Text>
               </Pressable>
             )}
-          </ScrollView>
+          </KeyboardAwareForm>
 
           {/* Save */}
           <View style={[styles.footer, { backgroundColor: theme.cardBackground }]}>

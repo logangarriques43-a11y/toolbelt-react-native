@@ -7,7 +7,7 @@
 
 import type { ComponentProps, ReactNode } from 'react';
 import { useEffect, useState } from 'react';
-import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { Icon } from '@/components/icon';
 import { useInventory } from '@/context/inventory-store';
@@ -76,6 +76,7 @@ export function ItemDetailSheet({ item, onClose }: { item: InventoryItem | null;
   return (
     <Modal visible transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose} />
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={[styles.sheet, { backgroundColor: theme.cardBackground }]}>
         <View style={styles.grabber} />
         <View style={styles.header}>
@@ -237,6 +238,7 @@ export function ItemDetailSheet({ item, onClose }: { item: InventoryItem | null;
           </ScrollView>
         )}
       </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

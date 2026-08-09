@@ -8,7 +8,7 @@
 
 import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { Icon } from '@/components/icon';
 import { useInventory } from '@/context/inventory-store';
@@ -65,6 +65,7 @@ export function ManualReorderSheet({ visible, onClose }: { visible: boolean; onC
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={close}>
       <Pressable style={styles.backdrop} onPress={close} />
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={[styles.sheet, { backgroundColor: theme.cardBackground }]}>
         <View style={styles.grabber} />
         <View style={styles.header}>
@@ -172,6 +173,7 @@ export function ManualReorderSheet({ visible, onClose }: { visible: boolean; onC
           </View>
         )}
       </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

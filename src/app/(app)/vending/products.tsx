@@ -10,6 +10,7 @@ import { Alert, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, TextInpu
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/icon';
+import { KeyboardAwareForm } from '@/components/keyboard-aware-form';
 import { OptionSheet } from '@/components/sheets/option-sheet';
 import { useVendors } from '@/context/vendor-store';
 import { withOpacity } from '@/lib/color';
@@ -181,7 +182,7 @@ function ProductEditor({ visible, product, vendorId, onClose }: { visible: boole
             <Text style={[styles.save, { color: canSave ? iOSColors.blue : iOSColors.gray }]}>Save</Text>
           </Pressable>
         </View>
-        <ScrollView contentContainerStyle={styles.editorBody}>
+        <KeyboardAwareForm contentContainerStyle={styles.editorBody}>
           <EField label="Name" value={name} onChangeText={setName} placeholder="Product name" />
           <EField label="Description" value={description} onChangeText={setDescription} placeholder="Short description" multiline />
           <EField label="SKU (optional)" value={sku} onChangeText={setSku} placeholder="SKU" autoCapitalize="characters" />
@@ -215,7 +216,7 @@ function ProductEditor({ visible, product, vendorId, onClose }: { visible: boole
               <Text style={[styles.deleteText, { color: iOSColors.red }]}>Delete Product</Text>
             </Pressable>
           )}
-        </ScrollView>
+        </KeyboardAwareForm>
 
         <OptionSheet
           visible={showUnit}

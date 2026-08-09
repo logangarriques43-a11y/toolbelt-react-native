@@ -8,9 +8,10 @@
  */
 
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 
 import { Icon } from '@/components/icon';
+import { KeyboardAwareForm } from '@/components/keyboard-aware-form';
 import { useInventory } from '@/context/inventory-store';
 import { useServices } from '@/context/services-store';
 import { uuid } from '@/lib/id';
@@ -104,7 +105,7 @@ export function ServiceLinkContent({
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.body}>
+    <KeyboardAwareForm contentContainerStyle={styles.body}>
       <View style={styles.center}>
         <Icon name="link.circle.fill" size={44} color={iOSColors.purple} />
       </View>
@@ -210,7 +211,7 @@ export function ServiceLinkContent({
       <Pressable onPress={save} style={[styles.saveBtn, { backgroundColor: iOSColors.blue }]}>
         <Text style={styles.saveText}>Add to Inventory</Text>
       </Pressable>
-    </ScrollView>
+    </KeyboardAwareForm>
   );
 }
 

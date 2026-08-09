@@ -6,11 +6,12 @@
 
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DashboardGradient } from '@/components/dashboard-gradient';
 import { Icon } from '@/components/icon';
+import { KeyboardAwareForm } from '@/components/keyboard-aware-form';
 import { ScreenHeader } from '@/components/screen-header';
 import { OptionSheet } from '@/components/sheets/option-sheet';
 import { iOSColors } from '@/theme/tokens';
@@ -42,7 +43,7 @@ export default function InvoiceSettings() {
     <DashboardGradient>
       <SafeAreaView style={styles.safe} edges={['top']}>
         <ScreenHeader title="Invoice Settings" />
-        <ScrollView contentContainerStyle={styles.body}>
+        <KeyboardAwareForm contentContainerStyle={styles.body}>
           <View style={[styles.iconCircle, { backgroundColor: theme.iconBackground(iOSColors.blue) }]}>
             <Icon name="doc.text.fill" size={30} color={iOSColors.blue} />
           </View>
@@ -99,7 +100,7 @@ export default function InvoiceSettings() {
           <Pressable onPress={save} style={[styles.save, { backgroundColor: iOSColors.blue }]}>
             <Text style={styles.saveText}>Save Settings</Text>
           </Pressable>
-        </ScrollView>
+        </KeyboardAwareForm>
       </SafeAreaView>
 
       <OptionSheet visible={dueSheet} title="Payment Due" options={DUE_OPTIONS} selected={dueDays} onSelect={setDueDays} onClose={() => setDueSheet(false)} />

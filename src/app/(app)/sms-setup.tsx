@@ -7,13 +7,14 @@
 import { useRouter } from 'expo-router';
 import type { SFSymbol } from 'expo-symbols';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { ConsentQRCard } from '@/components/sms/consent-qr-card';
 import { DashboardGradient } from '@/components/dashboard-gradient';
 import { Icon } from '@/components/icon';
+import { KeyboardAwareForm } from '@/components/keyboard-aware-form';
 import { useSession } from '@/context/session';
 import { useSMS } from '@/context/sms-store';
 import { withOpacity } from '@/lib/color';
@@ -62,7 +63,7 @@ export default function SMSSetup() {
           <View style={styles.back} />
         </View>
 
-        <ScrollView contentContainerStyle={styles.body}>
+        <KeyboardAwareForm contentContainerStyle={styles.body}>
           {step === 'intro' && (
             <View style={styles.center}>
               <View style={[styles.hero, { backgroundColor: withOpacity(BLUE, 0.15) }]}>
@@ -160,7 +161,7 @@ export default function SMSSetup() {
               )}
             </View>
           )}
-        </ScrollView>
+        </KeyboardAwareForm>
       </SafeAreaView>
     </DashboardGradient>
   );

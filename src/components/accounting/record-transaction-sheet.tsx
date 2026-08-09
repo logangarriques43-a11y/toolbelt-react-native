@@ -4,10 +4,11 @@
  */
 
 import { useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DashboardGradient } from '@/components/dashboard-gradient';
+import { KeyboardAwareForm } from '@/components/keyboard-aware-form';
 import { Icon } from '@/components/icon';
 import { DatePickerSheet } from '@/components/sheets/date-picker-sheet';
 import { useAccounting } from '@/context/accounting-store';
@@ -55,7 +56,7 @@ export function RecordTransactionSheet({ visible, onClose }: { visible: boolean;
             </Pressable>
           </View>
 
-          <ScrollView contentContainerStyle={styles.body}>
+          <KeyboardAwareForm contentContainerStyle={styles.body}>
             <Field label="Title" placeholder="e.g. Sarah Johnson" value={title} onChangeText={setTitle} />
             <Field label="Description" placeholder="e.g. Haircut & Styling" value={detail} onChangeText={setDetail} />
             <Field label="Amount" placeholder="0.00" value={amount} onChangeText={(t) => setAmount(t.replace(/[^0-9.]/g, ''))} keyboardType />
@@ -80,7 +81,7 @@ export function RecordTransactionSheet({ visible, onClose }: { visible: boolean;
             </View>
 
             <Field label="Note" placeholder="Optional note" value={note} onChangeText={setNote} />
-          </ScrollView>
+          </KeyboardAwareForm>
         </SafeAreaView>
       </DashboardGradient>
 

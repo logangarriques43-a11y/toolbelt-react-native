@@ -10,6 +10,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DashboardGradient } from '@/components/dashboard-gradient';
 import { Icon } from '@/components/icon';
+import { KeyboardAwareForm } from '@/components/keyboard-aware-form';
 import { ScreenHeader } from '@/components/screen-header';
 import { DatePickerSheet } from '@/components/sheets/date-picker-sheet';
 import { useExpenses } from '@/context/expenses-store';
@@ -60,7 +61,7 @@ export default function RecordExpense() {
     <DashboardGradient>
       <SafeAreaView style={styles.safe} edges={['top']}>
         <ScreenHeader title="Record Expense" />
-        <ScrollView contentContainerStyle={styles.body}>
+        <KeyboardAwareForm contentContainerStyle={styles.body}>
           {/* Amount */}
           <View style={[styles.card, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
             <Text style={[styles.cardLabel, { color: theme.secondaryText }]}>Amount</Text>
@@ -141,7 +142,7 @@ export default function RecordExpense() {
             <Icon name="plus.circle.fill" size={16} color="#FFFFFF" />
             <Text style={styles.saveText}>Save Expense</Text>
           </Pressable>
-        </ScrollView>
+        </KeyboardAwareForm>
       </SafeAreaView>
 
       <DatePickerSheet visible={dateSheet} date={date} onChange={setDate} onClose={() => setDateSheet(false)} />

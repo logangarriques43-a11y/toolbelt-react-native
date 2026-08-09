@@ -16,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DashboardGradient } from '@/components/dashboard-gradient';
 import { Icon } from '@/components/icon';
+import { KeyboardAwareForm } from '@/components/keyboard-aware-form';
 import { BRAND_BLUE, BRAND_PURPLE } from '@/components/payments/checkout';
 import { useClients } from '@/context/clients-store';
 import { useProducts } from '@/context/products-store';
@@ -163,7 +164,7 @@ export function ReviewSaleSheet(props: ReviewSaleSheetProps) {
             <View style={styles.roundBtn} />
           </View>
 
-          <ScrollView contentContainerStyle={styles.body}>
+          <KeyboardAwareForm contentContainerStyle={styles.body}>
             {/* Total */}
             <View style={styles.totalBlock}>
               <Text style={[styles.totalLabel, { color: theme.secondaryText }]}>Total</Text>
@@ -315,7 +316,7 @@ export function ReviewSaleSheet(props: ReviewSaleSheetProps) {
                 })}
               </View>
             </Field>
-          </ScrollView>
+          </KeyboardAwareForm>
 
           {/* Complete */}
           <View style={[styles.footer, { backgroundColor: theme.cardBackground }]}>

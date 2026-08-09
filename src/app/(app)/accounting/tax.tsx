@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DashboardGradient } from '@/components/dashboard-gradient';
 import { Icon } from '@/components/icon';
+import { KeyboardAwareForm } from '@/components/keyboard-aware-form';
 import { ScreenHeader } from '@/components/screen-header';
 import { useAccounting } from '@/context/accounting-store';
 import { useExpenses } from '@/context/expenses-store';
@@ -111,7 +112,7 @@ export default function TaxDashboard() {
     <DashboardGradient>
       <SafeAreaView style={styles.safe} edges={['top']}>
         <ScreenHeader title="Tax Dashboard" />
-        <ScrollView contentContainerStyle={styles.body}>
+        <KeyboardAwareForm contentContainerStyle={styles.body}>
           {/* Tax mode */}
           <View style={[styles.card, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
             <View style={styles.modeRow}>
@@ -198,7 +199,7 @@ export default function TaxDashboard() {
             <Icon name="square.and.arrow.up" size={14} color="#FFFFFF" />
             <Text style={styles.exportText}>Export Tax Report</Text>
           </Pressable>
-        </ScrollView>
+        </KeyboardAwareForm>
       </SafeAreaView>
     </DashboardGradient>
   );

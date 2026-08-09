@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DashboardGradient } from '@/components/dashboard-gradient';
 import { Icon } from '@/components/icon';
+import { KeyboardAwareForm } from '@/components/keyboard-aware-form';
 import { withOpacity } from '@/lib/color';
 import { useAppointments } from '@/context/appointments-store';
 import { Brand, iOSColors, lightShadow } from '@/theme/tokens';
@@ -135,7 +136,7 @@ function DiscountSheet({ visible, maxDiscount, onApply, onClose }: { visible: bo
             <Pressable onPress={apply} hitSlop={8}><Text style={styles.sheetAction}>Apply</Text></Pressable>
           </View>
 
-          <View style={styles.discountBody}>
+          <KeyboardAwareForm contentContainerStyle={styles.discountBody}>
             <View style={[styles.segmented, { backgroundColor: theme.divider }]}>
               {(['percentage', 'fixed'] as const).map((t) => (
                 <Pressable key={t} onPress={() => setType(t)} style={[styles.segment, type === t ? { backgroundColor: Brand.accent } : null]}>
@@ -168,7 +169,7 @@ function DiscountSheet({ visible, maxDiscount, onApply, onClose }: { visible: bo
                 ))}
               </View>
             ) : null}
-          </View>
+          </KeyboardAwareForm>
         </SafeAreaView>
       </DashboardGradient>
     </Modal>
