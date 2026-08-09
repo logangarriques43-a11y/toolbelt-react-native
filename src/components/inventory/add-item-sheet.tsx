@@ -7,9 +7,10 @@
 
 import type { ComponentProps, ReactNode } from 'react';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { Icon } from '@/components/icon';
+import { KeyboardAwareForm } from '@/components/keyboard-aware-form';
 import { ServiceLinkContent } from '@/components/inventory/service-link-sheet';
 import { useInventory } from '@/context/inventory-store';
 import { withOpacity } from '@/lib/color';
@@ -55,9 +56,6 @@ export function AddItemSheet({ visible, onClose }: { visible: boolean; onClose: 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={close}>
       <Pressable style={styles.backdrop} onPress={close} />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={{ backgroundColor: theme.cardBackground, borderTopLeftRadius: 24, borderTopRightRadius: 24 }}>
       <View style={[styles.sheet, { backgroundColor: theme.cardBackground }]}>
         <View style={styles.grabber} />
         <View style={styles.header}>
@@ -77,7 +75,7 @@ export function AddItemSheet({ visible, onClose }: { visible: boolean; onClose: 
         </View>
 
         {step === 'form' ? (
-          <ScrollView contentContainerStyle={styles.body}>
+          <KeyboardAwareForm contentContainerStyle={styles.body}>
             <Icon name="plus.circle.fill" size={50} color={iOSColors.green} />
             <Text style={[styles.subtitle, { color: theme.secondaryText }]}>Enter item details below</Text>
 
@@ -121,7 +119,7 @@ export function AddItemSheet({ visible, onClose }: { visible: boolean; onClose: 
               <Text style={styles.primaryBtnText}>Next</Text>
               <Icon name="chevron.right" size={14} color="#FFFFFF" weight="semibold" />
             </Pressable>
-          </ScrollView>
+          </KeyboardAwareForm>
         ) : step === 'services' ? (
           <ServiceLinkContent draft={draft} onSaved={() => setStep('success')} />
         ) : (
@@ -146,7 +144,6 @@ export function AddItemSheet({ visible, onClose }: { visible: boolean; onClose: 
           </View>
         )}
       </View>
-      </KeyboardAvoidingView>
     </Modal>
   );
 }

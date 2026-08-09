@@ -420,9 +420,7 @@ function TaxSheet({ visible, current, onClose, onApply }: { visible: boolean; cu
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose} />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={{ backgroundColor: theme.cardBackground, borderTopLeftRadius: 20, borderTopRightRadius: 20 }}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={[styles.sheet, { backgroundColor: theme.cardBackground }]}>
           <Text style={[styles.sheetTitle, { color: theme.primaryText }]}>Tax rate</Text>
           <View style={styles.sheetRow}>

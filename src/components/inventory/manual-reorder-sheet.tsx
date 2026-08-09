@@ -8,7 +8,9 @@
 
 import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+
+import { KeyboardAwareForm } from '@/components/keyboard-aware-form';
 
 import { Icon } from '@/components/icon';
 import { useInventory } from '@/context/inventory-store';
@@ -65,9 +67,6 @@ export function ManualReorderSheet({ visible, onClose }: { visible: boolean; onC
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={close}>
       <Pressable style={styles.backdrop} onPress={close} />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={{ backgroundColor: theme.cardBackground, borderTopLeftRadius: 24, borderTopRightRadius: 24 }}>
       <View style={[styles.sheet, { backgroundColor: theme.cardBackground }]}>
         <View style={styles.grabber} />
         <View style={styles.header}>
@@ -95,7 +94,7 @@ export function ManualReorderSheet({ visible, onClose }: { visible: boolean; onC
             </View>
           </View>
         ) : selected ? (
-          <ScrollView contentContainerStyle={styles.body}>
+          <KeyboardAwareForm contentContainerStyle={styles.body}>
             <View style={styles.center}>
               <Icon name="arrow.triangle.2.circlepath.circle.fill" size={44} color={iOSColors.blue} />
             </View>
@@ -136,7 +135,7 @@ export function ManualReorderSheet({ visible, onClose }: { visible: boolean; onC
             <Pressable onPress={() => { setSelectedId(null); setQuantityText(''); }}>
               <Text style={[styles.link, { color: iOSColors.blue }]}>Pick a different item</Text>
             </Pressable>
-          </ScrollView>
+          </KeyboardAwareForm>
         ) : (
           <View style={styles.picker}>
             <View style={[styles.searchBar, { backgroundColor: theme.divider }]}>
@@ -175,7 +174,6 @@ export function ManualReorderSheet({ visible, onClose }: { visible: boolean; onC
           </View>
         )}
       </View>
-      </KeyboardAvoidingView>
     </Modal>
   );
 }

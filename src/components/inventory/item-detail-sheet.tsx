@@ -7,7 +7,9 @@
 
 import type { ComponentProps, ReactNode } from 'react';
 import { useEffect, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+
+import { KeyboardAwareForm } from '@/components/keyboard-aware-form';
 
 import { Icon } from '@/components/icon';
 import { useInventory } from '@/context/inventory-store';
@@ -76,9 +78,6 @@ export function ItemDetailSheet({ item, onClose }: { item: InventoryItem | null;
   return (
     <Modal visible transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose} />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={{ backgroundColor: theme.cardBackground, borderTopLeftRadius: 24, borderTopRightRadius: 24 }}>
       <View style={[styles.sheet, { backgroundColor: theme.cardBackground }]}>
         <View style={styles.grabber} />
         <View style={styles.header}>
@@ -121,7 +120,7 @@ export function ItemDetailSheet({ item, onClose }: { item: InventoryItem | null;
             </Pressable>
           </View>
         ) : (
-          <ScrollView contentContainerStyle={styles.body}>
+          <KeyboardAwareForm contentContainerStyle={styles.body}>
             {/* Status header */}
             <View style={styles.headerBlock}>
               <View style={[styles.statusPill, { backgroundColor: withOpacity(color, 0.1) }]}>
@@ -237,10 +236,9 @@ export function ItemDetailSheet({ item, onClose }: { item: InventoryItem | null;
                 </Pressable>
               </View>
             )}
-          </ScrollView>
+          </KeyboardAwareForm>
         )}
       </View>
-      </KeyboardAvoidingView>
     </Modal>
   );
 }
