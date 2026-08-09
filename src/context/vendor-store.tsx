@@ -1,133 +1,35 @@
 /**
- * Vendor store — stands in for VendorManager.swift (backend /vendors + reviews)
- * and FavoriteVendorStore. Seeds verified sample vendors + reviews so the
- * marketplace UI is navigable offline; favorites + the user's own registered
- * vendor live in local state. Google-Places nearby search is out of scope.
+ * Vendor store — RN counterpart to VendorManager.swift + FavoriteVendorStore.
+ * Vendors and the owner's vendor-products are backed by `/vendors` and
+ * `/vendor-products` via React Query; favorites are local (no backend
+ * endpoint), and per-vendor reviews aren't exposed by the backend so
+ * `reviews`/`reviewsFor` return empty (aggregate averageRating/totalReviews
+ * still come through on each vendor).
+ *
+ * GET /vendors returns the verified marketplace plus the caller's own vendors;
+ * `ownedByMe` is derived server-side by uid. Mutations are optimistic and
+ * reconcile the affected row on success (the wire isn't lossy).
  */
 
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
+import { Alert } from 'react-native';
 
+import {
+  createVendor,
+  createVendorProduct,
+  deleteVendorProduct as deleteVendorProductApi,
+  listMyVendorProducts,
+  listVendors,
+  updateVendor as updateVendorApi,
+  updateVendorProduct as updateVendorProductApi,
+} from '@/api/vendors';
+import { ApiError } from '@/lib/api-client';
 import { uuid } from '@/lib/id';
 import { DEFAULT_VENDOR_CATEGORIES, type Vendor, type VendorProduct, type VendorReview, type VendorType } from '@/models/vendor';
 
-function seedVendors(): Vendor[] {
-  const now = Date.now();
-  const days = (n: number) => new Date(now - n * 86_400_000).toISOString();
-  const base = {
-    addressLine2: '',
-    country: 'US',
-    shipsNationwide: true,
-    acceptsReturns: true,
-  };
-  return [
-    {
-      ...base,
-      id: 'vendor-lumina',
-      businessName: 'Lumina Beauty Supply',
-      contactName: 'Dana Reyes',
-      email: 'orders@luminabeauty.com',
-      phoneNumber: '(310) 555-0142',
-      website: 'luminabeauty.com',
-      vendorType: 'wholesaler',
-      status: 'verified',
-      categories: ['Hair Products', 'Skincare', 'Retail Products'],
-      addressLine1: '1200 Beauty Blvd',
-      city: 'Los Angeles',
-      state: 'CA',
-      zipCode: '90021',
-      descriptionText: 'Wholesale salon-grade hair and skincare lines with fast restocking and no minimum on retail packs.',
-      minimumOrderAmount: 150,
-      shippingInfo: 'Free shipping over $250',
-      leadTimeDays: 2,
-      averageRating: 4.7,
-      totalReviews: 38,
-      dateRegistered: days(12),
-    },
-    {
-      ...base,
-      id: 'vendor-pronail',
-      businessName: 'ProNail Distributors',
-      contactName: 'Marcus Lee',
-      email: 'sales@pronaildist.com',
-      phoneNumber: '(702) 555-0188',
-      website: 'pronaildist.com',
-      vendorType: 'distributor',
-      status: 'verified',
-      categories: ['Nail Supplies', 'Disposables'],
-      addressLine1: '88 Industrial Way',
-      city: 'Las Vegas',
-      state: 'NV',
-      zipCode: '89101',
-      descriptionText: 'Nail supplies, gels, and single-use disposables in bulk. Same-week delivery across the Southwest.',
-      minimumOrderAmount: 100,
-      shippingInfo: 'Flat $12 shipping',
-      leadTimeDays: 3,
-      acceptsReturns: false,
-      shipsNationwide: false,
-      shipsRadiusMiles: 300,
-      averageRating: 4.3,
-      totalReviews: 14,
-      dateRegistered: days(40),
-    },
-    {
-      ...base,
-      id: 'vendor-clearco',
-      businessName: 'ClearCo Cleaning Supply',
-      contactName: 'Priya Shah',
-      email: 'hello@clearco.com',
-      phoneNumber: '(206) 555-0125',
-      website: 'clearco.com',
-      vendorType: 'supplier',
-      status: 'verified',
-      categories: ['Cleaning Supplies', 'Disposables'],
-      addressLine1: '440 Market St',
-      city: 'Seattle',
-      state: 'WA',
-      zipCode: '98101',
-      descriptionText: 'Eco-friendly cleaning and sanitation supplies for salons and studios.',
-      minimumOrderAmount: 0,
-      shippingInfo: 'Ships in 1–2 business days',
-      leadTimeDays: 1,
-      averageRating: 4.9,
-      totalReviews: 52,
-      dateRegistered: days(5),
-    },
-    {
-      ...base,
-      id: 'vendor-craftform',
-      businessName: 'CraftForm Furniture',
-      contactName: 'Sam Whitman',
-      email: 'quotes@craftform.com',
-      phoneNumber: '(312) 555-0170',
-      website: 'craftform.com',
-      vendorType: 'manufacturer',
-      status: 'verified',
-      categories: ['Furniture', 'Equipment'],
-      addressLine1: '15 Maker Row',
-      city: 'Chicago',
-      state: 'IL',
-      zipCode: '60607',
-      descriptionText: 'Custom salon chairs, stations, and reception furniture, built to order.',
-      minimumOrderAmount: 500,
-      shippingInfo: 'Freight quoted per order',
-      leadTimeDays: 21,
-      averageRating: 4.6,
-      totalReviews: 9,
-      dateRegistered: days(75),
-    },
-  ];
-}
-
-function seedReviews(): VendorReview[] {
-  const now = Date.now();
-  const days = (n: number) => new Date(now - n * 86_400_000).toISOString();
-  return [
-    { id: uuid(), vendorId: 'vendor-lumina', reviewerName: 'Bella Studio', rating: 5, comment: 'Fast restocks and great prices on color lines.', datePosted: days(8) },
-    { id: uuid(), vendorId: 'vendor-lumina', reviewerName: 'The Glow Bar', rating: 4, comment: 'Reliable, though a couple items were backordered.', datePosted: days(20) },
-    { id: uuid(), vendorId: 'vendor-clearco', reviewerName: 'Shear Genius', rating: 5, comment: 'Best sanitation supplier we have used. Quick delivery.', datePosted: days(3) },
-    { id: uuid(), vendorId: 'vendor-pronail', reviewerName: 'Polished', rating: 4, comment: 'Good bulk pricing on gels.', datePosted: days(15) },
-  ];
-}
+export const VENDORS_QUERY_KEY = ['vendors'] as const;
+export const VENDOR_PRODUCTS_QUERY_KEY = ['vendor-products', 'mine'] as const;
 
 export interface VendorStore {
   vendors: Vendor[];
@@ -154,17 +56,100 @@ export interface VendorStore {
 
 const VendorContext = createContext<VendorStore | null>(null);
 
+function alertFailure(action: string, err: unknown) {
+  const message =
+    err instanceof ApiError ? err.message : 'Please check your connection and try again.';
+  Alert.alert(`Couldn't ${action}`, message);
+}
+
 export function VendorProvider({ children }: { children: ReactNode }) {
-  const [vendors, setVendors] = useState<Vendor[]>(seedVendors);
-  const [reviews] = useState<VendorReview[]>(seedReviews);
+  const qc = useQueryClient();
+  const vendorsQuery = useQuery({ queryKey: VENDORS_QUERY_KEY, queryFn: listVendors });
+  const productsQuery = useQuery({ queryKey: VENDOR_PRODUCTS_QUERY_KEY, queryFn: listMyVendorProducts });
   const [favorites, setFavorites] = useState<Set<string>>(() => new Set());
-  const [products, setProducts] = useState<VendorProduct[]>([]);
+
+  const vendors = vendorsQuery.data ?? [];
+  const products = productsQuery.data ?? [];
+
+  const readV = () => qc.getQueryData<Vendor[]>(VENDORS_QUERY_KEY) ?? [];
+  const writeV = (next: Vendor[]) => qc.setQueryData(VENDORS_QUERY_KEY, next);
+  const readP = () => qc.getQueryData<VendorProduct[]>(VENDOR_PRODUCTS_QUERY_KEY) ?? [];
+  const writeP = (next: VendorProduct[]) => qc.setQueryData(VENDOR_PRODUCTS_QUERY_KEY, next);
 
   const value = useMemo<VendorStore>(() => {
     const verified = vendors.filter((v) => v.status === 'verified');
+
+    // REGISTER — optimistic pending row (owned by me), swap in the saved row on
+    // success. Returns the optimistic vendor (callers navigate away).
+    const registerVendor = (
+      input: Omit<Vendor, 'id' | 'status' | 'dateRegistered' | 'ownedByMe' | 'averageRating' | 'totalReviews'>,
+    ): Vendor => {
+      const tempId = `optimistic-${uuid()}`;
+      const vendor: Vendor = {
+        ...input,
+        id: tempId,
+        status: 'pending',
+        dateRegistered: new Date().toISOString(),
+        ownedByMe: true,
+        averageRating: 0,
+        totalReviews: 0,
+      };
+      writeV([vendor, ...readV()]);
+      createVendor(input)
+        .then((saved) => writeV(readV().map((v) => (v.id === tempId ? saved : v))))
+        .catch((err) => {
+          writeV(readV().filter((v) => v.id !== tempId));
+          alertFailure('register vendor', err);
+        });
+      return vendor;
+    };
+
+    const updateVendor = (updated: Vendor) => {
+      const prev = readV();
+      writeV(prev.map((v) => (v.id === updated.id ? updated : v)));
+      updateVendorApi(updated)
+        .then((saved) => writeV(readV().map((v) => (v.id === saved.id ? saved : v))))
+        .catch((err) => {
+          writeV(prev);
+          alertFailure('update vendor', err);
+        });
+    };
+
+    const addVendorProduct = (input: Omit<VendorProduct, 'id' | 'createdAt'>) => {
+      const tempId = `optimistic-${uuid()}`;
+      const product: VendorProduct = { ...input, id: tempId, createdAt: new Date().toISOString() };
+      writeP([product, ...readP()]);
+      createVendorProduct(input)
+        .then((saved) => writeP(readP().map((p) => (p.id === tempId ? saved : p))))
+        .catch((err) => {
+          writeP(readP().filter((p) => p.id !== tempId));
+          alertFailure('add product', err);
+        });
+    };
+
+    const updateVendorProduct = (updated: VendorProduct) => {
+      const prev = readP();
+      writeP(prev.map((p) => (p.id === updated.id ? updated : p)));
+      updateVendorProductApi(updated)
+        .then((saved) => writeP(readP().map((p) => (p.id === saved.id ? saved : p))))
+        .catch((err) => {
+          writeP(prev);
+          alertFailure('update product', err);
+        });
+    };
+
+    const deleteVendorProduct = (id: string) => {
+      const prev = readP();
+      writeP(prev.filter((p) => p.id !== id));
+      deleteVendorProductApi(id).catch((err) => {
+        writeP(prev);
+        alertFailure('delete product', err);
+      });
+    };
+
     return {
       vendors,
-      reviews,
+      reviews: [], // no backend reviews endpoint; aggregate rating lives on the vendor
       myVendor: vendors.find((v) => v.ownedByMe) ?? null,
       verifiedVendors: verified,
       allCategories: [...new Set(vendors.flatMap((v) => v.categories))].sort(),
@@ -188,7 +173,7 @@ export function VendorProvider({ children }: { children: ReactNode }) {
         if (wanted.size === 0) return [];
         return verified.filter((v) => v.categories.some((c) => wanted.has(c.toLowerCase())));
       },
-      reviewsFor: (vendorId) => reviews.filter((r) => r.vendorId === vendorId),
+      reviewsFor: () => [],
       isFavorite: (id) => favorites.has(id),
       toggleFavorite: (id) =>
         setFavorites((prev) => {
@@ -197,27 +182,16 @@ export function VendorProvider({ children }: { children: ReactNode }) {
           else next.add(id);
           return next;
         }),
-      registerVendor: (input) => {
-        const vendor: Vendor = {
-          ...input,
-          id: uuid(),
-          status: 'pending',
-          dateRegistered: new Date().toISOString(),
-          ownedByMe: true,
-          averageRating: 0,
-          totalReviews: 0,
-        };
-        setVendors((prev) => [vendor, ...prev]);
-        return vendor;
-      },
-      updateVendor: (updated) => setVendors((prev) => prev.map((v) => (v.id === updated.id ? updated : v))),
+      registerVendor,
+      updateVendor,
       productsFor: (vendorId) => products.filter((p) => p.vendorId === vendorId),
-      addVendorProduct: (input) =>
-        setProducts((prev) => [{ ...input, id: uuid(), createdAt: new Date().toISOString() }, ...prev]),
-      updateVendorProduct: (updated) => setProducts((prev) => prev.map((p) => (p.id === updated.id ? updated : p))),
-      deleteVendorProduct: (id) => setProducts((prev) => prev.filter((p) => p.id !== id)),
+      addVendorProduct,
+      updateVendorProduct,
+      deleteVendorProduct,
     };
-  }, [vendors, reviews, favorites, products]);
+    // handlers close over stable refs (qc, setFavorites); re-derive on data.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vendors, products, favorites]);
 
   return <VendorContext.Provider value={value}>{children}</VendorContext.Provider>;
 }
