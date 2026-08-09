@@ -76,7 +76,9 @@ export function ItemDetailSheet({ item, onClose }: { item: InventoryItem | null;
   return (
     <Modal visible transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose} />
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={{ backgroundColor: theme.cardBackground, borderTopLeftRadius: 24, borderTopRightRadius: 24 }}>
       <View style={[styles.sheet, { backgroundColor: theme.cardBackground }]}>
         <View style={styles.grabber} />
         <View style={styles.header}>

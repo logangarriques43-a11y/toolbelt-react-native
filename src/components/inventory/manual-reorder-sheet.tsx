@@ -65,7 +65,9 @@ export function ManualReorderSheet({ visible, onClose }: { visible: boolean; onC
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={close}>
       <Pressable style={styles.backdrop} onPress={close} />
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={{ backgroundColor: theme.cardBackground, borderTopLeftRadius: 24, borderTopRightRadius: 24 }}>
       <View style={[styles.sheet, { backgroundColor: theme.cardBackground }]}>
         <View style={styles.grabber} />
         <View style={styles.header}>
