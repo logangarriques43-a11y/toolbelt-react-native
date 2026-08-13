@@ -110,7 +110,7 @@ export default function Inventory() {
               const active = tab === t;
               return (
                 <Pressable key={t} style={styles.tab} onPress={() => setTab(t)}>
-                  <Text numberOfLines={1} style={[styles.tabText, { color: active ? iOSColors.blue : iOSColors.gray, fontWeight: active ? '600' : '500' }]}>{t}</Text>
+                  <Text style={[styles.tabText, { color: active ? iOSColors.blue : iOSColors.gray, fontWeight: active ? '600' : '500' }]}>{t}</Text>
                   <View style={[styles.tabRule, { backgroundColor: active ? iOSColors.blue : 'transparent' }]} />
                 </Pressable>
               );
@@ -286,11 +286,11 @@ const styles = StyleSheet.create({
   cta: { flexDirection: 'row', alignItems: 'center', gap: 16, padding: 20, borderRadius: 16 },
   ctaTitle: { color: '#FFFFFF', fontSize: 18, fontWeight: '700' },
   ctaSub: { color: 'rgba(255,255,255,0.9)', fontSize: 14, marginTop: 4 },
-  tabs: { flexDirection: 'row', paddingHorizontal: 16 },
-  tab: { flex: 1, alignItems: 'center', gap: 8, paddingHorizontal: 2 },
-  // One fixed size for all three tabs (no per-label adjustsFontSizeToFit, which
-  // shrank each independently). 12 fits the longest label ("Out of Stock") on
-  // a single line even on narrow Android screens.
+  // Each tab sizes to its own text (no flex:1 equal-thirds, which cramped the
+  // longest label and truncated it); space-between spreads the three evenly.
+  tabs: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 20 },
+  tab: { alignItems: 'center', gap: 8, paddingHorizontal: 4 },
+  // One fixed size for all three tabs; the tab grows to fit, so nothing is cut.
   tabText: { fontSize: 12, textAlign: 'center' },
   tabRule: { height: 2, alignSelf: 'stretch', borderRadius: 1 },
   search: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: 10, marginHorizontal: 16 },
