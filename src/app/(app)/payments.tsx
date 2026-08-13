@@ -197,20 +197,30 @@ export default function Payments() {
       {/* Checkout bar */}
       {section === 'Checkout' && (
         <View style={[styles.chargeBar, { backgroundColor: theme.cardBackground, borderTopColor: theme.divider }]}>
-          <View style={styles.chargeTotals}>
-            <Text style={[styles.chargeLabel, { color: theme.secondaryText }]}>Total</Text>
-            <Text style={[styles.chargeAmount, { color: theme.primaryText }]}>${displayTotal.toFixed(2)}</Text>
+          {/* Left content fills the remaining space and shrinks; the amount
+              scales down and chips truncate so they can never push the button
+              off-screen. */}
+          <View style={styles.chargeLeft}>
+            <View style={styles.chargeTotals}>
+              <Text style={[styles.chargeLabel, { color: theme.secondaryText }]}>Total</Text>
+              <Text
+                style={[styles.chargeAmount, { color: theme.primaryText }]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.5}>
+                ${displayTotal.toFixed(2)}
+              </Text>
+            </View>
+            <View style={styles.chips}>
+              {itemCount > 0 && <Chip text={`${itemCount} item${itemCount === 1 ? '' : 's'}`} color={BRAND_BLUE} />}
+              {(keypadAmount > 0 || (tab === 'Keypad' && keypadDisplayAmount > 0)) && (
+                <Chip
+                  text={`+$${(tab === 'Keypad' ? keypadDisplayAmount : keypadAmount).toFixed(2)} keypad`}
+                  color={iOSColors.orange}
+                />
+              )}
+            </View>
           </View>
-          <View style={styles.chips}>
-            {itemCount > 0 && <Chip text={`${itemCount} item${itemCount === 1 ? '' : 's'}`} color={BRAND_BLUE} />}
-            {(keypadAmount > 0 || (tab === 'Keypad' && keypadDisplayAmount > 0)) && (
-              <Chip
-                text={`+$${(tab === 'Keypad' ? keypadDisplayAmount : keypadAmount).toFixed(2)} keypad`}
-                color={iOSColors.orange}
-              />
-            )}
-          </View>
-          <View style={styles.flex} />
           <Pressable onPress={onCharge} disabled={!canCharge} style={styles.chargeBtnWrap}>
             <View
               style={[
@@ -279,7 +289,7 @@ function RoundButton({
 function Chip({ text, color }: { text: string; color: string }) {
   return (
     <View style={[styles.chip, { backgroundColor: withOpacity(color, 0.1) }]}>
-      <Text style={[styles.chipText, { color }]}>{text}</Text>
+      <Text style={[styles.chipText, { color }]} numberOfLines={1}>{text}</Text>
     </View>
   );
 }
@@ -332,13 +342,17 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderTopWidth: StyleSheet.hairlineWidth,
   },
-  chargeTotals: { gap: 2 },
+  // Left group takes the space left of the button and is allowed to shrink
+  // (minWidth:0) so its children scale/truncate instead of overflowing.
+  chargeLeft: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  chargeTotals: { gap: 2, flexShrink: 1, minWidth: 0 },
   chargeLabel: { fontSize: 12, fontWeight: '500' },
   chargeAmount: { fontSize: 22, fontWeight: '700' },
-  chips: { gap: 3 },
+  chips: { gap: 3, flexShrink: 1, minWidth: 0 },
   chip: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
   chipText: { fontSize: 11, fontWeight: '500' },
-  chargeBtnWrap: {},
+  // Never shrink — the Charge button keeps its full width, anchored right.
+  chargeBtnWrap: { flexShrink: 0 },
   chargeBtn: {
     flexDirection: 'row',
     alignItems: 'center',
