@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DashboardGradient } from '@/components/dashboard-gradient';
 import { Icon } from '@/components/icon';
+import { compactMoney } from '@/lib/compact-money';
 import { ActivityHistorySheet } from '@/components/inventory/activity-history-sheet';
 import { AddItemSheet } from '@/components/inventory/add-item-sheet';
 import { InventoryReportSheet } from '@/components/inventory/inventory-report-sheet';
@@ -85,7 +86,7 @@ export default function Inventory() {
           {/* Metrics */}
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.metrics}>
             <Metric title="Total Items" value={`${inventory.totalItemCount}`} subtitle="Across all categories" icon="shippingbox.fill" color={iOSColors.blue} />
-            <Metric title="Total Value" value={`$${inventory.totalValue.toFixed(2)}`} subtitle="Current inventory worth" icon="dollarsign.circle.fill" color={iOSColors.green} />
+            <Metric title="Total Value" value={compactMoney(inventory.totalValue)} subtitle="Current inventory worth" icon="dollarsign.circle.fill" color={iOSColors.green} />
             <Metric title="Low Stock" value={`${inventory.lowStockItems.length}`} subtitle="Items need reorder" icon="exclamationmark.triangle.fill" color={iOSColors.orange} />
             <Metric title="Out of Stock" value={`${inventory.outOfStockItems.length}`} subtitle="Immediate attention" icon="xmark.circle.fill" color={iOSColors.red} />
             <Metric title="Incoming" value={`${inventory.recentActivities.filter((a) => a.type === 'incoming').length}`} subtitle="Recent restocks" icon="arrow.down.circle.fill" color={iOSColors.purple} />
@@ -213,8 +214,8 @@ function Metric({ title, value, subtitle, icon, color }: { title: string; value:
   return (
     <View style={[styles.metric, { backgroundColor: theme.cardBackground, borderColor: withOpacity(color, 0.2) }, lightShadow(theme)]}>
       <Icon name={icon} size={20} color={color} />
-      <Text style={[styles.metricValue, { color: theme.primaryText }]} numberOfLines={1}>{value}</Text>
-      <Text style={[styles.metricTitle, { color: theme.primaryText }]}>{title}</Text>
+      <Text style={[styles.metricValue, { color: theme.primaryText }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>{value}</Text>
+      <Text style={[styles.metricTitle, { color: theme.primaryText }]} numberOfLines={1}>{title}</Text>
       <Text style={[styles.metricSub, { color: theme.secondaryText }]} numberOfLines={1}>{subtitle}</Text>
     </View>
   );
@@ -273,10 +274,14 @@ const styles = StyleSheet.create({
   body: { paddingBottom: 40, gap: 20, paddingTop: 8 },
   sectionLink: { fontSize: 16, fontWeight: '600', paddingHorizontal: 16 },
   metrics: { gap: 12, paddingHorizontal: 16 },
-  metric: { width: 150, height: 140, padding: 16, borderRadius: 12, borderWidth: 1, gap: 8, justifyContent: 'flex-start' },
-  metricValue: { fontSize: 26, fontWeight: '700', marginTop: 4 },
-  metricTitle: { fontSize: 14, fontWeight: '500' },
-  metricSub: { fontSize: 11 },
+  // minHeight (not fixed) so the card grows on Android if text renders taller;
+  // explicit margins (no container `gap`) keep the label tucked right under the
+  // number instead of floating too low. Slightly narrower so more of the next
+  // card peeks, making the horizontal scroll obvious.
+  metric: { width: 140, minHeight: 132, padding: 14, borderRadius: 12, borderWidth: 1 },
+  metricValue: { fontSize: 24, fontWeight: '700', marginTop: 10 },
+  metricTitle: { fontSize: 13, fontWeight: '500', marginTop: 2 },
+  metricSub: { fontSize: 11, marginTop: 4 },
   ctaWrap: { paddingHorizontal: 16 },
   cta: { flexDirection: 'row', alignItems: 'center', gap: 16, padding: 20, borderRadius: 16 },
   ctaTitle: { color: '#FFFFFF', fontSize: 18, fontWeight: '700' },
@@ -288,14 +293,17 @@ const styles = StyleSheet.create({
   search: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: 10, marginHorizontal: 16 },
   searchInput: { flex: 1, fontSize: 16 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', paddingHorizontal: 16, gap: 12 },
-  card: { width: '47%', height: 140, padding: 12, borderRadius: 12 },
+  // minHeight (not a fixed height) so the card grows to contain a 2-line name +
+  // SKU + the Qty/status row on Android, where text is taller — otherwise that
+  // bottom row spilled out of the box and collided with "Quick Actions".
+  card: { width: '47%', minHeight: 150, padding: 12, borderRadius: 12 },
   cardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   catBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4, maxWidth: '75%' },
   catBadgeText: { color: '#FFFFFF', fontSize: 10, fontWeight: '500' },
   statusDot: { width: 10, height: 10, borderRadius: 5 },
   cardName: { fontSize: 14, fontWeight: '600', marginTop: 8 },
   cardSku: { fontSize: 11, marginTop: 2 },
-  cardBottom: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
+  cardBottom: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 8 },
   cardQtyLabel: { fontSize: 10 },
   cardQty: { fontSize: 16, fontWeight: '700' },
   cardStatus: { fontSize: 10, fontWeight: '500' },
