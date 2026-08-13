@@ -110,7 +110,7 @@ export default function Inventory() {
               const active = tab === t;
               return (
                 <Pressable key={t} style={styles.tab} onPress={() => setTab(t)}>
-                  <Text style={[styles.tabText, { color: active ? iOSColors.blue : iOSColors.gray, fontWeight: active ? '600' : '500' }]}>{t}</Text>
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85} style={[styles.tabText, { color: active ? iOSColors.blue : iOSColors.gray, fontWeight: active ? '600' : '500' }]}>{t}</Text>
                   <View style={[styles.tabRule, { backgroundColor: active ? iOSColors.blue : 'transparent' }]} />
                 </Pressable>
               );
@@ -215,8 +215,8 @@ function Metric({ title, value, subtitle, icon, color }: { title: string; value:
     <View style={[styles.metric, { backgroundColor: theme.cardBackground, borderColor: withOpacity(color, 0.2) }, lightShadow(theme)]}>
       <Icon name={icon} size={20} color={color} />
       <Text style={[styles.metricValue, { color: theme.primaryText }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>{value}</Text>
-      <Text style={[styles.metricTitle, { color: theme.primaryText }]} numberOfLines={1}>{title}</Text>
-      <Text style={[styles.metricSub, { color: theme.secondaryText }]} numberOfLines={1}>{subtitle}</Text>
+      <Text style={[styles.metricTitle, { color: theme.primaryText }]} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.8}>{title}</Text>
+      <Text style={[styles.metricSub, { color: theme.secondaryText }]} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.8}>{subtitle}</Text>
     </View>
   );
 }
@@ -274,21 +274,21 @@ const styles = StyleSheet.create({
   body: { paddingBottom: 40, gap: 20, paddingTop: 8 },
   sectionLink: { fontSize: 16, fontWeight: '600', paddingHorizontal: 16 },
   metrics: { gap: 12, paddingHorizontal: 16 },
-  // minHeight (not fixed) so the card grows on Android if text renders taller;
-  // explicit margins (no container `gap`) keep the label tucked right under the
-  // number instead of floating too low. Slightly narrower so more of the next
-  // card peeks, making the horizontal scroll obvious.
-  metric: { width: 140, minHeight: 132, padding: 14, borderRadius: 12, borderWidth: 1 },
+  // Fixed height so every card in the row is the same even when the title or
+  // subtitle wraps to 2 lines (tall enough for 2-line title + 2-line sub).
+  // Explicit margins (no container `gap`) keep the label tucked right under the
+  // number. Slightly narrower so the next card peeks and the scroll reads.
+  metric: { width: 140, height: 160, padding: 14, borderRadius: 12, borderWidth: 1 },
   metricValue: { fontSize: 24, fontWeight: '700', marginTop: 10 },
   metricTitle: { fontSize: 13, fontWeight: '500', marginTop: 2 },
-  metricSub: { fontSize: 11, marginTop: 4 },
+  metricSub: { fontSize: 11, marginTop: 4, lineHeight: 14 },
   ctaWrap: { paddingHorizontal: 16 },
   cta: { flexDirection: 'row', alignItems: 'center', gap: 16, padding: 20, borderRadius: 16 },
   ctaTitle: { color: '#FFFFFF', fontSize: 18, fontWeight: '700' },
   ctaSub: { color: 'rgba(255,255,255,0.9)', fontSize: 14, marginTop: 4 },
   tabs: { flexDirection: 'row', paddingHorizontal: 16 },
-  tab: { flex: 1, alignItems: 'center', gap: 8 },
-  tabText: { fontSize: 14 },
+  tab: { flex: 1, alignItems: 'center', gap: 8, paddingHorizontal: 2 },
+  tabText: { fontSize: 13, textAlign: 'center' },
   tabRule: { height: 2, alignSelf: 'stretch', borderRadius: 1 },
   search: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: 10, marginHorizontal: 16 },
   searchInput: { flex: 1, fontSize: 16 },
