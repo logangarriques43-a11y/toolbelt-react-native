@@ -110,7 +110,7 @@ export default function Inventory() {
               const active = tab === t;
               return (
                 <Pressable key={t} style={styles.tab} onPress={() => setTab(t)}>
-                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85} style={[styles.tabText, { color: active ? iOSColors.blue : iOSColors.gray, fontWeight: active ? '600' : '500' }]}>{t}</Text>
+                  <Text numberOfLines={1} style={[styles.tabText, { color: active ? iOSColors.blue : iOSColors.gray, fontWeight: active ? '600' : '500' }]}>{t}</Text>
                   <View style={[styles.tabRule, { backgroundColor: active ? iOSColors.blue : 'transparent' }]} />
                 </Pressable>
               );
@@ -288,7 +288,10 @@ const styles = StyleSheet.create({
   ctaSub: { color: 'rgba(255,255,255,0.9)', fontSize: 14, marginTop: 4 },
   tabs: { flexDirection: 'row', paddingHorizontal: 16 },
   tab: { flex: 1, alignItems: 'center', gap: 8, paddingHorizontal: 2 },
-  tabText: { fontSize: 13, textAlign: 'center' },
+  // One fixed size for all three tabs (no per-label adjustsFontSizeToFit, which
+  // shrank each independently). 12 fits the longest label ("Out of Stock") on
+  // a single line even on narrow Android screens.
+  tabText: { fontSize: 12, textAlign: 'center' },
   tabRule: { height: 2, alignSelf: 'stretch', borderRadius: 1 },
   search: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: 10, marginHorizontal: 16 },
   searchInput: { flex: 1, fontSize: 16 },
