@@ -309,7 +309,13 @@ function Keypad({ enteredAmount, onKey }: { enteredAmount: string; onKey: (k: st
     <View style={styles.keypad}>
       <View style={styles.keypadDisplay}>
         <Text style={[styles.keypadLabel, { color: theme.secondaryText }]}>Enter Amount</Text>
-        <Text style={[styles.keypadAmount, { color: theme.primaryText }]}>{display}</Text>
+        <Text
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.4}
+          style={[styles.keypadAmount, { color: theme.primaryText }]}>
+          {display}
+        </Text>
       </View>
       <View style={styles.keypadGrid}>
         {KEYPAD_ROWS.map((row, ri) => (
@@ -566,9 +572,12 @@ const styles = StyleSheet.create({
   emptySub: { fontSize: 14, textAlign: 'center' },
   // Keypad
   keypad: { flex: 1, justifyContent: 'flex-end' },
-  keypadDisplay: { alignItems: 'center', gap: 8, paddingVertical: 20, flex: 1, justifyContent: 'center' },
+  keypadDisplay: { alignItems: 'center', gap: 8, paddingVertical: 20, paddingHorizontal: 24, flex: 1, justifyContent: 'center' },
   keypadLabel: { fontSize: 14, fontWeight: '500' },
-  keypadAmount: { fontSize: 56, fontWeight: '700' },
+  // lineHeight (~1.25x) so the tall bold glyphs aren't clipped top/bottom on
+  // Android; stretch + center so adjustsFontSizeToFit has a width to shrink
+  // long amounts against. includeFontPadding keeps Android from cropping.
+  keypadAmount: { fontSize: 56, fontWeight: '700', lineHeight: 70, textAlign: 'center', alignSelf: 'stretch', includeFontPadding: true },
   keypadGrid: { gap: 16, paddingHorizontal: 30, paddingBottom: 20 },
   keypadRow: { flexDirection: 'row', justifyContent: 'center', gap: 16 },
   key: {
