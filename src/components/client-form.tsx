@@ -173,7 +173,7 @@ export function ClientForm({ editingId }: { editingId?: string }) {
             </Field>
             <Divider />
             <Field label="Notes" icon="note.text">
-              <TextInput value={notes} onChangeText={setNotes} placeholder="Add notes about preferences, allergies, etc..." placeholderTextColor={withOpacity(iOSColors.gray, 0.5)} multiline style={[styles.input, styles.notes, { color: theme.primaryText }]} />
+              <TextInput value={notes} onChangeText={setNotes} placeholder="Add notes about preferences" placeholderTextColor={withOpacity(iOSColors.gray, 0.5)} multiline style={[styles.input, styles.notes, { color: theme.primaryText }]} />
             </Field>
           </Section>
 

@@ -171,7 +171,7 @@ export default function CreateInvoice() {
           </View>
 
           <Section label="Invoice name (optional)" hint="Defaults to invoice number if left blank">
-            <Field icon="pencil" iconColor={iOSColors.purple} placeholder="e.g. April Haircut, Website Design..." value={invoiceName} onChangeText={setInvoiceName} />
+            <Field icon="pencil" iconColor={iOSColors.purple} placeholder="e.g. April Haircut" value={invoiceName} onChangeText={setInvoiceName} />
           </Section>
 
           <View style={[styles.banner, { borderColor: withOpacity(iOSColors.blue, 0.2) }]}>

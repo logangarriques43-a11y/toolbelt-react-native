@@ -155,7 +155,7 @@ export function AddProductSheet({
 
             {/* Basic info */}
             <Section title="Basic info">
-              <LabeledInput label="Product Name" value={name} onChange={setName} placeholder="e.g., Shampoo, Hair Oil" />
+              <LabeledInput label="Product Name" value={name} onChange={setName} placeholder="e.g., Shampoo" />
               <Pressable
                 style={[styles.rowCard, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}
                 onPress={() => setShowColorPicker(true)}>
@@ -166,7 +166,7 @@ export function AddProductSheet({
                 </View>
                 <Icon name="chevron.right" size={14} color={theme.secondaryText} />
               </Pressable>
-              <LabeledInput label="Category" value={category} onChange={setCategory} placeholder="e.g., Hair Care, Skin Care" />
+              <LabeledInput label="Category" value={category} onChange={setCategory} placeholder="e.g., Hair Care" />
               <LabeledInput label="SKU (Optional)" value={sku} onChange={setSku} placeholder="e.g., SHP-001" autoCapitalize="characters" />
             </Section>
 

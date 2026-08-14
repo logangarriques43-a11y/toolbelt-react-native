@@ -177,7 +177,7 @@ export default function VendorRegister() {
         {/* Location */}
         <Section title="Location">
           <Field label="Address Line 1" value={addressLine1} onChangeText={setAddressLine1} placeholder="Street address" />
-          <Field label="Address Line 2" value={addressLine2} onChangeText={setAddressLine2} placeholder="Suite, unit, etc. (optional)" />
+          <Field label="Address Line 2" value={addressLine2} onChangeText={setAddressLine2} placeholder="Suite (optional)" />
           <View style={styles.cityRow}>
             <View style={styles.flex}>
               <Field label="City" value={city} onChangeText={setCity} placeholder="City" />
@@ -209,7 +209,7 @@ export default function VendorRegister() {
         {/* Order details */}
         <Section title="Order Details">
           <Field label="Minimum Order ($)" value={minimumOrderAmount} onChangeText={(t) => setMinimumOrderAmount(t.replace(/[^0-9.]/g, ''))} placeholder="0.00" keyboardType="decimal-pad" />
-          <Field label="Shipping Info" value={shippingInfo} onChangeText={setShippingInfo} placeholder="Free shipping over $100, etc." />
+          <Field label="Shipping Info" value={shippingInfo} onChangeText={setShippingInfo} placeholder="Free shipping over $100" />
           <Field label="Lead Time (days)" value={leadTimeDays} onChangeText={(t) => setLeadTimeDays(t.replace(/[^0-9]/g, ''))} placeholder="3" keyboardType="number-pad" />
           <View style={styles.toggleRow}>
             <Text style={[styles.toggleTitle, styles.flex, { color: theme.primaryText }]}>Accepts Returns</Text>

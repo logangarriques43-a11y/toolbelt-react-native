@@ -206,7 +206,7 @@ function ProductEditor({ visible, product, vendorId, onClose }: { visible: boole
               <EField label="Min order qty" value={moq} onChangeText={(t) => setMoq(t.replace(/[^0-9]/g, ''))} placeholder="1" keyboardType="number-pad" />
             </View>
           </View>
-          <EField label="Categories (comma separated)" value={tags} onChangeText={setTags} placeholder="hair, shampoo" autoCapitalize="none" />
+          <EField label="Categories (comma separated)" value={tags} onChangeText={setTags} placeholder="hair" autoCapitalize="none" />
           <View style={[styles.toggleRow, { backgroundColor: theme.cardBackground }]}>
             <Text style={[styles.toggleTitle, styles.flex, { color: theme.primaryText }]}>Listed for buyers</Text>
             <Switch value={isActive} onValueChange={setIsActive} />

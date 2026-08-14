@@ -180,7 +180,7 @@ export default function TimeOff() {
 
         <KeyboardAwareForm contentContainerStyle={styles.body}>
           <Section label="Title">
-            <InputRow icon="pencil" placeholder="e.g. Lunch break, Vacation" value={title} onChangeText={setTitle} />
+            <InputRow icon="pencil" placeholder="e.g. Lunch break" value={title} onChangeText={setTitle} />
           </Section>
 
           <Section label="Who's off">
