@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
   list: { padding: 16, gap: 10 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 14, borderRadius: 12 },
   avatar: { width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { color: '#FFFFFF', fontSize: 18, fontWeight: '700' },
+  avatarText: { color: '#FFFFFF', fontSize: 18, fontWeight: '600' },
   rowText: { flex: 1, gap: 3 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   name: { fontSize: 16, fontWeight: '600' },

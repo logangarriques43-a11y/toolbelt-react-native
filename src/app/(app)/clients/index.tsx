@@ -127,7 +127,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.card,
   },
   avatar: { width: 50, height: 50, borderRadius: 25, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { color: '#FFFFFF', fontSize: 20, fontWeight: '700' },
+  avatarText: { color: '#FFFFFF', fontSize: 20, fontWeight: '600' },
   cardBody: { flex: 1, gap: 6 },
   name: { fontSize: 18, fontWeight: '600' },
   phoneRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },

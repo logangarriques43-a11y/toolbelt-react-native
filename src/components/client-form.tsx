@@ -289,7 +289,7 @@ const styles = StyleSheet.create({
   body: { paddingBottom: 40, gap: 20, paddingTop: 24 },
   photoBlock: { alignItems: 'center', gap: 16 },
   photoCircle: { width: 100, height: 100, borderRadius: 50, alignItems: 'center', justifyContent: 'center', gap: 6 },
-  photoInitials: { fontSize: 32, fontWeight: '700', color: Brand.accent },
+  photoInitials: { fontSize: 32, fontWeight: '600', color: Brand.accent },
   photoLabel: { fontSize: 12, fontWeight: '500' },
   importRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   importText: { fontSize: 14, fontWeight: '500' },

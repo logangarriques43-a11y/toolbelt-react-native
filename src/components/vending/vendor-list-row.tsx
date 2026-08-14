@@ -45,7 +45,7 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 14, borderRadius: 12 },
   avatar: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { fontSize: 16, fontWeight: '700' },
+  avatarText: { fontSize: 16, fontWeight: '600' },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   name: { fontSize: 15, fontWeight: '600', flexShrink: 1 },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 3 },

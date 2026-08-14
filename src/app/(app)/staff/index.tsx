@@ -119,7 +119,7 @@ const styles = StyleSheet.create({
   list: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 100, gap: 12 },
   card: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16, borderRadius: Radius.card },
   avatar: { width: 50, height: 50, borderRadius: 25, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { color: '#FFFFFF', fontSize: 20, fontWeight: '700' },
+  avatarText: { color: '#FFFFFF', fontSize: 20, fontWeight: '600' },
   cardBody: { flex: 1, gap: 4 },
   name: { fontSize: 17, fontWeight: '600' },
   role: { fontSize: 14 },

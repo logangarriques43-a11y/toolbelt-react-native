@@ -235,7 +235,7 @@ const styles = StyleSheet.create({
   card: { borderRadius: 16, padding: 16, marginHorizontal: 20, gap: 12 },
   profile: { alignItems: 'center', paddingVertical: 20 },
   avatar: { width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { fontSize: 28, fontWeight: '700' },
+  avatarText: { fontSize: 28, fontWeight: '600' },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   name: { fontSize: 22, fontWeight: '700' },
   typeRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },

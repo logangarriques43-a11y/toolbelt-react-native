@@ -301,7 +301,7 @@ const styles = StyleSheet.create({
   body: { paddingVertical: 20, gap: 24 },
   photoBlock: { alignItems: 'center', gap: 16 },
   photoCircle: { width: 90, height: 90, borderRadius: 45, alignItems: 'center', justifyContent: 'center', gap: 4 },
-  photoInitials: { fontSize: 28, fontWeight: '700' },
+  photoInitials: { fontSize: 28, fontWeight: '600' },
   photoLabel: { fontSize: 11, fontWeight: '500' },
   importBtn: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 12, borderWidth: 1.5 },
   importText: { fontSize: 15, fontWeight: '500' },

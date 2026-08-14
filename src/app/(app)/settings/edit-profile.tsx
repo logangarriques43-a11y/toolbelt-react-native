@@ -62,7 +62,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   body: { padding: 20, gap: 24, alignItems: 'center', paddingBottom: 40 },
   avatar: { width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { fontSize: 26, fontWeight: '700' },
+  avatarText: { fontSize: 26, fontWeight: '600' },
   form: { alignSelf: 'stretch', gap: 16 },
   save: { alignSelf: 'stretch', paddingVertical: 16, borderRadius: 14, alignItems: 'center' },
   saveText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },

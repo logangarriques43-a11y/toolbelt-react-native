@@ -112,7 +112,7 @@ const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.3)' },
   profile: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 20, paddingTop: 16, paddingBottom: 20 },
   avatar: { width: 60, height: 60, borderRadius: 30, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { color: '#FFFFFF', fontSize: 22, fontWeight: '700' },
+  avatarText: { color: '#FFFFFF', fontSize: 22, fontWeight: '600' },
   profileText: { flex: 1, gap: 4 },
   name: { fontSize: 18, fontWeight: '700' },
   business: { fontSize: 14 },

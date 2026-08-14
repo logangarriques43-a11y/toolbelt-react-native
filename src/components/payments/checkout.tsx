@@ -530,7 +530,7 @@ const styles = StyleSheet.create({
   card: { width: '48%', marginBottom: 12, borderRadius: 12 },
   addCard: { borderWidth: 1.5, borderColor: 'rgba(102,128,242,0.3)', borderStyle: 'dashed', overflow: 'hidden' },
   cardTop: { height: 80, alignItems: 'center', justifyContent: 'center', borderTopLeftRadius: 12, borderTopRightRadius: 12 },
-  cardInitials: { fontSize: 28, fontWeight: '700', color: '#FFFFFF' },
+  cardInitials: { fontSize: 28, fontWeight: '600', color: '#FFFFFF' },
   cardBody: { paddingHorizontal: 8, paddingVertical: 12, alignItems: 'center', gap: 4, borderBottomLeftRadius: 12, borderBottomRightRadius: 12 },
   cardName: { fontSize: 14, fontWeight: '500', textAlign: 'center' },
   cardPrice: { fontSize: 13, fontWeight: '600' },
@@ -552,7 +552,7 @@ const styles = StyleSheet.create({
   qtyMult: { fontSize: 14, fontWeight: '600' },
   qtyTotal: { fontSize: 16, fontWeight: '700' },
   avatar: { width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { fontSize: 16, fontWeight: '700' },
+  avatarText: { fontSize: 16, fontWeight: '600' },
   // Section header
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 20, paddingTop: 20, paddingBottom: 8 },
   sectionDot: { width: 8, height: 8, borderRadius: 4 },
