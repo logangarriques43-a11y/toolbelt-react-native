@@ -131,5 +131,7 @@ const styles = StyleSheet.create({
   cardBody: { flex: 1, gap: 6 },
   name: { fontSize: 18, fontWeight: '600' },
   phoneRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  phone: { fontSize: 14 },
+  // flex:1 so the row gives the number its full remaining width — without it,
+  // Android measures the nested Text too narrow and clips it to the area code.
+  phone: { fontSize: 14, flex: 1 },
 });

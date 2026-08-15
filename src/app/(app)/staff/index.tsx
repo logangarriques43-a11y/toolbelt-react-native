@@ -124,6 +124,8 @@ const styles = StyleSheet.create({
   name: { fontSize: 17, fontWeight: '600' },
   role: { fontSize: 14 },
   phoneRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  phone: { fontSize: 13 },
+  // flex:1 so the row gives the number its full remaining width — without it,
+  // Android measures the nested Text too narrow and clips it to the area code.
+  phone: { fontSize: 13, flex: 1 },
   statusDot: { width: 10, height: 10, borderRadius: 5 },
 });
