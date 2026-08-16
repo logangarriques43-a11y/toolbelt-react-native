@@ -19,7 +19,6 @@ import { Icon } from '@/components/icon';
 import { ScreenHeader } from '@/components/screen-header';
 import { useBusinessSettings } from '@/context/business-settings-store';
 import { useSession } from '@/context/session';
-import { useSubscription } from '@/context/subscription';
 import { ApiError } from '@/lib/api-client';
 import { reminderTimingLabel } from '@/models/business-settings';
 import { iOSColors, lightShadow } from '@/theme/tokens';
@@ -34,13 +33,7 @@ export default function Settings() {
   const router = useRouter();
   const { signOut } = useSession();
   const s = useBusinessSettings();
-  const sub = useSubscription();
   const [deleting, setDeleting] = useState(false);
-  const subscriptionSubtitle = sub.isLoading
-    ? '$15/month — ToolBelt Pro'
-    : sub.isPro
-      ? `ToolBelt Pro — active${sub.willRenew ? '' : ' (cancels at period end)'}`
-      : 'ToolBelt Pro — not subscribed';
 
   const soon = (label: string) => Alert.alert('Coming soon', `${label} arrives in a later phase.`);
   const open = (path: string) => WebBrowser.openBrowserAsync(`${BASE}/${path}`);
@@ -147,7 +140,7 @@ export default function Settings() {
             <Divider />
             <Row icon="doc.text.fill" title="Invoice Settings" subtitle="Default tax rate, terms, notes" color={iOSColors.blue} onPress={() => router.push('/settings/invoice-settings')} />
             <Divider />
-            <Row icon="dollarsign.circle.fill" title="Subscription & Plan" subtitle={subscriptionSubtitle} color={iOSColors.purple} onPress={() => router.push('/settings/subscription')} />
+            <Row icon="star.circle.fill" title="Plan & Features" subtitle="What's included" color={iOSColors.purple} onPress={() => router.push('/settings/subscription')} />
           </Section>
 
           {/* Staff */}
