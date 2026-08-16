@@ -103,7 +103,13 @@ function StatPill({ value, label, color }: { value: string; label: string; color
   return (
     <View style={[styles.statPill, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
       <Text style={[styles.statValue, { color }]}>{value}</Text>
-      <Text style={[styles.statLabel, { color: theme.secondaryText }]}>{label}</Text>
+      <Text
+        style={[styles.statLabel, { color: theme.secondaryText }]}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.85}>
+        {label}
+      </Text>
     </View>
   );
 }
@@ -131,10 +137,13 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'flex-start', paddingTop: 8, marginBottom: 8 },
   title: { fontSize: 28, fontWeight: '700' },
   subtitle: { fontSize: 14, marginTop: 4 },
-  stats: { flexDirection: 'row', gap: 12, marginBottom: 8 },
-  statPill: { flex: 1, alignItems: 'center', gap: 4, paddingVertical: 14, borderRadius: 12 },
-  statValue: { fontSize: 22, fontWeight: '700' },
-  statLabel: { fontSize: 11, fontWeight: '500' },
+  stats: { flexDirection: 'row', gap: 10, marginBottom: 8, alignItems: 'stretch' },
+  // paddingHorizontal keeps the label off the edges; alignItems:stretch on the
+  // row keeps all three the same height (number on top, label cleanly below).
+  statPill: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 4, paddingVertical: 14, paddingHorizontal: 6, borderRadius: 12 },
+  // 600 (not 700) so the numbers aren't overly bold — matches iOS.
+  statValue: { fontSize: 22, fontWeight: '600' },
+  statLabel: { fontSize: 12, fontWeight: '500' },
   sectionTitle: { fontSize: 20, fontWeight: '700' },
   section: { gap: 12, marginTop: 12 },
   sectionHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },

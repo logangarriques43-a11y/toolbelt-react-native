@@ -279,7 +279,7 @@ const styles = StyleSheet.create({
   // Explicit margins (no container `gap`) keep the label tucked right under the
   // number. Slightly narrower so the next card peeks and the scroll reads.
   metric: { width: 140, height: 160, padding: 14, borderRadius: 12, borderWidth: 1 },
-  metricValue: { fontSize: 24, fontWeight: '700', marginTop: 10 },
+  metricValue: { fontSize: 24, fontWeight: '600', marginTop: 10 },
   metricTitle: { fontSize: 13, fontWeight: '500', marginTop: 2 },
   metricSub: { fontSize: 11, marginTop: 4, lineHeight: 14 },
   ctaWrap: { paddingHorizontal: 16 },
