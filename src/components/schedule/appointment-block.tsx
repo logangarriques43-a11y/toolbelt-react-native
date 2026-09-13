@@ -9,7 +9,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Icon } from '@/components/icon';
 import { withOpacity } from '@/lib/color';
-import { PX_PER_MIN } from '@/lib/schedule-layout';
+import { blockMetrics } from '@/lib/schedule-layout';
 import { STAFF_TINT_OPACITY } from '@/lib/staff-shading';
 import { appointmentTimeRange, type Appointment } from '@/models/appointment';
 import { iOSColors } from '@/theme/tokens';
@@ -29,10 +29,10 @@ export function AppointmentBlock({
 }) {
   const theme = useAppTheme();
 
-  const apptH = a.duration * PX_PER_MIN;
-  const procH = a.processingTime * PX_PER_MIN;
-  const blockH = a.blockTime * PX_PER_MIN;
-  const hasTail = a.processingTime > 0 || a.blockTime > 0;
+  // Clamped to end-of-day so an overnight / bad-data (1440+min) appointment
+  // can't draw past the grid bottom. Mirrors Swift SingleDayBlockMetrics.
+  const { core: apptH, processing: procH, blocked: blockH } = blockMetrics(a);
+  const hasTail = procH > 0 || blockH > 0;
 
   return (
     <Pressable onPress={onPress} style={{ width }}>
@@ -81,7 +81,7 @@ export function AppointmentBlock({
       </View>
 
       {/* Processing */}
-      {a.processingTime > 0 ? (
+      {procH > 0 ? (
         <View
           style={[
             styles.tail,
@@ -91,8 +91,8 @@ export function AppointmentBlock({
               backgroundColor: withOpacity(a.serviceColor, 0.1),
               borderColor: withOpacity(a.serviceColor, 0.5),
               borderStyle: 'dashed',
-              borderBottomLeftRadius: a.blockTime > 0 ? 0 : 8,
-              borderBottomRightRadius: a.blockTime > 0 ? 0 : 8,
+              borderBottomLeftRadius: blockH > 0 ? 0 : 8,
+              borderBottomRightRadius: blockH > 0 ? 0 : 8,
             },
           ]}>
           {procH >= 24 ? (
@@ -105,7 +105,7 @@ export function AppointmentBlock({
       ) : null}
 
       {/* Block time */}
-      {a.blockTime > 0 ? (
+      {blockH > 0 ? (
         <View
           style={[
             styles.tail,

@@ -7,7 +7,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { withOpacity } from '@/lib/color';
-import { PX_PER_MIN } from '@/lib/schedule-layout';
+import { blockMetrics } from '@/lib/schedule-layout';
 import type { Appointment } from '@/models/appointment';
 import { iOSColors } from '@/theme/tokens';
 
@@ -23,10 +23,10 @@ export function CompactAppointmentBlock({
   /** Assigned staff member's color; when set, shows a slim left accent strip. */
   staffTint?: string | null;
 }) {
-  const apptH = a.duration * PX_PER_MIN;
-  const procH = a.processingTime * PX_PER_MIN;
-  const blockH = a.blockTime * PX_PER_MIN;
-  const hasTail = a.processingTime > 0 || a.blockTime > 0;
+  // Clamped to end-of-day (mirrors Swift SingleDayBlockMetrics) so an overnight
+  // or bad-data 1440+min appointment can't overrun the grid bottom.
+  const { core: apptH, processing: procH, blocked: blockH } = blockMetrics(a);
+  const hasTail = procH > 0 || blockH > 0;
 
   return (
     <Pressable onPress={onPress} style={{ width }}>
@@ -48,7 +48,7 @@ export function CompactAppointmentBlock({
         ) : null}
       </View>
 
-      {a.processingTime > 0 ? (
+      {procH > 0 ? (
         <View
           style={[
             styles.tail,
@@ -58,14 +58,14 @@ export function CompactAppointmentBlock({
               backgroundColor: withOpacity(a.serviceColor, 0.15),
               borderColor: withOpacity(a.serviceColor, 0.5),
               borderStyle: 'dashed',
-              borderBottomLeftRadius: a.blockTime > 0 ? 0 : 4,
-              borderBottomRightRadius: a.blockTime > 0 ? 0 : 4,
+              borderBottomLeftRadius: blockH > 0 ? 0 : 4,
+              borderBottomRightRadius: blockH > 0 ? 0 : 4,
             },
           ]}
         />
       ) : null}
 
-      {a.blockTime > 0 ? (
+      {blockH > 0 ? (
         <View
           style={[
             styles.tail,

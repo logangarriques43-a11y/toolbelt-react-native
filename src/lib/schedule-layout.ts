@@ -34,8 +34,33 @@ export function offsetForTime(iso: string): number {
   return (d.getHours() * 60 + d.getMinutes()) * PX_PER_MIN;
 }
 
+/**
+ * The three stacked segment heights (in px) of an appointment block, CLAMPED so
+ * the block can never extend past the end of the day it's drawn on. Remaining
+ * minutes of the day are handed out in stack order: appointment → processing →
+ * block; anything that doesn't fit is dropped. Mirrors Swift
+ * `SingleDayBlockMetrics.forAppointment` — without this, an overnight booking or
+ * a bad 1440+min imported "all-day" event drew a block taller than the grid.
+ */
+export function blockMetrics(a: Appointment): { core: number; processing: number; blocked: number; total: number } {
+  const d = new Date(a.startTime);
+  const startMinute = d.getHours() * 60 + d.getMinutes();
+  let remaining = Math.max(1440 - startMinute, 0);
+
+  const coreMin = Math.min(Math.max(a.duration, 0), remaining);
+  remaining -= coreMin;
+  const procMin = Math.min(Math.max(a.processingTime, 0), remaining);
+  remaining -= procMin;
+  const blockMin = Math.min(Math.max(a.blockTime, 0), remaining);
+
+  const core = coreMin * PX_PER_MIN;
+  const processing = procMin * PX_PER_MIN;
+  const blocked = blockMin * PX_PER_MIN;
+  return { core, processing, blocked, total: core + processing + blocked };
+}
+
 export function blockHeight(a: Appointment): number {
-  return (a.duration + a.processingTime + a.blockTime) * PX_PER_MIN;
+  return blockMetrics(a).total;
 }
 
 export interface OverlapInfo {
