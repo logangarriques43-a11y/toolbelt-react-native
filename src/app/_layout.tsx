@@ -15,6 +15,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { SessionProvider, useSession } from '@/context/session';
+import { RevenueCatInit } from '@/lib/revenuecat-init';
 import { ThemeProvider, useAppTheme } from '@/theme/theme-context';
 
 const queryClient = new QueryClient({
@@ -28,6 +29,7 @@ export default function RootLayout() {
         <ThemeProvider>
           <QueryClientProvider client={queryClient}>
             <SessionProvider>
+              <RevenueCatInit />
               <RootNavigator />
             </SessionProvider>
           </QueryClientProvider>
