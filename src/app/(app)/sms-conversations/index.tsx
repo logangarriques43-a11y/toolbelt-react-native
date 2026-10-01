@@ -10,9 +10,11 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 
+import { AiSmsPaywall } from '@/components/sms/ai-sms-paywall';
 import { DashboardGradient } from '@/components/dashboard-gradient';
 import { Icon } from '@/components/icon';
 import { useSMS } from '@/context/sms-store';
+import { useAiSmsEntitlement } from '@/hooks/use-ai-sms-entitlement';
 import { withOpacity } from '@/lib/color';
 import {
   conversationDisplayName,
@@ -38,9 +40,19 @@ export default function SMSConversations() {
   const theme = useAppTheme();
   const router = useRouter();
   const sms = useSMS();
+  const { entitled, loading: entLoading } = useAiSmsEntitlement();
   const [filter, setFilter] = useState<SMSStatus>('active');
 
   const list = sms.conversations.filter((c) => c.status === filter);
+
+  // Gate: AI SMS is unlocked by the `ai_sms` entitlement. While it's resolving,
+  // hold on the gradient; if not entitled, show the paywall at this entry point.
+  if (entLoading) {
+    return <DashboardGradient><SafeAreaView style={styles.safe} edges={['top']} /></DashboardGradient>;
+  }
+  if (!entitled) {
+    return <AiSmsPaywall />;
+  }
 
   return (
     <DashboardGradient>

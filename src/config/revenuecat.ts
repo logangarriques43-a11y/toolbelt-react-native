@@ -20,6 +20,11 @@ import { Platform } from 'react-native';
 
 export const REVENUECAT_ANDROID_API_KEY = process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY ?? '';
 
+/** Entitlement that unlocks the AI SMS assistant (RevenueCat dashboard). */
+export const AI_SMS_ENTITLEMENT = 'ai_sms';
+/** Offering holding the four AI SMS plan packages. */
+export const AI_SMS_OFFERING = 'default';
+
 export const PURCHASES_AVAILABLE =
   Platform.OS === 'android' &&
   Constants.appOwnership !== 'expo' && // 'expo' == running inside Expo Go
