@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "867777580265",
+    "project_id": "toolbelt-b2ef6",
+    "storage_bucket": "toolbelt-b2ef6.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:867777580265:android:92ce4ac42ac03db3cdb478",
+        "android_client_info": {
+          "package_name": "tools.toolbelt.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "867777580265-kg8fhftblqkf8alkrkjf3f601vod51vg.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCySP5TqCrEJ0CzPOLQx7Bcr1_IZd_XZfQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "867777580265-5t3oc449ks5lnn6epe28ht32u7198u9m.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "867777580265-qsaoq7h6bob3ug8cmigigbapo6f302us.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "logan-and-david.Buisness-Pilot-6"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
