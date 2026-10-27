@@ -24,7 +24,7 @@ export function HamburgerMenu({ visible, onClose }: { visible: boolean; onClose:
   const router = useRouter();
   const { account, signOut } = useSession();
 
-  const go = (path: '/appointments/search' | '/clients' | '/services' | '/staff' | '/import-data' | '/messages' | '/sms-conversations' | '/settings') => {
+  const go = (path: '/appointments/search' | '/clients' | '/services' | '/staff' | '/import-data' | '/messages' | '/sms-conversations' | '/settings' | '/online-booking') => {
     onClose();
     router.push(path);
   };
@@ -60,7 +60,7 @@ export function HamburgerMenu({ visible, onClose }: { visible: boolean; onClose:
               <Item icon="message.fill" title="Messages" onPress={() => go('/messages')} />
               <Item icon="bubble.left.and.text.bubble.right.fill" title="AI Texting" onPress={() => go('/sms-conversations')} />
               <Item icon="person.badge.key.fill" title="Staff" onPress={() => go('/staff')} />
-              <Item icon="globe" title="Online Booking" onPress={() => stub('Online Booking')} />
+              <Item icon="globe" title="Online Booking" onPress={() => go('/online-booking')} />
               {/* Waitlist — hidden for v1.0 (see FeatureFlags). */}
               {FeatureFlags.waitlist ? <Item icon="list.number" title="Waitlist" onPress={() => stub('Waitlist')} /> : null}
               <Item icon="square.and.arrow.down.on.square" title="Import Data" onPress={() => go('/import-data')} />

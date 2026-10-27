@@ -3,8 +3,8 @@
  *
  * Theme picker (System / Light / Dark + the Noir, Clay, Editorial and Plum
  * looks) wired to the real app theme; notification toggles + reminder
- * timing + address are backed by the in-session business-settings store. Child
- * screens that exist navigate; the rest show "coming soon" (later batches/phases).
+ * timing + address are saved through the business-settings store. Child
+ * screens navigate; Brand Colors & Logo opens the booking page look.
  */
 
 import Constants from 'expo-constants';
@@ -36,7 +36,6 @@ export default function Settings() {
   const s = useBusinessSettings();
   const [deleting, setDeleting] = useState(false);
 
-  const soon = (label: string) => Alert.alert('Coming soon', `${label} arrives in a later phase.`);
   const open = (path: string) => WebBrowser.openBrowserAsync(`${BASE}/${path}`);
 
   // Store-required in-app account deletion: confirm, call the backend purge
@@ -113,9 +112,9 @@ export default function Settings() {
               </View>
             </View>
             <Divider />
-            <Row icon="paintpalette.fill" title="Brand Colors & Logo" onPress={() => soon('Branding')} />
+            <Row icon="paintpalette.fill" title="Brand Colors & Logo" subtitle="Your booking page look" onPress={() => router.push('/online-booking')} />
             <Divider />
-            <Row icon="textformat" title="Receipt & Invoice Branding" onPress={() => soon('Receipt branding')} />
+            <Row icon="textformat" title="Receipt & Invoice Branding" onPress={() => router.push('/settings/invoice-settings')} />
           </Section>
 
           {/* Business Profile */}
@@ -126,7 +125,7 @@ export default function Settings() {
             <Divider />
             <Row icon="mappin.circle.fill" title="Business Address" color={iOSColors.red} onPress={() => router.push('/settings/business-address')} />
             <Divider />
-            <Row icon="globe" title="Online Booking Page" onPress={() => soon('Online Booking')} />
+            <Row icon="globe" title="Online Booking Page" onPress={() => router.push('/online-booking')} />
           </Section>
 
           {/* Notifications */}
@@ -153,7 +152,7 @@ export default function Settings() {
 
           {/* Payments & Billing */}
           <Section title="Payments & Billing">
-            <Row icon="creditcard.fill" title="Payment Methods" onPress={() => soon('Payments')} />
+            <Row icon="creditcard.fill" title="Payment Methods" onPress={() => router.push('/payout')} />
             <Divider />
             <Row icon="banknote.fill" title="Payout Settings" onPress={() => router.push('/payout')} />
             <Divider />
@@ -186,9 +185,9 @@ export default function Settings() {
           <Section title="Account">
             <Row icon="person.circle.fill" title="Edit Profile" onPress={() => router.push('/settings/edit-profile')} />
             <Divider />
-            <Row icon="key.fill" title="Change Password" onPress={() => soon('Change password')} />
+            <Row icon="key.fill" title="Change Password" onPress={() => router.push('/settings/change-password')} />
             <Divider />
-            <Row icon="shield.checkered" title="Two-Factor Authentication" onPress={() => router.push('/security')} />
+            <Row icon="shield.checkered" title="Security & Two-Factor" onPress={() => router.push('/security')} />
             <Divider />
             <Row icon="rectangle.portrait.and.arrow.right" title="Log Out" color={iOSColors.red} onPress={signOut} />
             <Divider />

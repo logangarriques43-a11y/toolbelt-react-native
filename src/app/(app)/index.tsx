@@ -8,12 +8,14 @@
  * card, editorial or agenda.
  */
 
+import { useQuery } from '@tanstack/react-query';
 import { useRouter, type Href } from 'expo-router';
 import type { SFSymbol } from 'expo-symbols';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Alert, Linking, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { getBookingPage } from '@/api/booking-page';
 import type { HelperSnapshot } from '@/api/helper';
 import { HelperChatSheet } from '@/components/ai-helper/helper-chat-sheet';
 import { HelperEntryCard } from '@/components/ai-helper/helper-entry-card';
@@ -67,6 +69,8 @@ export default function Dashboard() {
   const { phoneNumber } = useSMS();
   const { role, can } = usePermissions();
   const chat = useHelperChat();
+  const bookingPage = useQuery({ queryKey: ['booking-page'], queryFn: getBookingPage });
+  const bookingLive = bookingPage.data?.isEnabled === true && !!bookingPage.data?.slug;
 
   const [now, setNow] = useState(() => new Date());
   const [menuOpen, setMenuOpen] = useState(false);
@@ -107,7 +111,7 @@ export default function Dashboard() {
     },
     setup: {
       aiTexting: smsActive,
-      onlineBooking: null,
+      onlineBooking: bookingPage.data ? bookingLive : null,
       payouts: payoutComplete ? true : null,
     },
     serviceNames: services.map((s) => s.name).slice(0, 30),
@@ -187,9 +191,9 @@ export default function Dashboard() {
               <ListRow
                 icon="globe"
                 title="Online booking"
-                subtitle="Let clients book from your page"
-                trailing={<LivePill live={false} />}
-                onPress={() => Alert.alert('Coming soon', 'Online Booking arrives in a later phase.')}
+                subtitle={bookingLive ? 'Clients can book from your page' : 'Let clients book from your page'}
+                trailing={<LivePill live={bookingLive} />}
+                onPress={() => router.push('/online-booking')}
               />
               <Hairline inset />
               <ListRow

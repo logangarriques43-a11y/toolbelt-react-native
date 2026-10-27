@@ -7,13 +7,15 @@
  * Swift BusinessSettingsSync, the server copy is loaded once per session and
  * local edits win after that; edits are pushed after a short debounce. Push
  * notifications aren't in the blob, so that toggle is kept on the device.
- * Reminder Timing is also the default reminder for new in-app appointments.
+ * Reminder Timing is also the default reminder for new in-app appointments,
+ * and AI Auto-Reply also flips the server's AI texting switch (/ai-responder).
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
 import { loadAppSettings, saveAppSettings, type AppSettingsBlob } from '@/api/app-settings';
+import { api } from '@/lib/api-client';
 import { setDefaultReminderMinutes } from '@/lib/appointment-defaults';
 import { EMPTY_ADDRESS, type BusinessAddress } from '@/models/business-settings';
 
@@ -108,6 +110,8 @@ export function BusinessSettingsProvider({ children }: { children: ReactNode }) 
         setState((prev) => {
           const next = { ...prev, [key]: val };
           if (key === 'reminderHours') setDefaultReminderMinutes((val as number) * 60);
+          // AI auto-reply is also the server's AI texting switch.
+          if (key === 'aiAutoReply') api.patch('/ai-responder', { enabled: val }).catch(() => {});
           if (key === 'pushEnabled') {
             AsyncStorage.setItem(PUSH_KEY, String(val)).catch(() => {});
           } else {
