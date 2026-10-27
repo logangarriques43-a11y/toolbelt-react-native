@@ -3,10 +3,12 @@
  * Bottom-sheet form to create an inventory item, then a success summary. The
  * Swift flow has a second "Services & Re-order" step (InventoryServiceLinkSheet)
  * before saving — that lands in 6b-ii; here "Add Item" saves directly.
+ * `initialSku` prefills SKU / Barcode when the sheet opens from a scan that
+ * matched no existing item.
  */
 
 import type { ComponentProps, ReactNode } from 'react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { Icon } from '@/components/icon';
@@ -17,7 +19,7 @@ import { useInventory } from '@/context/inventory-store';
 import { iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
-export function AddItemSheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+export function AddItemSheet({ visible, onClose, initialSku }: { visible: boolean; onClose: () => void; initialSku?: string }) {
   const theme = useAppTheme();
   const capsule = theme.isEditorial ? 2 : 999;
   const inventory = useInventory();
@@ -29,6 +31,10 @@ export function AddItemSheet({ visible, onClose }: { visible: boolean; onClose: 
   const [price, setPrice] = useState('');
   const [reorderLevel, setReorderLevel] = useState('');
   const [category, setCategory] = useState('General');
+
+  useEffect(() => {
+    if (visible && initialSku) setSku(initialSku);
+  }, [visible, initialSku]);
 
   const reset = () => {
     setName('');

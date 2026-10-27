@@ -9,7 +9,7 @@
 
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { DashboardGradient } from '@/components/dashboard-gradient';
@@ -65,7 +65,6 @@ export default function Schedule() {
 
   const today = isToday(displayedDate);
   const openDetail = (a: Appointment) => router.push(`/appointments/${a.id}`);
-  const stub = (what: string) => Alert.alert('Coming soon', `${what} arrives in a later phase.`);
 
   return (
     <DashboardGradient>
@@ -142,7 +141,7 @@ export default function Schedule() {
         <FloatingActionMenu
           onCreateAppointment={() => router.push('/appointments/create')}
           onTimeOff={() => router.push('/time-off')}
-          onInvoice={() => stub('Invoicing')}
+          onInvoice={() => router.push('/accounting/create-invoice')}
         />
 
         <HamburgerMenu visible={menuOpen} onClose={() => setMenuOpen(false)} />

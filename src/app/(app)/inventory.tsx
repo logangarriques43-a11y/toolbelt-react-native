@@ -2,14 +2,15 @@
  * Inventory dashboard — port of InventoryDashboardView.swift.
  * Overview metrics, a scan CTA, All/Low/Out-of-Stock tabs with search, a 2-column
  * item grid, quick actions, and recent activity. Tapping an item opens the detail
- * sheet; "+" opens the add sheet. The barcode scanner is native (AVFoundation) and
- * stubbed; Report / Reorder Alerts / Manual Re-order / full Activity arrive in 6b-ii.
+ * sheet; "+" opens the add sheet. "Scan Package Label" opens the camera barcode
+ * scanner: a code matching an item's SKU / barcode opens that item's detail
+ * sheet, otherwise the add sheet opens with SKU / Barcode prefilled.
  */
 
 import type { SFSymbol } from 'expo-symbols';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DashboardGradient } from '@/components/dashboard-gradient';
@@ -17,6 +18,7 @@ import { Icon } from '@/components/icon';
 import { compactMoney } from '@/lib/compact-money';
 import { ActivityHistorySheet } from '@/components/inventory/activity-history-sheet';
 import { AddItemSheet } from '@/components/inventory/add-item-sheet';
+import { BarcodeScanner } from '@/components/inventory/barcode-scanner';
 import { InventoryReportSheet } from '@/components/inventory/inventory-report-sheet';
 import { ItemDetailSheet } from '@/components/inventory/item-detail-sheet';
 import { ManualReorderSheet } from '@/components/inventory/manual-reorder-sheet';
@@ -51,7 +53,26 @@ export default function Inventory() {
   const [showReport, setShowReport] = useState(false);
   const [showActivity, setShowActivity] = useState(false);
 
-  const scanStub = () => Alert.alert('Scan Package Label', 'The barcode/label scanner needs the native build (camera). Coming with native modules.');
+  const [showScanner, setShowScanner] = useState(false);
+  const [scannedSku, setScannedSku] = useState<string | undefined>(undefined);
+
+  const openScanner = () => setShowScanner(true);
+
+  // Close the camera first, then open the matching sheet once the modal has
+  // dismissed (two RN Modals animating at once can drop the second on iOS).
+  const onScanned = (code: string) => {
+    setShowScanner(false);
+    const needle = code.toLowerCase();
+    const match = inventory.items.find((i) => i.sku.trim().toLowerCase() === needle);
+    setTimeout(() => {
+      if (match) {
+        setDetailItem(match);
+      } else {
+        setScannedSku(code);
+        setShowAdd(true);
+      }
+    }, 350);
+  };
 
   const base =
     tab === 'Low Stock' ? inventory.lowStockItems : tab === 'Out of Stock' ? inventory.outOfStockItems : inventory.items;
@@ -70,7 +91,7 @@ export default function Inventory() {
           </Pressable>
           <Text style={[styles.headerTitle, theme.display(22)]}>Inventory</Text>
           <View style={styles.headerActions}>
-            <Pressable onPress={scanStub} hitSlop={8}>
+            <Pressable onPress={openScanner} hitSlop={8}>
               <Icon name="barcode.viewfinder" size={22} color={theme.accent} />
             </Pressable>
             <Pressable onPress={() => setShowAdd(true)} hitSlop={8}>
@@ -92,7 +113,7 @@ export default function Inventory() {
           </ScrollView>
 
           {/* Scan CTA */}
-          <Pressable onPress={scanStub} style={styles.ctaWrap}>
+          <Pressable onPress={openScanner} style={styles.ctaWrap}>
             <View style={[styles.cta, { backgroundColor: theme.hero, borderRadius: theme.cornerRadius, borderWidth: 1, borderColor: theme.divider }]}>
               <Icon name="barcode.viewfinder" size={40} color={theme.onHero} />
               <View style={styles.flex}>
@@ -160,7 +181,7 @@ export default function Inventory() {
 
           {/* Quick actions */}
           <Text style={[styles.sectionTitle, theme.display(22)]}>Quick Actions</Text>
-          <ActionButton icon="barcode.viewfinder" title="Scan Package Label" subtitle="Log incoming stock" onPress={scanStub} />
+          <ActionButton icon="barcode.viewfinder" title="Scan Package Label" subtitle="Log incoming stock" onPress={openScanner} />
           <ActionButton icon="plus.circle.fill" title="Add Item Manually" subtitle="Enter stock details" onPress={() => setShowAdd(true)} />
           <ActionButton icon="doc.text.fill" title="Generate Report" subtitle="Export inventory data" onPress={() => setShowReport(true)} />
           <ActionButton icon="bell.badge.fill" title="Reorder Alerts" subtitle="Manage notifications" onPress={() => setShowAlerts(true)} />
@@ -196,7 +217,15 @@ export default function Inventory() {
         </ScrollView>
       </SafeAreaView>
 
-      <AddItemSheet visible={showAdd} onClose={() => setShowAdd(false)} />
+      <BarcodeScanner visible={showScanner} onClose={() => setShowScanner(false)} onScanned={onScanned} />
+      <AddItemSheet
+        visible={showAdd}
+        initialSku={scannedSku}
+        onClose={() => {
+          setShowAdd(false);
+          setScannedSku(undefined);
+        }}
+      />
       <ItemDetailSheet item={detailItem} onClose={() => setDetailItem(null)} />
       <ReorderAlertsSheet visible={showAlerts} onClose={() => setShowAlerts(false)} />
       <ManualReorderSheet visible={showReorder} onClose={() => setShowReorder(false)} />

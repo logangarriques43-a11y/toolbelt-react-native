@@ -3,8 +3,10 @@
  * A wizard that imports clients / services / appointments from a CSV or ICS file
  * into the existing stores: select source → (map CSV columns) → preview/select →
  * import → results. File picking uses expo-document-picker; reading uses
- * expo-file-system. Apple Calendar (EventKit) sync is native and deferred — its
- * card explains the ICS-export path instead.
+ * expo-file-system. "Device Calendar" reads events straight from the phone's
+ * calendars (expo-calendar — Apple Calendar on iOS, Google / Samsung calendars
+ * on Android) via DeviceCalendarSheet, maps them like the ICS path, and feeds
+ * the same preview / smart-detection review / import steps.
  */
 
 import { useRouter } from 'expo-router';
@@ -13,10 +15,11 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DetectedServicesReviewSheet } from '@/components/import/detected-services-review-sheet';
+import { DeviceCalendarSheet, type DeviceCalendarImport } from '@/components/import/device-calendar-sheet';
 import { Icon } from '@/components/icon';
 import { ThemedIconTile } from '@/components/themed';
 import { OptionSheet } from '@/components/sheets/option-sheet';
@@ -98,6 +101,22 @@ export default function ImportData() {
   // Smart type detection (Sync-4) — groups + the review sheet over Preview.
   const [detectedGroups, setDetectedGroups] = useState<DetectedServiceGroup[]>([]);
   const [showReview, setShowReview] = useState(false);
+  const [showDeviceCalendar, setShowDeviceCalendar] = useState(false);
+
+  // Device calendar events arrive already mapped (same shape as parseICS);
+  // treat them as an ICS import so Back from Preview returns to the sources.
+  const loadDeviceCalendar = (res: DeviceCalendarImport) => {
+    setShowDeviceCalendar(false);
+    setFileType('ics');
+    setCategory('appointments');
+    setFileName(res.label);
+    setClients(res.clients);
+    setServices(res.services);
+    setAppointments(res.appointments);
+    setStep('preview');
+    // Let the calendar sheet finish dismissing before detection may open the review sheet.
+    setTimeout(() => applyDetection(res.appointments), 350);
+  };
 
   // Run detection over freshly parsed appointments; when it finds structure,
   // drop the derived service list (creation flows through resolutions) and
@@ -554,7 +573,7 @@ export default function ImportData() {
       )}
 
       <ScrollView contentContainerStyle={styles.body}>
-        {step === 'selectSource' && <SelectSource onPick={pickFile} />}
+        {step === 'selectSource' && <SelectSource onPick={pickFile} onDeviceCalendar={() => setShowDeviceCalendar(true)} />}
         {step === 'mapColumns' && (
           <MapColumns
             headers={csvHeaders}
@@ -598,6 +617,8 @@ export default function ImportData() {
         onClose={() => setEditingMapping(null)}
       />
 
+      <DeviceCalendarSheet visible={showDeviceCalendar} onClose={() => setShowDeviceCalendar(false)} onLoaded={loadDeviceCalendar} />
+
       <DetectedServicesReviewSheet
         visible={showReview}
         groups={detectedGroups}
@@ -632,7 +653,13 @@ function stepTitle(step: ImportStep): string {
 
 // ── Select source ──
 
-function SelectSource({ onPick }: { onPick: (ft: ImportFileType, cat: ImportDataCategory) => void }) {
+function SelectSource({
+  onPick,
+  onDeviceCalendar,
+}: {
+  onPick: (ft: ImportFileType, cat: ImportDataCategory) => void;
+  onDeviceCalendar: () => void;
+}) {
   const theme = useAppTheme();
   return (
     <View style={styles.section}>
@@ -643,9 +670,9 @@ function SelectSource({ onPick }: { onPick: (ft: ImportFileType, cat: ImportData
       <Text style={[styles.blockSub, { color: theme.secondaryText }]}>Pull appointments from your phone's calendar apps directly.</Text>
       <SourceCard
         icon="calendar"
-        title="Apple Calendar"
-        subtitle="Sync events from your iPhone calendar"
-        onPress={() => Alert.alert('Apple Calendar', 'Direct calendar sync needs the native build (coming with Phase 7). For now, export an ICS file and import it below.')}
+        title="Device Calendar"
+        subtitle={Platform.OS === 'ios' ? 'Import events from your iPhone calendars' : 'Import from Google, Samsung & other calendars on this phone'}
+        onPress={onDeviceCalendar}
       />
       <SourceCard
         icon="g.circle.fill"

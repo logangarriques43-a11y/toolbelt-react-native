@@ -1,18 +1,22 @@
 /**
  * StaffForm — add/edit a staff member. Port of AddStaffSheet (StaffView.swift).
- * Fields: photo (deferred stub), import-from-contacts (deferred stub), name,
- * role (free text + suggestions), phone, email, and the services this member
- * performs. Shared by `staff/new` and `staff/[id]`.
+ * Fields: photo (take / choose, kept on the device only via `local-photos`
+ * keyed by the staff id, like iOS), import-from-contacts (system contact
+ * picker → name / phone / email), name, role (free text + suggestions), phone,
+ * email, and the services this member performs. Shared by `staff/new` and
+ * `staff/[id]`.
  */
 
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import type { SFSymbol } from 'expo-symbols';
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Alert, Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { KeyboardAwareForm } from '@/components/keyboard-aware-form';
 
+import { choosePhoneNumber, pickDeviceContact } from '@/components/contacts-picker-sheet';
 import { DashboardGradient } from '@/components/dashboard-gradient';
 import { Icon } from '@/components/icon';
 import { ColorPickerSheet } from '@/components/sheets/color-picker-sheet';
@@ -22,6 +26,7 @@ import { StaffPermissionsSheet } from '@/components/staff/permissions-sheet';
 import { StaffWorkingHoursSheet } from '@/components/staff/working-hours-sheet';
 import { useServices } from '@/context/services-store';
 import { useStaff } from '@/context/staff-store';
+import { choosePhoto, getPhoto, setPhoto } from '@/lib/local-photos';
 import { formatPhoneNumber } from '@/lib/phone';
 import { PERMISSIONS } from '@/models/permission';
 import { STAFF_ORANGE, staffInitials } from '@/models/staff';
@@ -55,11 +60,37 @@ export function StaffForm({ editingId }: { editingId?: string }) {
   const [showLunch, setShowLunch] = useState(false);
   const [showPermissions, setShowPermissions] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [photoUri, setPhotoUri] = useState<string | undefined>(undefined);
+  const [importing, setImporting] = useState(false);
+
+  useEffect(() => {
+    if (!editingId) return;
+    getPhoto('staff', editingId).then(setPhotoUri);
+  }, [editingId]);
 
   const enabledPermissions = editing ? PERMISSIONS.filter((p) => editing.permissions?.[p] === true).length : 0;
 
   const canSave = name.trim().length > 0 && role.trim().length > 0;
-  const stub = (msg: string) => Alert.alert('Coming soon', msg);
+
+  const pickPhoto = async () => {
+    const uri = await choosePhoto({ title: 'Staff Photo', onRemove: photoUri ? () => setPhotoUri(undefined) : undefined });
+    if (uri) setPhotoUri(uri);
+  };
+
+  const importContact = async () => {
+    if (importing) return;
+    setImporting(true);
+    try {
+      const contact = await pickDeviceContact();
+      if (!contact) return;
+      const number = await choosePhoneNumber(contact);
+      if (contact.name) setName(contact.name);
+      if (number) setPhone(formatPhoneNumber(number));
+      if (contact.email) setEmail(contact.email);
+    } finally {
+      setImporting(false);
+    }
+  };
 
   const toggleService = (id: string) =>
     setServiceIds((prev) => {
@@ -91,8 +122,13 @@ export function StaffForm({ editingId }: { editingId?: string }) {
     };
     setSaving(true);
     try {
-      if (editing) await updateStaff({ ...editing, ...base });
-      else await addStaff(base);
+      if (editing) {
+        await updateStaff({ ...editing, ...base });
+        await setPhoto('staff', editing.id, photoUri);
+      } else {
+        const created = await addStaff(base);
+        if (photoUri && created?.id) await setPhoto('staff', created.id, photoUri);
+      }
       router.back();
     } catch (e) {
       Alert.alert('Could not save', e instanceof Error ? e.message : 'Please try again.');
@@ -126,10 +162,12 @@ export function StaffForm({ editingId }: { editingId?: string }) {
         </View>
 
         <KeyboardAwareForm contentContainerStyle={styles.body}>
-          {/* Photo (deferred) */}
+          {/* Photo (device-local) */}
           <View style={styles.photoBlock}>
-            <Pressable onPress={() => stub('Photo picker arrives in a later phase.')} style={[styles.photoCircle, { backgroundColor: theme.accentSoft, borderRadius: theme.isEditorial ? 2 : 45 }]}>
-              {name ? (
+            <Pressable onPress={pickPhoto} accessibilityLabel="Staff photo" style={[styles.photoCircle, { backgroundColor: theme.accentSoft, borderRadius: theme.isEditorial ? 2 : 45 }]}>
+              {photoUri ? (
+                <Image source={{ uri: photoUri }} style={[styles.photoImage, { borderRadius: theme.isEditorial ? 2 : 45 }]} contentFit="cover" />
+              ) : name ? (
                 <Text style={[styles.photoInitials, { color: theme.accent }]}>{staffInitials(name)}</Text>
               ) : (
                 <>
@@ -138,7 +176,7 @@ export function StaffForm({ editingId }: { editingId?: string }) {
                 </>
               )}
             </Pressable>
-            <Pressable onPress={() => stub('Import from Contacts arrives in a later phase.')} style={[styles.importBtn, { borderColor: theme.divider, backgroundColor: theme.cardBackground, borderRadius: theme.isEditorial ? 2 : 999 }]}>
+            <Pressable onPress={importContact} disabled={importing} style={[styles.importBtn, { borderColor: theme.divider, backgroundColor: theme.cardBackground, borderRadius: theme.isEditorial ? 2 : 999, opacity: importing ? 0.5 : 1 }]}>
               <Icon name="person.crop.circle.badge.plus" size={18} color={theme.accent} />
               <Text style={[styles.importText, { color: theme.accent }]}>Import from Contacts</Text>
             </Pressable>
@@ -308,6 +346,7 @@ const styles = StyleSheet.create({
   body: { paddingVertical: 20, gap: 24 },
   photoBlock: { alignItems: 'center', gap: 16 },
   photoCircle: { width: 90, height: 90, alignItems: 'center', justifyContent: 'center', gap: 4 },
+  photoImage: { width: 90, height: 90 },
   photoInitials: { fontSize: 28, fontWeight: '600' },
   photoLabel: { fontSize: 11, fontWeight: '500' },
   importBtn: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 20, paddingVertical: 12, borderWidth: 1 },

@@ -2,29 +2,51 @@
  * ClientForm — add/edit a client. Port of AddClientView.swift.
  * Shared by `clients/new` and `clients/[id]`.
  *
- * Deferred (native modules, consistent with the port's staging): profile photo
- * picker, Import-from-Contacts, and the graphical birthday date picker — these
- * render as inert affordances. Phone formatting, buffer time (via the shared
- * time-wheel sheet), and SMS consent are fully wired.
+ * Tapping the photo circle takes / chooses a photo, kept on the device only
+ * (like iOS) via `local-photos` keyed by the client id. "Import from Contacts"
+ * opens the system contact picker and fills name / phone / email. Birthday uses
+ * the native date picker (inline sheet on iOS, dialog on Android). Phone
+ * formatting, buffer time (via the shared time-wheel sheet), and SMS consent
+ * are fully wired.
  */
 
+import { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import type { SFSymbol } from 'expo-symbols';
-import { useMemo, useState, type ReactNode } from 'react';
-import { Alert, Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { Alert, Platform, Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { KeyboardAwareForm } from '@/components/keyboard-aware-form';
 
+import { pickDeviceContact, choosePhoneNumber } from '@/components/contacts-picker-sheet';
 import { Icon } from '@/components/icon';
+import { DatePickerSheet } from '@/components/sheets/date-picker-sheet';
 import { TimeWheelSheet } from '@/components/sheets/time-wheel-sheet';
 import { useClients } from '@/context/clients-store';
 import { clientInitials } from '@/models/client';
+import { choosePhoto, getPhoto, setPhoto } from '@/lib/local-photos';
 import { formatPhoneNumber } from '@/lib/phone';
 import { useAppTheme } from '@/theme/theme-context';
 
 // Required-field asterisks stay red (semantic).
 const REQUIRED_RED = '#F26666';
+
+const birthdayFmt = new Intl.DateTimeFormat('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+
+/** Noon local time, so the stored ISO day never shifts across time zones. */
+function noonISO(d: Date): string {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12).toISOString();
+}
+
+/** Parse a stored birthday ('YYYY-MM-DD' or full ISO) as a local calendar day. */
+function parseBirthday(value?: string): Date | null {
+  if (!value) return null;
+  const m = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const d = m ? new Date(+m[1], +m[2] - 1, +m[3], 12) : new Date(value);
+  return isNaN(d.getTime()) ? null : d;
+}
 
 function formatBuffer(h: number, m: number): string {
   if (h > 0 && m > 0) return `${h}h ${m}m`;
@@ -49,6 +71,18 @@ export function ClientForm({ editingId }: { editingId?: string }) {
   const [location, setLocation] = useState(editing?.location ?? '');
   const [notes, setNotes] = useState(editing?.notes ?? '');
   const [trackBirthday, setTrackBirthday] = useState(!!editing?.birthday);
+  const [birthday, setBirthday] = useState<string | undefined>(
+    () => (parseBirthday(editing?.birthday) ? noonISO(parseBirthday(editing?.birthday)!) : undefined),
+  );
+  const [birthdaySheet, setBirthdaySheet] = useState(false);
+  const [photoUri, setPhotoUri] = useState<string | undefined>(undefined);
+  const [importing, setImporting] = useState(false);
+
+  // Photos are device-local (never uploaded), keyed by client id.
+  useEffect(() => {
+    if (!editingId) return;
+    getPhoto('client', editingId).then(setPhotoUri);
+  }, [editingId]);
 
   const [hasBuffer, setHasBuffer] = useState((editing?.clientBlockTime ?? 0) > 0);
   const [bufferH, setBufferH] = useState(Math.floor((editing?.clientBlockTime ?? 0) / 60));
@@ -73,8 +107,8 @@ export function ClientForm({ editingId }: { editingId?: string }) {
       email: email || undefined,
       notes: notes || undefined,
       location: location || undefined,
-      birthday: trackBirthday ? editing?.birthday : undefined,
-      photoUri: editing?.photoUri,
+      birthday: trackBirthday ? birthday : undefined,
+      photoUri,
       clientBlockTime: blockTime,
       smsConsentGiven: smsConsent,
       smsConsentDate: smsConsent ? editing?.smsConsentDate ?? new Date().toISOString() : undefined,
@@ -85,8 +119,10 @@ export function ClientForm({ editingId }: { editingId?: string }) {
     try {
       if (editing) {
         await updateClient({ ...editing, ...base });
+        await setPhoto('client', editing.id, photoUri);
       } else {
-        await addClient(base);
+        const created = await addClient(base);
+        if (photoUri && created?.id) await setPhoto('client', created.id, photoUri);
       }
       router.back();
     } catch (e) {
@@ -96,7 +132,46 @@ export function ClientForm({ editingId }: { editingId?: string }) {
     }
   };
 
-  const stub = (msg: string) => Alert.alert('Coming soon', msg);
+  const pickPhoto = async () => {
+    const uri = await choosePhoto({ title: 'Client Photo', onRemove: photoUri ? () => setPhotoUri(undefined) : undefined });
+    if (uri) setPhotoUri(uri);
+  };
+
+  const importContact = async () => {
+    if (importing) return;
+    setImporting(true);
+    try {
+      const contact = await pickDeviceContact();
+      if (!contact) return;
+      const number = await choosePhoneNumber(contact);
+      if (contact.name) setName(contact.name);
+      if (number) setPhone(formatPhoneNumber(number));
+      const other = contact.phones.find((p) => p !== number);
+      if (other && !secondaryPhone) setSecondaryPhone(formatPhoneNumber(other));
+      if (contact.email) setEmail(contact.email);
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const birthdayDate = parseBirthday(birthday);
+
+  const openBirthday = () => {
+    const value = birthdayDate ?? new Date(new Date().getFullYear() - 30, 0, 1, 12);
+    if (Platform.OS === 'android') {
+      DateTimePickerAndroid.open({
+        value,
+        mode: 'date',
+        maximumDate: new Date(),
+        onChange: (e, d) => {
+          if (e.type === 'set' && d) setBirthday(noonISO(d));
+        },
+      });
+    } else {
+      if (!birthday) setBirthday(noonISO(value));
+      setBirthdaySheet(true);
+    }
+  };
 
   return (
     <View style={[styles.root, { backgroundColor: theme.background }]}>
@@ -127,11 +202,13 @@ export function ClientForm({ editingId }: { editingId?: string }) {
         </View>
 
         <KeyboardAwareForm contentContainerStyle={styles.body}>
-          {/* Photo (deferred) */}
+          {/* Photo (device-local) */}
           <View style={styles.photoBlock}>
-            <Pressable onPress={() => stub('Photo picker is coming with a later phase.')}>
+            <Pressable onPress={pickPhoto} accessibilityLabel="Client photo">
               <View style={[styles.photoCircle, { backgroundColor: theme.accentSoft }]}>
-                {editing ? (
+                {photoUri ? (
+                  <Image source={{ uri: photoUri }} style={styles.photoImage} contentFit="cover" />
+                ) : editing ? (
                   <Text style={[styles.photoInitials, { color: theme.accent }]}>{clientInitials(name || '?')}</Text>
                 ) : (
                   <>
@@ -142,8 +219,9 @@ export function ClientForm({ editingId }: { editingId?: string }) {
               </View>
             </Pressable>
             <Pressable
-              onPress={() => stub('Import from Contacts is coming with a later phase.')}
-              style={styles.importRow}>
+              onPress={importContact}
+              disabled={importing}
+              style={[styles.importRow, { opacity: importing ? 0.5 : 1 }]}>
               <Icon name="person.crop.circle.badge.plus" size={14} color={theme.accent} />
               <Text style={[styles.importText, { color: theme.accent }]}>Import from Contacts</Text>
             </Pressable>
@@ -179,13 +257,23 @@ export function ClientForm({ editingId }: { editingId?: string }) {
             </Field>
           </Section>
 
-          {/* Birthday (date picker deferred) */}
+          {/* Birthday */}
           <Section title="Birthday" icon="gift.fill">
             <ToggleRow icon="calendar" title="Track Birthday" value={trackBirthday} onChange={setTrackBirthday} />
             {trackBirthday ? (
-              <Text style={[styles.hint, { color: theme.secondaryText }]}>
-                Birthday date selection is coming with a later phase.
-              </Text>
+              <>
+                <Divider />
+                <Pressable onPress={openBirthday} style={styles.bufferRow}>
+                  <Icon name="gift.fill" size={16} color={theme.secondaryText} />
+                  <Text style={[styles.bufferLabel, { color: theme.secondaryText }]}>Date</Text>
+                  <View style={styles.bufferEnd}>
+                    <Text style={[styles.bufferValue, { color: birthdayDate ? theme.primaryText : theme.tertiaryText }]}>
+                      {birthdayDate ? birthdayFmt.format(birthdayDate) : 'Select date'}
+                    </Text>
+                    <Icon name="chevron.right" size={12} color={theme.secondaryText} />
+                  </View>
+                </Pressable>
+              </>
             ) : null}
           </Section>
 
@@ -224,6 +312,15 @@ export function ClientForm({ editingId }: { editingId?: string }) {
           </View>
         </KeyboardAwareForm>
       </SafeAreaView>
+
+      {Platform.OS === 'ios' ? (
+        <DatePickerSheet
+          visible={birthdaySheet}
+          date={birthday ?? noonISO(new Date())}
+          onChange={(iso) => setBirthday(noonISO(new Date(iso)))}
+          onClose={() => setBirthdaySheet(false)}
+        />
+      ) : null}
 
       <TimeWheelSheet
         visible={bufferSheet}
@@ -291,6 +388,7 @@ const styles = StyleSheet.create({
   body: { paddingBottom: 40, gap: 20, paddingTop: 24 },
   photoBlock: { alignItems: 'center', gap: 16 },
   photoCircle: { width: 100, height: 100, borderRadius: 50, alignItems: 'center', justifyContent: 'center', gap: 6 },
+  photoImage: { width: 100, height: 100, borderRadius: 50 },
   photoInitials: { fontSize: 32, fontWeight: '600' },
   photoLabel: { fontSize: 12, fontWeight: '500' },
   importRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
@@ -307,7 +405,6 @@ const styles = StyleSheet.create({
   input: { fontSize: 16, paddingVertical: 4, textAlignVertical: 'center' },
   notes: { minHeight: 72, textAlignVertical: 'top' },
   divider: { height: StyleSheet.hairlineWidth, marginLeft: 52 },
-  hint: { fontSize: 12, paddingHorizontal: 16, paddingBottom: 12 },
   sectionDesc: { fontSize: 13, paddingHorizontal: 16, paddingBottom: 12 },
   toggleRow: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, paddingVertical: 12 },
   toggleTitle: { flex: 1, fontSize: 16 },

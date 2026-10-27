@@ -3,15 +3,17 @@
  *
  * Faithful to the client / date+time / services / SMS-reminder / notes layout.
  * End time auto-recalculates from the service duration until the user edits it
- * manually (mirroring `endTimeManuallyAdjusted`). Deferred (need managers from
- * later phases): staff assignment + picker, working-hours warning, staff
- * double-book conflict, and appointment photos — rendered inert.
+ * manually (mirroring `endTimeManuallyAdjusted`). Photos are device-local like
+ * iOS: picked into the documents folder, then attached (via `local-photos`) to
+ * the appointment once the store swaps in its saved backend id.
  */
 
+import { type QueryClient, useQueryClient } from '@tanstack/react-query';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import type { SFSymbol } from 'expo-symbols';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DashboardGradient } from '@/components/dashboard-gradient';
@@ -22,13 +24,15 @@ import { OptionSheet } from '@/components/sheets/option-sheet';
 import { StaffPickerSheet } from '@/components/sheets/staff-picker-sheet';
 import { TimeStepperSheet } from '@/components/sheets/time-stepper-sheet';
 import { useAppointmentForm } from '@/context/appointment-form';
-import { useAppointments } from '@/context/appointments-store';
+import { APPOINTMENTS_QUERY_KEY, useAppointments } from '@/context/appointments-store';
 import { useStaff } from '@/context/staff-store';
 import { useTimeOff } from '@/context/time-off-store';
 import { useWorkingHours } from '@/context/working-hours-store';
 import { firstBlockingTimeOff } from '@/models/time-off';
 import type { StaffMember } from '@/models/staff';
 import { withOpacity } from '@/lib/color';
+import { choosePhoto, discardPhoto, setPhotos } from '@/lib/local-photos';
+import type { Appointment } from '@/models/appointment';
 import {
   combineDateTime,
   durationMinutes,
@@ -46,11 +50,41 @@ import { useAppTheme } from '@/theme/theme-context';
 
 const shortTime = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit' });
 
+/**
+ * addAppointment is fire-and-forget (optimistic temp id, swapped for the real
+ * backend row on success), so photos are attached by watching the appointments
+ * cache for the saved row with this client + start time. Gives up after 2 min
+ * (e.g. the save failed) and deletes the orphaned files.
+ */
+function attachPhotosWhenSaved(qc: QueryClient, clientId: string, startISO: string, uris: string[]) {
+  const startMs = new Date(startISO).getTime();
+  const find = () =>
+    (qc.getQueryData<Appointment[]>(APPOINTMENTS_QUERY_KEY) ?? []).find(
+      (a) => !a.id.startsWith('optimistic-') && a.clientId === clientId && new Date(a.startTime).getTime() === startMs,
+    );
+  let done = false;
+  const finish = (saved?: Appointment) => {
+    if (done) return;
+    done = true;
+    unsubscribe();
+    clearTimeout(timer);
+    if (saved) setPhotos('appointment', saved.id, uris).catch(() => {});
+    else uris.forEach((u) => discardPhoto(u));
+  };
+  const unsubscribe = qc.getQueryCache().subscribe(() => {
+    const saved = find();
+    if (saved) finish(saved);
+  });
+  const timer = setTimeout(() => finish(find()), 120_000);
+}
+
 export default function CreateAppointment() {
   const theme = useAppTheme();
   const router = useRouter();
   const form = useAppointmentForm();
   const { appointments, addAppointment } = useAppointments();
+  const qc = useQueryClient();
+  const [photos, setPhotoList] = useState<string[]>([]);
   const { staff } = useStaff();
   const { events: timeOffEvents } = useTimeOff();
   const { isWorkingTime } = useWorkingHours();
@@ -130,10 +164,11 @@ export default function CreateAppointment() {
         staffMemberName: selectedStaff?.name,
         reminderMinutesBefore: hasConsent ? reminder : 0,
         status: 'scheduled',
-        notes: '',
-        internalNotes: '',
-        location: '',
+        notes: notes.trim(),
+        internalNotes: internalNotes.trim(),
+        location: location.trim(),
       });
+      if (photos.length) attachPhotosWhenSaved(qc, selectedClient.id, start.toISOString(), photos);
       form.reset();
       router.back();
     };
@@ -364,13 +399,43 @@ export default function CreateAppointment() {
             <InputRow icon="lock.doc.fill" placeholder="Enter internal notes..." value={internalNotes} onChangeText={setInternalNotes} />
           </Section>
           <Section label="Photos">
-            <Row onPress={() => Alert.alert('Coming soon', 'Appointment photos arrive with a later phase.')}>
+            <Row
+              onPress={async () => {
+                const uri = await choosePhoto({ title: 'Appointment Photo', square: false });
+                if (uri) setPhotoList((prev) => [...prev, uri]);
+              }}>
               <Icon name="camera.fill" size={18} color={theme.accent} />
-              <Text style={[styles.placeholder, { color: theme.accent }]}>Add photos</Text>
+              <Text style={[styles.placeholder, { color: theme.accent }]}>
+                {photos.length ? `${photos.length} photo${photos.length === 1 ? '' : 's'} · Add more` : 'Add photos'}
+              </Text>
               <View style={styles.flexEnd}>
                 <Icon name="chevron.right" size={14} color={theme.chevronTint} />
               </View>
             </Row>
+            {photos.length > 0 && (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photoRow}>
+                {photos.map((uri) => (
+                  <Pressable
+                    key={uri}
+                    accessibilityLabel="Photo, tap to remove"
+                    onPress={() =>
+                      Alert.alert('Remove Photo', undefined, [
+                        { text: 'Cancel', style: 'cancel' },
+                        {
+                          text: 'Remove',
+                          style: 'destructive',
+                          onPress: () => {
+                            setPhotoList((prev) => prev.filter((p) => p !== uri));
+                            discardPhoto(uri);
+                          },
+                        },
+                      ])
+                    }>
+                    <Image source={{ uri }} style={[styles.photoThumb, { borderRadius: theme.isEditorial ? 2 : 10 }]} contentFit="cover" />
+                  </Pressable>
+                ))}
+              </ScrollView>
+            )}
           </Section>
           <Section label="Location">
             <InputRow icon="mappin.circle.fill" placeholder="Enter address..." value={location} onChangeText={setLocation} />
@@ -470,6 +535,8 @@ const styles = StyleSheet.create({
   closeBtn: { width: 36, height: 36, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   headerTitle: { flex: 1, textAlign: 'center', marginHorizontal: 6 },
   savePill: { paddingHorizontal: 16, paddingVertical: 10 },
+  photoRow: { gap: 10, paddingTop: 4 },
+  photoThumb: { width: 72, height: 72 },
   saveText: { fontSize: 16, fontWeight: '600' },
   body: { paddingTop: 24, paddingBottom: 60, gap: 24 },
   section: { gap: 12, paddingHorizontal: 16 },

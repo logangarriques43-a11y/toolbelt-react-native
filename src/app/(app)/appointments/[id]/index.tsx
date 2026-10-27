@@ -8,14 +8,18 @@
  * default for new appointments, a conditional Recurrence card, and a Details
  * (notes / internal notes / location) section. Staff-reassignment permission
  * gating (`.editAppointments`) is deferred to Sync-1b — anyone may reassign for
- * now, matching create/edit. The Resources-Used (inventory) section shows its
- * empty state with an inert Track button; Send Message is a stub.
+ * now, matching create/edit. The Resources-Used Track button opens Inventory;
+ * Send Message opens the device's SMS app to the client's number (disabled
+ * when there is none). Photos are device-local (like iOS): the client avatar
+ * shows the client's local photo, and the Photos section lists / adds the
+ * appointment's photos via `local-photos`.
  */
 
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { SFSymbol } from 'expo-symbols';
-import { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image } from 'expo-image';
+import { useEffect, useState } from 'react';
+import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DashboardGradient } from '@/components/dashboard-gradient';
@@ -25,10 +29,12 @@ import { ThemedButton, ThemedIconTile } from '@/components/themed';
 import { OptionSheet } from '@/components/sheets/option-sheet';
 import { StaffPickerSheet } from '@/components/sheets/staff-picker-sheet';
 import { useAppointments } from '@/context/appointments-store';
+import { useClients } from '@/context/clients-store';
 import { usePermissions } from '@/context/permissions-store';
 import { useStaff } from '@/context/staff-store';
 import { defaultReminderMinutes, setDefaultReminderMinutes } from '@/lib/appointment-defaults';
 import { withOpacity } from '@/lib/color';
+import { choosePhoto, getPhoto, useLocalPhotos } from '@/lib/local-photos';
 import { REMINDERS, reminderLabel } from '@/lib/reminders';
 import {
   APPOINTMENT_STATUSES,
@@ -61,7 +67,36 @@ export default function AppointmentDetail() {
   const { can } = usePermissions();
   const canEditStaff = can('editAppointments');
 
+  const { clients } = useClients();
   const appt = appointments.find((a) => a.id === id);
+  const client = appt ? clients.find((c) => c.id === appt.clientId) : undefined;
+  const clientPhone = (appt?.clientPhone || client?.phoneNumber || '').trim();
+  const { photos, save: savePhotos } = useLocalPhotos('appointment', appt?.id);
+  const [clientPhoto, setClientPhoto] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    if (!appt?.clientId) return;
+    getPhoto('client', appt.clientId).then(setClientPhoto);
+  }, [appt?.clientId]);
+
+  const messageClient = () => {
+    const digits = clientPhone.replace(/[^\d+]/g, '');
+    if (!digits) return;
+    Linking.openURL(`sms:${digits}`).catch(() =>
+      Alert.alert('Could not open Messages', 'This device can’t send text messages.'),
+    );
+  };
+
+  const addPhoto = async () => {
+    const uri = await choosePhoto({ title: 'Appointment Photo', square: false });
+    if (uri) await savePhotos([...photos, uri]);
+  };
+
+  const removePhoto = (uri: string) =>
+    Alert.alert('Remove Photo', 'Remove this photo from the appointment?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Remove', style: 'destructive', onPress: () => savePhotos(photos.filter((p) => p !== uri)) },
+    ]);
   const assignedStaff = appt?.staffMemberId ? staff.find((s) => s.id === appt.staffMemberId) ?? null : null;
 
   const [staffSheet, setStaffSheet] = useState(false);
@@ -121,8 +156,12 @@ export default function AppointmentDetail() {
           <ScrollView contentContainerStyle={styles.body}>
             {/* Client header */}
             <View style={styles.clientBlock}>
-              <View style={[styles.avatar, { backgroundColor: theme.accent, borderRadius: theme.isEditorial ? 2 : 50 }]}>
-                <Text style={[styles.avatarText, { color: theme.onAccent }]}>{clientInitials(appt.clientName)}</Text>
+              <View style={[styles.avatar, { backgroundColor: theme.accent, borderRadius: theme.isEditorial ? 2 : 50, overflow: 'hidden' }]}>
+                {clientPhoto ? (
+                  <Image source={{ uri: clientPhoto }} style={styles.avatarImage} contentFit="cover" />
+                ) : (
+                  <Text style={[styles.avatarText, { color: theme.onAccent }]}>{clientInitials(appt.clientName)}</Text>
+                )}
               </View>
               <Text style={theme.display(28)}>{appt.clientName}</Text>
               <View style={styles.metaLine}>
@@ -239,12 +278,40 @@ export default function AppointmentDetail() {
             {/* Details — notes / internal notes / location (shown only if present) */}
             <NotesSection appointment={appt} />
 
-            {/* Resources (deferred) */}
+            {/* Photos (device-local) */}
+            <View style={styles.section}>
+              <View style={styles.resourceHead}>
+                <Text style={theme.display(20)}>Photos</Text>
+                <Pressable onPress={addPhoto} style={styles.trackBtn} hitSlop={8}>
+                  <Icon name="plus.circle.fill" size={14} color={theme.accent} />
+                  <Text style={[styles.trackText, { color: theme.accent }]}>Add</Text>
+                </Pressable>
+              </View>
+              {photos.length === 0 ? (
+                <Pressable onPress={addPhoto} style={[styles.resourceEmpty, theme.card]}>
+                  <ThemedIconTile name="camera.fill" size={44} />
+                  <View style={styles.resourceText}>
+                    <Text style={[styles.resourceTitle, { color: theme.primaryText }]}>No photos yet</Text>
+                    <Text style={[styles.resourceSub, { color: theme.secondaryText }]}>Before / after shots stay on this device</Text>
+                  </View>
+                </Pressable>
+              ) : (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photoRow}>
+                  {photos.map((uri) => (
+                    <Pressable key={uri} onPress={() => removePhoto(uri)} accessibilityLabel="Photo, tap to remove">
+                      <Image source={{ uri }} style={[styles.photoThumb, { borderRadius: theme.isEditorial ? 2 : 12 }]} contentFit="cover" />
+                    </Pressable>
+                  ))}
+                </ScrollView>
+              )}
+            </View>
+
+            {/* Resources — tracked from Inventory */}
             <View style={styles.section}>
               <View style={styles.resourceHead}>
                 <Text style={theme.display(20)}>Resources Used</Text>
                 <Pressable
-                  onPress={() => Alert.alert('Coming soon', 'Inventory resource tracking arrives in a later phase.')}
+                  onPress={() => router.push('/inventory')}
                   style={styles.trackBtn}>
                   <Icon name="plus.circle.fill" size={14} color={theme.accent} />
                   <Text style={[styles.trackText, { color: theme.accent }]}>Track</Text>
@@ -254,7 +321,7 @@ export default function AppointmentDetail() {
                 <ThemedIconTile name="shippingbox" size={44} />
                 <View style={styles.resourceText}>
                   <Text style={[styles.resourceTitle, { color: theme.primaryText }]}>No resources tracked</Text>
-                  <Text style={[styles.resourceSub, { color: theme.secondaryText }]}>Tap Track to log inventory used</Text>
+                  <Text style={[styles.resourceSub, { color: theme.secondaryText }]}>Tap Track to log inventory used in Inventory</Text>
                 </View>
               </View>
             </View>
@@ -269,7 +336,13 @@ export default function AppointmentDetail() {
               />
 
               <OutlineBtn icon="calendar.badge.clock" label="Reschedule" onPress={() => router.push(`/appointments/${appt.id}/edit`)} />
-              <OutlineBtn icon="message.fill" label="Send Message to Client" onPress={() => Alert.alert('Coming soon', 'Messaging arrives with the Messages phase.')} />
+              <ThemedButton
+                title={clientPhone ? 'Send Message to Client' : 'No phone number on file'}
+                icon="message.fill"
+                kind="quiet"
+                disabled={!clientPhone}
+                onPress={messageClient}
+              />
             </View>
           </ScrollView>
         )}
@@ -403,6 +476,9 @@ const styles = StyleSheet.create({
   clientBlock: { alignItems: 'center', gap: 12, paddingTop: 32 },
   avatar: { width: 100, height: 100, alignItems: 'center', justifyContent: 'center' },
   avatarText: { fontSize: 36, fontWeight: '600' },
+  avatarImage: { width: 100, height: 100 },
+  photoRow: { gap: 10 },
+  photoThumb: { width: 96, height: 96 },
   metaLine: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   metaText: { fontSize: 16, fontWeight: '500' },
   section: { gap: 16, paddingHorizontal: 20 },

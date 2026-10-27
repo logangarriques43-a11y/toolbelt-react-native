@@ -2,9 +2,11 @@
  * Item Detail sheet — port of ItemDetailView.swift.
  * View / edit a single inventory item: status header, editable fields, quick
  * quantity adjust, stock details, save + delete, and a saved confirmation. The
- * "Find Vendors" CTA targets the Vendor marketplace (Phase 6d) — stubbed for now.
+ * "Find Vendors" CTA closes the sheet and opens Vendor Discovery searching for
+ * this item's name.
  */
 
+import { useRouter } from 'expo-router';
 import type { ComponentProps, ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -24,6 +26,7 @@ export function ItemDetailSheet({ item, onClose }: { item: InventoryItem | null;
   const theme = useAppTheme();
   const capsule = theme.isEditorial ? 2 : 999;
   const inventory = useInventory();
+  const router = useRouter();
 
   const [editing, setEditing] = useState(false);
   const [showSaved, setShowSaved] = useState(false);
@@ -216,7 +219,11 @@ export function ItemDetailSheet({ item, onClose }: { item: InventoryItem | null;
 
             {!editing && (
               <Pressable
-                onPress={() => Alert.alert('Find Vendors', 'The Vendor marketplace arrives in Phase 6d.')}
+                onPress={() => {
+                  const q = item.name;
+                  onClose();
+                  router.push({ pathname: '/vending/discovery', params: { q } });
+                }}
                 style={[styles.vendorBtn, { backgroundColor: theme.accent, borderRadius: theme.cornerRadius }]}>
                 <Icon name="storefront.fill" size={18} color={theme.onAccent} />
                 <View style={styles.flex}>

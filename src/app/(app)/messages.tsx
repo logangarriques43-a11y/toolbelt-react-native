@@ -2,18 +2,22 @@
  * Messages — port of MessagesView.swift.
  * Reminders / Follow-ups / Contacts over the local clients + appointments stores,
  * with a compose sheet and a "sent" toast. Actual SMS delivery is Twilio-backed
- * (deferred) so Send is local UI state; the device-contacts source needs the
- * native Contacts framework and is stubbed. Messaging settings live in 6c-ii.
+ * (deferred) so Send is local UI state. The "Phone Contacts" source opens the
+ * system contact picker (expo-contacts) and starts a message to the chosen
+ * number; picked contacts stay listed for this visit. Messaging settings live
+ * in 6c-ii.
  */
 
 import { useRouter } from 'expo-router';
 import type { SFSymbol } from 'expo-symbols';
 import { useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { choosePhoneNumber, pickDeviceContact } from '@/components/contacts-picker-sheet';
 import { Icon } from '@/components/icon';
 import { KeyboardAwareForm } from '@/components/keyboard-aware-form';
+import { ThemedButton } from '@/components/themed';
 import { useAppointments } from '@/context/appointments-store';
 import { useClients } from '@/context/clients-store';
 import type { Appointment } from '@/models/appointment';
@@ -348,8 +352,30 @@ function ContactsTab({ clients, onCompose }: { clients: import('@/models/client'
   const theme = useAppTheme();
   const [source, setSource] = useState<'My Clients' | 'Phone Contacts'>('My Clients');
   const [search, setSearch] = useState('');
+  const [picked, setPicked] = useState<MessageContact[]>([]);
+  const [picking, setPicking] = useState(false);
   const q = search.trim().toLowerCase();
   const filtered = q ? clients.filter((c) => c.name.toLowerCase().includes(q) || c.phoneNumber.includes(search)) : clients;
+  const pickedFiltered = q ? picked.filter((c) => c.name.toLowerCase().includes(q) || c.phone.includes(search)) : picked;
+
+  const pickFromPhone = async () => {
+    if (picking) return;
+    setPicking(true);
+    try {
+      const contact = await pickDeviceContact();
+      if (!contact) return;
+      const phone = await choosePhoneNumber(contact);
+      if (!phone) {
+        if (contact.phones.length === 0) Alert.alert('No phone number', `${contact.name || 'This contact'} has no phone number to message.`);
+        return;
+      }
+      const entry: MessageContact = { name: contact.name || phone, phone, email: contact.email };
+      setPicked((prev) => [entry, ...prev.filter((p) => p.phone !== phone)]);
+      onCompose(entry);
+    } finally {
+      setPicking(false);
+    }
+  };
 
   return (
     <View style={styles.flex}>
@@ -369,10 +395,34 @@ function ContactsTab({ clients, onCompose }: { clients: import('@/models/client'
       </View>
       <ScrollView contentContainerStyle={styles.listBody}>
         {source === 'Phone Contacts' ? (
-          <View style={styles.phoneStub}>
-            <Icon name="person.crop.circle.badge.xmark" size={48} color={theme.tertiaryText} />
-            <Text style={[styles.phoneStubTitle, { color: theme.primaryText }]}>Phone Contacts</Text>
-            <Text style={[styles.phoneStubSub, { color: theme.secondaryText }]}>Importing device contacts needs the native build (Contacts permission). For now, message your clients below.</Text>
+          <View style={styles.phoneSection}>
+            <View style={styles.phoneStub}>
+              <Icon name="person.crop.circle.badge.plus" size={48} color={theme.accent} />
+              <Text style={[styles.phoneStubTitle, { color: theme.primaryText }]}>Phone Contacts</Text>
+              <Text style={[styles.phoneStubSub, { color: theme.secondaryText }]}>Pick someone from your phone’s contacts to start a message. Contacts stay on your device.</Text>
+              <ThemedButton title="Choose from Contacts" icon="person.crop.circle" onPress={pickFromPhone} loading={picking} style={styles.phonePickBtn} />
+            </View>
+            {pickedFiltered.length > 0 && (
+              <View style={[styles.contactCard, theme.card]}>
+                {pickedFiltered.map((c, i) => (
+                  <View key={c.phone}>
+                    <View style={styles.contactRow}>
+                      <View style={[styles.contactAvatar, { backgroundColor: theme.accentSoft }]}>
+                        <Text style={[styles.avatarText, { color: theme.accent }]}>{initials(c.name)}</Text>
+                      </View>
+                      <View style={styles.flex}>
+                        <Text style={[styles.clientName, { color: theme.primaryText }]}>{c.name}</Text>
+                        <Text style={[styles.clientMeta, { color: theme.secondaryText }]}>{c.phone}</Text>
+                      </View>
+                      <Pressable onPress={() => onCompose(c)} style={[styles.msgBtn, { backgroundColor: theme.accentSoft }]}>
+                        <Icon name="message.fill" size={16} color={theme.accent} />
+                      </Pressable>
+                    </View>
+                    {i < pickedFiltered.length - 1 && <View style={[styles.contactDivider, { backgroundColor: theme.divider }]} />}
+                  </View>
+                ))}
+              </View>
+            )}
           </View>
         ) : filtered.length === 0 ? (
           <EmptyState icon="person.3.fill" title="No Clients" subtitle="Add clients to send them messages." />
@@ -548,6 +598,8 @@ const styles = StyleSheet.create({
   phoneStub: { alignItems: 'center', gap: 12, paddingTop: 40, paddingHorizontal: 30 },
   phoneStubTitle: { fontSize: 18, fontWeight: '600' },
   phoneStubSub: { fontSize: 14, textAlign: 'center' },
+  phoneSection: { gap: 20 },
+  phonePickBtn: { alignSelf: 'stretch', marginTop: 4 },
   fab: { position: 'absolute', right: 20, bottom: 24, width: 56, height: 56, overflow: 'hidden' },
   fabFill: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   toastWrap: { position: 'absolute', left: 0, right: 0, bottom: 40, alignItems: 'center' },
