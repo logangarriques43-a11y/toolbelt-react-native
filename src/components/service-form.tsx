@@ -23,7 +23,6 @@ import { TimeWheelSheet } from '@/components/sheets/time-wheel-sheet';
 import { useServices } from '@/context/services-store';
 import { withOpacity } from '@/lib/color';
 import { DEFAULT_SERVICE_COLOR, type PriceType } from '@/models/service';
-import { iOSColors, lightShadow } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
 function formatDuration(h: number, m: number): string {
@@ -146,13 +145,16 @@ export function ServiceForm({ editingId }: { editingId?: string }) {
         {/* Header */}
         <View style={[styles.header, { backgroundColor: withOpacity(theme.cardBackground, 0.9) }]}>
           <Pressable onPress={() => router.back()} hitSlop={8}>
-            <Icon name="chevron.left" size={20} weight="semibold" color={iOSColors.blue} />
+            <Icon name="chevron.left" size={20} weight="semibold" color={theme.accent} />
           </Pressable>
-          <Text style={[styles.headerTitle, { color: theme.primaryText }]}>
+          <Text style={theme.display(20)}>
             {editing ? 'Edit Service' : 'Add Service'}
           </Text>
-          <Pressable onPress={save} disabled={saving} style={styles.saveBtn}>
-            <Text style={styles.saveText}>Save</Text>
+          <Pressable
+            onPress={save}
+            disabled={saving}
+            style={[styles.saveBtn, { backgroundColor: theme.accent, borderRadius: theme.isEditorial ? 2 : 999 }]}>
+            <Text style={[styles.saveText, { color: theme.onAccent }]}>Save</Text>
           </Pressable>
         </View>
 
@@ -161,7 +163,7 @@ export function ServiceForm({ editingId }: { editingId?: string }) {
           <View style={styles.section}>
             <View style={styles.fieldBlock}>
               <Text style={[styles.label, { color: theme.secondaryText }]}>Service Name</Text>
-              <View style={[styles.card, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
+              <View style={[styles.card, theme.card]}>
                 <TextInput
                   value={name}
                   onChangeText={setName}
@@ -174,7 +176,7 @@ export function ServiceForm({ editingId }: { editingId?: string }) {
 
             <Pressable
               onPress={() => setColorSheet(true)}
-              style={[styles.card, styles.row, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
+              style={[styles.card, styles.row, theme.card]}>
               <View style={[styles.colorDot, { backgroundColor: color }]} />
               <View style={styles.rowText}>
                 <Text style={[styles.rowCaption, { color: theme.secondaryText }]}>Color</Text>
@@ -193,12 +195,12 @@ export function ServiceForm({ editingId }: { editingId?: string }) {
 
           {/* Price & duration */}
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: theme.primaryText }]}>Price &amp; duration</Text>
+            <Text style={theme.display(20)}>Price &amp; duration</Text>
 
             <View style={styles.priceRow}>
               <Pressable
                 onPress={() => setPriceTypeSheet(true)}
-                style={[styles.card, styles.flex, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
+                style={[styles.card, styles.flex, theme.card]}>
                 <Text style={[styles.rowCaption, { color: theme.secondaryText }]}>Type</Text>
                 <View style={styles.inlineBetween}>
                   <Text style={[styles.rowValue, { color: theme.primaryText }]}>{priceType}</Text>
@@ -207,7 +209,7 @@ export function ServiceForm({ editingId }: { editingId?: string }) {
               </Pressable>
 
               {priceType === 'Fixed' ? (
-                <View style={[styles.card, styles.flex, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
+                <View style={[styles.card, styles.flex, theme.card]}>
                   <Text style={[styles.rowCaption, { color: theme.secondaryText }]}>Price</Text>
                   <View style={styles.inlineStart}>
                     <Text style={{ color: theme.secondaryText }}>$</Text>
@@ -222,7 +224,7 @@ export function ServiceForm({ editingId }: { editingId?: string }) {
                   </View>
                 </View>
               ) : (
-                <View style={[styles.card, styles.flex, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
+                <View style={[styles.card, styles.flex, theme.card]}>
                   <Text style={[styles.rowCaption, { color: theme.secondaryText }]}>Price Range</Text>
                   <View style={styles.inlineStart}>
                     <Text style={{ color: theme.secondaryText }}>$</Text>
@@ -251,7 +253,7 @@ export function ServiceForm({ editingId }: { editingId?: string }) {
 
             <Pressable
               onPress={() => setTimeSheet('duration')}
-              style={[styles.card, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
+              style={[styles.card, theme.card]}>
               <Text style={[styles.rowCaption, { color: theme.secondaryText }]}>Duration</Text>
               <View style={styles.inlineBetween}>
                 <Text style={[styles.rowValue, { color: theme.primaryText }]}>{formatDuration(durH, durM)}</Text>
@@ -268,8 +270,8 @@ export function ServiceForm({ editingId }: { editingId?: string }) {
             {addProcessing ? (
               <Pressable
                 onPress={() => setTimeSheet('processing')}
-                style={[styles.card, styles.row, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
-                <Icon name="hourglass" size={16} color={iOSColors.blue} />
+                style={[styles.card, styles.row, theme.card]}>
+                <Icon name="hourglass" size={16} color={theme.accent} />
                 <Text style={[styles.inlineLabel, { color: theme.secondaryText }]}>Processing time</Text>
                 <View style={styles.flexEnd}>
                   <Text style={[styles.rowValue, { color: theme.primaryText }]}>{formatDuration(procH, procM)}</Text>
@@ -287,7 +289,7 @@ export function ServiceForm({ editingId }: { editingId?: string }) {
             {blockExtra ? (
               <Pressable
                 onPress={() => setTimeSheet('block')}
-                style={[styles.card, styles.row, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
+                style={[styles.card, styles.row, theme.card]}>
                 <Icon name="lock.fill" size={16} color={theme.secondaryText} />
                 <Text style={[styles.inlineLabel, { color: theme.secondaryText }]}>Block time</Text>
                 <View style={styles.flexEnd}>
@@ -309,13 +311,12 @@ export function ServiceForm({ editingId }: { editingId?: string }) {
 
           {/* Online booking */}
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: theme.primaryText }]}>Online booking</Text>
+            <Text style={theme.display(20)}>Online booking</Text>
             <ToggleRow
               icon="globe"
               title="Available for online booking"
               value={onlineBooking}
               onChange={setOnlineBooking}
-              accent={iOSColors.yellow}
             />
             <ToggleRow
               icon="calendar.badge.exclamationmark"
@@ -327,7 +328,7 @@ export function ServiceForm({ editingId }: { editingId?: string }) {
 
           {/* Description */}
           <View style={styles.section}>
-            <View style={[styles.card, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
+            <View style={[styles.card, theme.card]}>
               <TextInput
                 value={description}
                 onChangeText={setDescription}
@@ -370,23 +371,21 @@ function ToggleRow({
   title,
   value,
   onChange,
-  accent = iOSColors.blue,
 }: {
   icon: SFSymbol;
   title: string;
   value: boolean;
   onChange: (v: boolean) => void;
-  accent?: string;
 }) {
   const theme = useAppTheme();
   return (
-    <View style={[styles.card, styles.toggleRow, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
+    <View style={[styles.card, styles.toggleRow, theme.card]}>
       <Icon name={icon} size={20} color={theme.secondaryText} />
       <Text style={[styles.toggleTitle, { color: theme.primaryText }]}>{title}</Text>
       <Switch
         value={value}
         onValueChange={onChange}
-        trackColor={{ true: accent, false: withOpacity(iOSColors.gray, 0.3) }}
+        trackColor={{ true: theme.accent, false: theme.inputBackground }}
       />
     </View>
   );
@@ -395,15 +394,13 @@ function ToggleRow({
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16 },
-  headerTitle: { fontSize: 20, fontWeight: '700' },
-  saveBtn: { backgroundColor: iOSColors.blue, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8 },
-  saveText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
+  saveBtn: { paddingHorizontal: 16, paddingVertical: 8 },
+  saveText: { fontSize: 16, fontWeight: '600' },
   body: { paddingTop: 24, paddingBottom: 60, gap: 24 },
   section: { gap: 16, paddingHorizontal: 16 },
-  sectionTitle: { fontSize: 20, fontWeight: '700' },
   fieldBlock: { gap: 8 },
   label: { fontSize: 14, fontWeight: '500' },
-  card: { borderRadius: 12, padding: 16 },
+  card: { padding: 16 },
   input: { fontSize: 16 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   rowText: { flex: 1, gap: 2 },

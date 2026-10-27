@@ -9,23 +9,17 @@ import type { SFSymbol } from 'expo-symbols';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 
 import { ConsentQRCard } from '@/components/sms/consent-qr-card';
 import { DashboardGradient } from '@/components/dashboard-gradient';
 import { Icon } from '@/components/icon';
 import { KeyboardAwareForm } from '@/components/keyboard-aware-form';
+import { ThemedButton, ThemedIconTile } from '@/components/themed';
 import { useSession } from '@/context/session';
 import { useSMS } from '@/context/sms-store';
-import { withOpacity } from '@/lib/color';
 import { formatPhone, POPULAR_AREA_CODES } from '@/models/sms';
-import { iOSColors, lightShadow } from '@/theme/tokens';
+import { iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
-
-const BLUE = '#4285F5';
-const PURPLE = '#9966E6';
-const GREEN = '#4CBF80';
-const AMBER = '#F29933';
 
 type Step = 'intro' | 'areaCode' | 'provisioning' | 'success' | 'alreadySetUp';
 
@@ -56,41 +50,39 @@ export default function SMSSetup() {
       <SafeAreaView style={styles.safe} edges={['top']}>
         <View style={styles.header}>
           <Pressable onPress={() => router.back()} style={styles.back} hitSlop={8}>
-            <Icon name="chevron.left" size={16} color={BLUE} weight="semibold" />
-            <Text style={[styles.backText, { color: BLUE }]}>Back</Text>
+            <Icon name="chevron.left" size={16} color={theme.accent} weight="semibold" />
+            <Text style={[styles.backText, { color: theme.accent }]}>Back</Text>
           </Pressable>
-          <Text style={[styles.headerTitle, { color: theme.primaryText }]}>AI Texting</Text>
+          <Text style={[styles.headerTitle, theme.display(24)]}>AI Texting</Text>
           <View style={styles.back} />
         </View>
 
         <KeyboardAwareForm contentContainerStyle={styles.body}>
           {step === 'intro' && (
             <View style={styles.center}>
-              <View style={[styles.hero, { backgroundColor: withOpacity(BLUE, 0.15) }]}>
-                <Icon name="bubble.left.and.text.bubble.right.fill" size={44} color={BLUE} />
-              </View>
-              <Text style={[styles.title, { color: theme.primaryText }]}>AI-Powered Texting</Text>
+              <ThemedIconTile name="bubble.left.and.text.bubble.right.fill" size={72} filled style={styles.hero} />
+              <Text style={[styles.title, theme.display(24)]}>AI-Powered Texting</Text>
               <Text style={[styles.subtitle, { color: theme.secondaryText }]}>
                 Get a dedicated business phone number. An AI assistant will text your clients to handle bookings, rescheduling, and cancellations automatically.
               </Text>
-              <View style={[styles.featureCard, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
-                <Feature icon="phone.fill" title="Your Own Business Number" subtitle="Clients text this number to book" color={BLUE} />
+              <View style={[styles.featureCard, theme.card]}>
+                <Feature icon="phone.fill" title="Your Own Business Number" subtitle="Clients text this number to book" />
                 <Divider />
-                <Feature icon="brain" title="AI Handles Conversations" subtitle="Books, reschedules, and cancels automatically" color={PURPLE} />
+                <Feature icon="brain" title="AI Handles Conversations" subtitle="Books, reschedules, and cancels automatically" />
                 <Divider />
-                <Feature icon="calendar.badge.plus" title="Auto-Adds to Calendar" subtitle="Appointments appear in your schedule" color={GREEN} />
+                <Feature icon="calendar.badge.plus" title="Auto-Adds to Calendar" subtitle="Appointments appear in your schedule" />
                 <Divider />
-                <Feature icon="eye.fill" title="You See Everything" subtitle="View all conversations and take over anytime" color={AMBER} />
+                <Feature icon="eye.fill" title="You See Everything" subtitle="View all conversations and take over anytime" />
               </View>
-              <GradientButton label="Get Started" onPress={() => setStep('areaCode')} />
+              <ThemedButton title="Get Started" onPress={() => setStep('areaCode')} style={styles.btn} />
             </View>
           )}
 
           {step === 'areaCode' && (
             <View style={styles.center}>
-              <Text style={[styles.title, { color: theme.primaryText }]}>Choose Your Area Code</Text>
+              <Text style={[styles.title, theme.display(24)]}>Choose Your Area Code</Text>
               <Text style={[styles.subtitle, { color: theme.secondaryText }]}>Pick an area code so your business number looks local to your clients.</Text>
-              <View style={[styles.search, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
+              <View style={[styles.search, { backgroundColor: theme.inputBackground }]}>
                 <Icon name="magnifyingglass" size={16} color={theme.secondaryText} />
                 <TextInput
                   value={areaCode}
@@ -114,14 +106,14 @@ export default function SMSSetup() {
                     <Pressable
                       key={ac.code}
                       onPress={() => setAreaCode(ac.code)}
-                      style={[styles.codeCard, { backgroundColor: active ? withOpacity(BLUE, 0.1) : theme.cardBackground, borderColor: active ? BLUE : 'transparent' }, lightShadow(theme)]}>
-                      <Text style={[styles.codeNum, { color: active ? BLUE : theme.primaryText }]}>{ac.code}</Text>
+                      style={[styles.codeCard, { backgroundColor: active ? theme.accentSoft : theme.cardBackground, borderColor: active ? theme.accent : theme.divider, borderRadius: theme.isEditorial ? 2 : 12 }]}>
+                      <Text style={[styles.codeNum, { color: active ? theme.accent : theme.primaryText }]}>{ac.code}</Text>
                       <Text style={[styles.codeCity, { color: theme.secondaryText }]} numberOfLines={1}>{ac.city}</Text>
                     </Pressable>
                   );
                 })}
               </View>
-              <GradientButton label={areaCode ? `Get a ${areaCode} Number` : 'Get Any Available Number'} onPress={provision} />
+              <ThemedButton title={areaCode ? `Get a ${areaCode} Number` : 'Get Any Available Number'} onPress={provision} style={styles.btn} />
               <Pressable onPress={() => setStep('intro')}>
                 <Text style={[styles.goBack, { color: theme.secondaryText }]}>Go Back</Text>
               </Pressable>
@@ -130,21 +122,21 @@ export default function SMSSetup() {
 
           {step === 'provisioning' && (
             <View style={[styles.center, styles.provisioning]}>
-              <ActivityIndicator size="large" color={BLUE} />
-              <Text style={[styles.title, { color: theme.primaryText }]}>Setting up your number...</Text>
+              <ActivityIndicator size="large" color={theme.accent} />
+              <Text style={[styles.title, theme.display(24)]}>Setting up your number...</Text>
               <Text style={[styles.subtitle, { color: theme.secondaryText }]}>This usually takes a few seconds</Text>
             </View>
           )}
 
           {(step === 'success' || step === 'alreadySetUp') && (
             <View style={styles.center}>
-              <View style={[styles.hero, { backgroundColor: withOpacity(GREEN, 0.15) }]}>
-                <Icon name={step === 'success' ? 'checkmark.circle.fill' : 'checkmark.seal.fill'} size={step === 'success' ? 56 : 40} color={GREEN} />
+              <View style={[styles.hero, styles.successHero, { backgroundColor: theme.liveSoft, borderRadius: theme.isEditorial ? 2 : 22 }]}>
+                <Icon name={step === 'success' ? 'checkmark.circle.fill' : 'checkmark.seal.fill'} size={step === 'success' ? 40 : 32} color={theme.live} />
               </View>
-              <Text style={[styles.title, { color: theme.primaryText }]}>{step === 'success' ? "You're All Set!" : 'AI Texting Active'}</Text>
+              <Text style={[styles.title, theme.display(24)]}>{step === 'success' ? "You're All Set!" : 'AI Texting Active'}</Text>
               <Text style={[styles.subtitle, { color: theme.secondaryText }]}>{step === 'success' ? 'Your business AI texting number is:' : 'Your business number:'}</Text>
-              <View style={[styles.numberCard, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
-                <Text style={[styles.number, { color: theme.primaryText }]}>{formatted}</Text>
+              <View style={[styles.numberCard, theme.card]}>
+                <Text style={[styles.number, theme.display(30, '500')]}>{formatted}</Text>
               </View>
               {step === 'success' && (
                 <Text style={[styles.subtitle, { color: theme.secondaryText }]}>
@@ -152,8 +144,8 @@ export default function SMSSetup() {
                 </Text>
               )}
               {/* In-person opt-in QR (placeholder until Online Booking supplies the consent URL). */}
-              <ConsentQRCard consentURL="" />
-              <GradientButton label="View Conversations" onPress={() => router.replace('/sms-conversations')} />
+              <ConsentQRCard />
+              <ThemedButton title="View Conversations" onPress={() => router.replace('/sms-conversations')} style={styles.btn} />
               {step === 'alreadySetUp' && (
                 <Pressable onPress={() => { sms.release(); setStep('intro'); }}>
                   <Text style={[styles.deactivate, { color: iOSColors.red }]}>Deactivate AI Texting</Text>
@@ -167,13 +159,11 @@ export default function SMSSetup() {
   );
 }
 
-function Feature({ icon, title, subtitle, color }: { icon: SFSymbol; title: string; subtitle: string; color: string }) {
+function Feature({ icon, title, subtitle }: { icon: SFSymbol; title: string; subtitle: string }) {
   const theme = useAppTheme();
   return (
     <View style={styles.feature}>
-      <View style={[styles.featureIcon, { backgroundColor: withOpacity(color, 0.15) }]}>
-        <Icon name={icon} size={18} color={color} />
-      </View>
+      <ThemedIconTile name={icon} size={44} />
       <View style={styles.flex}>
         <Text style={[styles.featureTitle, { color: theme.primaryText }]}>{title}</Text>
         <Text style={[styles.featureSub, { color: theme.secondaryText }]}>{subtitle}</Text>
@@ -187,47 +177,35 @@ function Divider() {
   return <View style={[styles.featureDivider, { backgroundColor: theme.divider }]} />;
 }
 
-function GradientButton({ label, onPress }: { label: string; onPress: () => void }) {
-  return (
-    <Pressable onPress={onPress} style={styles.btnWrap}>
-      <LinearGradient colors={[BLUE, PURPLE]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.btn}>
-        <Text style={styles.btnText}>{label}</Text>
-      </LinearGradient>
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   flex: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', padding: 16 },
   back: { flexDirection: 'row', alignItems: 'center', gap: 4, minWidth: 70 },
   backText: { fontSize: 16, fontWeight: '600' },
-  headerTitle: { flex: 1, textAlign: 'center', fontSize: 24, fontWeight: '700' },
+  headerTitle: { flex: 1, textAlign: 'center' },
   body: { padding: 16, paddingBottom: 40 },
   center: { alignItems: 'center', gap: 16 },
   provisioning: { paddingTop: 80, gap: 20 },
-  hero: { width: 100, height: 100, borderRadius: 50, alignItems: 'center', justifyContent: 'center', marginTop: 12 },
-  title: { fontSize: 24, fontWeight: '700', textAlign: 'center' },
+  hero: { marginTop: 12 },
+  successHero: { width: 72, height: 72, alignItems: 'center', justifyContent: 'center' },
+  title: { textAlign: 'center' },
   subtitle: { fontSize: 16, textAlign: 'center', paddingHorizontal: 8, lineHeight: 22 },
-  featureCard: { alignSelf: 'stretch', borderRadius: 16, paddingVertical: 8 },
+  featureCard: { alignSelf: 'stretch', paddingVertical: 8 },
   feature: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 16, paddingVertical: 10 },
-  featureIcon: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   featureTitle: { fontSize: 16, fontWeight: '600' },
   featureSub: { fontSize: 13, marginTop: 2 },
   featureDivider: { height: StyleSheet.hairlineWidth, marginLeft: 74 },
-  btnWrap: { alignSelf: 'stretch', marginTop: 8 },
-  btn: { alignItems: 'center', justifyContent: 'center', paddingVertical: 16, borderRadius: 16 },
-  btnText: { color: '#FFFFFF', fontSize: 18, fontWeight: '600' },
+  btn: { alignSelf: 'stretch', marginTop: 8 },
   search: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14, borderRadius: 12, alignSelf: 'stretch' },
   searchInput: { flex: 1, fontSize: 16 },
   orText: { fontSize: 14 },
   codeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, alignSelf: 'stretch', justifyContent: 'space-between' },
-  codeCard: { width: '48%', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 12, paddingHorizontal: 8, borderRadius: 12, borderWidth: 1.5 },
+  codeCard: { width: '48%', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 12, paddingHorizontal: 8, borderWidth: 1.5 },
   codeNum: { fontSize: 16, fontWeight: '600', fontVariant: ['tabular-nums'] },
   codeCity: { fontSize: 12, flexShrink: 1 },
   goBack: { fontSize: 16, marginTop: 4 },
-  numberCard: { paddingVertical: 20, paddingHorizontal: 32, borderRadius: 16 },
-  number: { fontSize: 30, fontWeight: '700', fontVariant: ['tabular-nums'] },
+  numberCard: { paddingVertical: 20, paddingHorizontal: 32 },
+  number: { fontVariant: ['tabular-nums'] },
   deactivate: { fontSize: 14, marginTop: 4 },
 });

@@ -11,13 +11,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DashboardGradient } from '@/components/dashboard-gradient';
 import { Icon } from '@/components/icon';
+import { ThemedButton, ThemedIconTile } from '@/components/themed';
 import { TimeStepperSheet } from '@/components/sheets/time-stepper-sheet';
 import { useStaff } from '@/context/staff-store';
 import { to24 } from '@/lib/appointment-time';
 import { intervalTimeString } from '@/models/working-hours';
-import { STAFF_ORANGE, type StaffLunchBreak, type StaffMember } from '@/models/staff';
-import { iOSColors, lightShadow } from '@/theme/tokens';
-import { withOpacity } from '@/lib/color';
+import type { StaffLunchBreak, StaffMember } from '@/models/staff';
+import { iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
 const WEEKDAYS: { num: number; label: string }[] = [
@@ -120,35 +120,33 @@ export function StaffLunchBreaksSheet({ visible, member, onClose }: { visible: b
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
       <DashboardGradient>
         <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-          <View style={[styles.header, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
+          <View style={[styles.header, { backgroundColor: theme.background, borderBottomColor: theme.divider }]}>
             <Pressable onPress={onClose} hitSlop={8}>
-              <Text style={styles.cancel}>Cancel</Text>
+              <Text style={[styles.cancel, { color: theme.accent }]}>Cancel</Text>
             </Pressable>
-            <Text style={[styles.headerTitle, { color: theme.primaryText }]}>Lunch Breaks</Text>
+            <Text style={theme.display(20)}>Lunch Breaks</Text>
             <View style={styles.cancelSpacer} />
           </View>
 
           <ScrollView contentContainerStyle={styles.body}>
             <View style={styles.hero}>
-              <View style={[styles.heroCircle, { backgroundColor: withOpacity(STAFF_ORANGE, 0.15) }]}>
-                <Icon name="fork.knife" size={26} color={STAFF_ORANGE} />
-              </View>
-              <Text style={[styles.heroName, { color: theme.primaryText }]}>{member.name}</Text>
+              <ThemedIconTile name="fork.knife" size={64} filled />
+              <Text style={theme.display(22)}>{member.name}</Text>
               <Text style={[styles.heroDesc, { color: theme.secondaryText }]}>Block out a lunch window so customers can't book over it.</Text>
             </View>
 
-            <Pressable onPress={applyToAll} disabled={!firstEnabled} style={[styles.applyBtn, { backgroundColor: withOpacity(STAFF_ORANGE, 0.12), opacity: firstEnabled ? 1 : 0.4 }]}>
-              <Icon name="square.on.square" size={14} color={STAFF_ORANGE} />
-              <Text style={[styles.applyText, { color: STAFF_ORANGE }]}>Apply same time to every day</Text>
+            <Pressable onPress={applyToAll} disabled={!firstEnabled} style={[styles.applyBtn, { backgroundColor: theme.accentSoft, borderRadius: theme.isEditorial ? 2 : 999, opacity: firstEnabled ? 1 : 0.4 }]}>
+              <Icon name="square.on.square" size={14} color={theme.accent} />
+              <Text style={[styles.applyText, { color: theme.accent }]}>Apply same time to every day</Text>
             </Pressable>
 
             {WEEKDAYS.map((d) => {
               const draft = drafts[d.num];
               return (
-                <View key={d.num} style={[styles.card, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
+                <View key={d.num} style={[styles.card, theme.card]}>
                   <View style={styles.dayHead}>
                     <Text style={[styles.dayLabel, { color: theme.primaryText }]}>{d.label}</Text>
-                    <Switch value={draft?.enabled ?? false} onValueChange={(v) => setEnabled(d.num, v)} trackColor={{ true: STAFF_ORANGE, false: withOpacity(iOSColors.gray, 0.3) }} />
+                    <Switch value={draft?.enabled ?? false} onValueChange={(v) => setEnabled(d.num, v)} trackColor={{ true: theme.accent, false: theme.inputBackground }} />
                   </View>
                   {draft?.enabled ? (
                     <View style={styles.timeRow}>
@@ -168,9 +166,7 @@ export function StaffLunchBreaksSheet({ visible, member, onClose }: { visible: b
               </View>
             )}
 
-            <Pressable onPress={save} style={[styles.saveBtn, { backgroundColor: STAFF_ORANGE }]}>
-              <Text style={styles.saveText}>Save Lunch Breaks</Text>
-            </Pressable>
+            <ThemedButton title="Save Lunch Breaks" kind="accent" onPress={save} style={styles.saveBtn} />
           </ScrollView>
         </SafeAreaView>
       </DashboardGradient>
@@ -181,7 +177,6 @@ export function StaffLunchBreaksSheet({ visible, member, onClose }: { visible: b
         minute={editTime.minute}
         isPM={editTime.isPM}
         title={editing?.field === 'start' ? 'Start Time' : 'End Time'}
-        accent={STAFF_ORANGE}
         onChange={(h, m, pm) => editing && setTime(editing.weekday, editing.field, h, m, pm)}
         onClose={() => setEditing(null)}
       />
@@ -192,7 +187,7 @@ export function StaffLunchBreaksSheet({ visible, member, onClose }: { visible: b
 function TimeButton({ label, value, onPress }: { label: string; value: string; onPress: () => void }) {
   const theme = useAppTheme();
   return (
-    <Pressable onPress={onPress} style={[styles.timeBtn, { backgroundColor: theme.background }]}>
+    <Pressable onPress={onPress} style={[styles.timeBtn, { backgroundColor: theme.inputBackground, borderRadius: theme.isEditorial ? 2 : 12 }]}>
       <Text style={[styles.timeBtnLabel, { color: theme.secondaryText }]}>{label}</Text>
       <Text style={[styles.timeBtnValue, { color: theme.primaryText }]}>{value}</Text>
     </Pressable>
@@ -201,26 +196,22 @@ function TimeButton({ label, value, onPress }: { label: string; value: string; o
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
-  cancel: { color: iOSColors.blue, fontSize: 16 },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth },
+  cancel: { fontSize: 16 },
   cancelSpacer: { width: 50 },
-  headerTitle: { fontSize: 18, fontWeight: '700' },
   body: { padding: 16, gap: 16, paddingBottom: 40 },
   hero: { alignItems: 'center', gap: 10 },
-  heroCircle: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center' },
-  heroName: { fontSize: 18, fontWeight: '700' },
   heroDesc: { fontSize: 13, textAlign: 'center', paddingHorizontal: 16 },
-  card: { borderRadius: 12, padding: 14, gap: 10 },
-  applyBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 12, borderRadius: 10 },
+  card: { padding: 14, gap: 10 },
+  applyBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 12 },
   applyText: { fontSize: 14, fontWeight: '600' },
   dayHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   dayLabel: { fontSize: 16, fontWeight: '600' },
   timeRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  timeBtn: { flex: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, gap: 4 },
+  timeBtn: { flex: 1, paddingHorizontal: 12, paddingVertical: 10, gap: 4 },
   timeBtnLabel: { fontSize: 11, fontWeight: '600' },
   timeBtnValue: { fontSize: 15, fontWeight: '500' },
   savedRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
   savedText: { fontSize: 13, fontWeight: '600' },
-  saveBtn: { alignItems: 'center', justifyContent: 'center', paddingVertical: 16, borderRadius: 14, marginTop: 4 },
-  saveText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
+  saveBtn: { marginTop: 4 },
 });

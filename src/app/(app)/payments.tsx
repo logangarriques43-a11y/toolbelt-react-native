@@ -1,10 +1,11 @@
 /**
  * Payments hub — port of PaymentsView.swift.
  * A self-contained POS surface: custom header (close + clear-cart), a section
- * switcher (Checkout / Transactions / Features / AI / More) along the bottom, and
+ * switcher (Checkout / Transactions / Features / More) along the bottom, and
  * — in Checkout — a Total/Charge bar over the cart. Cart state lives here and is
- * threaded into <Checkout>. Transactions/Features/AI/More are placeholders until
- * 5d/5e; "Charge" opens the Review Sale sheet in 5c.
+ * threaded into <Checkout>. "Charge" opens the Review Sale sheet, which takes
+ * cash, card (Stripe PaymentSheet) or Tap to Pay — the whole screen sits inside
+ * PaymentsTerminalProvider so the sheet can drive Stripe Terminal.
  */
 
 import { useRouter } from 'expo-router';
@@ -15,12 +16,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/icon';
 import { AddProductSheet } from '@/components/payments/add-product-sheet';
-import { BRAND_BLUE, Checkout, type CheckoutTab } from '@/components/payments/checkout';
+import { Checkout, type CheckoutTab } from '@/components/payments/checkout';
 import { PaymentFeatures, PaymentMore } from '@/components/payments/features';
 import { ReviewSaleSheet } from '@/components/payments/review-sale-sheet';
 import { PaymentTransactions } from '@/components/payments/transactions';
 import { useProducts } from '@/context/products-store';
 import { useServices } from '@/context/services-store';
+import { PaymentsTerminalProvider } from '@/lib/stripe-terminal';
 import {
   cartItemCount,
   productsTotal,
@@ -30,21 +32,27 @@ import {
 } from '@/models/cart';
 import type { Product } from '@/models/product';
 import type { Service } from '@/models/service';
-import { withOpacity } from '@/lib/color';
 import { iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
-type Section = 'Checkout' | 'Transactions' | 'Features' | 'AI' | 'More';
+type Section = 'Checkout' | 'Transactions' | 'Features' | 'More';
 
 const SECTIONS: { section: Section; icon: SFSymbol }[] = [
   { section: 'Checkout', icon: 'cart.fill' },
   { section: 'Transactions', icon: 'list.bullet.rectangle.portrait.fill' },
   { section: 'Features', icon: 'star.fill' },
-  { section: 'AI', icon: 'brain' },
   { section: 'More', icon: 'ellipsis.circle.fill' },
 ];
 
-export default function Payments() {
+export default function PaymentsScreen() {
+  return (
+    <PaymentsTerminalProvider>
+      <Payments />
+    </PaymentsTerminalProvider>
+  );
+}
+
+function Payments() {
   const theme = useAppTheme();
   const router = useRouter();
   const servicesStore = useServices();
@@ -147,11 +155,11 @@ export default function Payments() {
     <SafeAreaView style={[styles.safe, { backgroundColor: theme.background }]} edges={['top', 'bottom']}>
       {/* Header */}
       <View style={[styles.header, { backgroundColor: theme.cardBackground }]}>
-        <RoundButton icon="house.fill" color={iOSColors.blue} onPress={() => router.back()} />
-        <Text style={[styles.headerTitle, { color: theme.primaryText }]}>{section}</Text>
+        <RoundButton icon="house.fill" color={theme.accent} onPress={() => router.back()} />
+        <Text style={[styles.headerTitle, theme.display(20, '500')]}>{section}</Text>
         <RoundButton
           icon="trash"
-          color={hasItems ? iOSColors.red : withOpacity(iOSColors.gray, 0.5)}
+          color={hasItems ? iOSColors.red : theme.tertiaryText}
           onPress={clearCart}
           disabled={!hasItems}
         />
@@ -212,11 +220,10 @@ export default function Payments() {
               </Text>
             </View>
             <View style={styles.chips}>
-              {itemCount > 0 && <Chip text={`${itemCount} item${itemCount === 1 ? '' : 's'}`} color={BRAND_BLUE} />}
+              {itemCount > 0 && <Chip text={`${itemCount} item${itemCount === 1 ? '' : 's'}`} />}
               {(keypadAmount > 0 || (tab === 'Keypad' && keypadDisplayAmount > 0)) && (
                 <Chip
                   text={`+$${(tab === 'Keypad' ? keypadDisplayAmount : keypadAmount).toFixed(2)} keypad`}
-                  color={iOSColors.orange}
                 />
               )}
             </View>
@@ -225,10 +232,13 @@ export default function Payments() {
             <View
               style={[
                 styles.chargeBtn,
-                { backgroundColor: canCharge ? BRAND_BLUE : withOpacity(iOSColors.gray, 0.3) },
+                {
+                  backgroundColor: canCharge ? theme.accent : theme.inputBackground,
+                  borderRadius: theme.isEditorial ? 2 : 999,
+                },
               ]}>
-              <Icon name="cart.badge.plus" size={14} color="#FFFFFF" weight="semibold" />
-              <Text style={styles.chargeBtnText}>Charge</Text>
+              <Icon name="cart.badge.plus" size={14} color={canCharge ? theme.onAccent : theme.tertiaryText} weight="semibold" />
+              <Text style={[styles.chargeBtnText, { color: canCharge ? theme.onAccent : theme.tertiaryText }]}>Charge</Text>
             </View>
           </Pressable>
         </View>
@@ -240,8 +250,8 @@ export default function Payments() {
           const active = section === s;
           return (
             <Pressable key={s} style={styles.navItem} onPress={() => setSection(s)}>
-              <Icon name={icon} size={20} color={active ? BRAND_BLUE : iOSColors.gray} />
-              <Text numberOfLines={1} allowFontScaling={false} style={[styles.navLabel, { color: active ? BRAND_BLUE : iOSColors.gray }]}>{s}</Text>
+              <Icon name={icon} size={20} color={active ? theme.accent : theme.tertiaryText} />
+              <Text numberOfLines={1} allowFontScaling={false} style={[styles.navLabel, { color: active ? theme.accent : theme.tertiaryText }]}>{s}</Text>
             </Pressable>
           );
         })}
@@ -280,16 +290,17 @@ function RoundButton({
 }) {
   const theme = useAppTheme();
   return (
-    <Pressable onPress={onPress} disabled={disabled} style={[styles.roundBtn, { backgroundColor: theme.cardBackground }]}>
+    <Pressable onPress={onPress} disabled={disabled} style={[styles.roundBtn, { backgroundColor: theme.cardBackground, borderColor: theme.divider }]}>
       <Icon name={icon} size={18} color={color} weight="medium" />
     </Pressable>
   );
 }
 
-function Chip({ text, color }: { text: string; color: string }) {
+function Chip({ text }: { text: string }) {
+  const theme = useAppTheme();
   return (
-    <View style={[styles.chip, { backgroundColor: withOpacity(color, 0.1) }]}>
-      <Text style={[styles.chipText, { color }]} numberOfLines={1}>{text}</Text>
+    <View style={[styles.chip, { backgroundColor: theme.accentSoft, borderRadius: theme.isEditorial ? 2 : 6 }]}>
+      <Text style={[styles.chipText, { color: theme.accent }]} numberOfLines={1}>{text}</Text>
     </View>
   );
 }
@@ -299,13 +310,12 @@ function SectionPlaceholder({ section }: { section: Section }) {
   const copy: Record<Exclude<Section, 'Checkout'>, { icon: SFSymbol; title: string; sub: string }> = {
     Transactions: { icon: 'list.bullet.rectangle.portrait.fill', title: 'Transactions', sub: 'Sales & payment history arrives in 5d.' },
     Features: { icon: 'star.fill', title: 'Payment Features', sub: 'Gift cards, links, reminders & more arrive in 5e.' },
-    AI: { icon: 'brain', title: 'Payments AI', sub: 'Your payments copilot is coming soon.' },
     More: { icon: 'ellipsis.circle.fill', title: 'More', sub: 'Additional payment options are coming soon.' },
   };
   const c = copy[section as Exclude<Section, 'Checkout'>];
   return (
     <View style={styles.placeholder}>
-      <Icon name={c.icon} size={44} color={withOpacity(iOSColors.gray, 0.5)} />
+      <Icon name={c.icon} size={44} color={theme.tertiaryText} />
       <Text style={[styles.placeholderTitle, { color: theme.primaryText }]}>{c.title}</Text>
       <Text style={[styles.placeholderSub, { color: theme.secondaryText }]}>{c.sub}</Text>
     </View>
@@ -321,18 +331,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
-  headerTitle: { flex: 1, textAlign: 'center', fontSize: 20, fontWeight: '700' },
+  headerTitle: { flex: 1, textAlign: 'center' },
   roundBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    borderWidth: 1,
   },
   chargeBar: {
     flexDirection: 'row',
@@ -349,7 +355,7 @@ const styles = StyleSheet.create({
   chargeLabel: { fontSize: 12, fontWeight: '500' },
   chargeAmount: { fontSize: 22, fontWeight: '700' },
   chips: { gap: 3, flexShrink: 1, minWidth: 0 },
-  chip: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+  chip: { paddingHorizontal: 8, paddingVertical: 3 },
   chipText: { fontSize: 11, fontWeight: '500' },
   // Never shrink — the Charge button keeps its full width, anchored right.
   chargeBtnWrap: { flexShrink: 0 },
@@ -359,9 +365,8 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 16,
     paddingVertical: 11,
-    borderRadius: 12,
   },
-  chargeBtnText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
+  chargeBtnText: { fontSize: 14, fontWeight: '700' },
   nav: {
     flexDirection: 'row',
     borderTopWidth: StyleSheet.hairlineWidth,

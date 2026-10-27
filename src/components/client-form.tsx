@@ -2,32 +2,51 @@
  * ClientForm — add/edit a client. Port of AddClientView.swift.
  * Shared by `clients/new` and `clients/[id]`.
  *
- * Deferred (native modules, consistent with the port's staging): profile photo
- * picker, Import-from-Contacts, and the graphical birthday date picker — these
- * render as inert affordances. Phone formatting, buffer time (via the shared
- * time-wheel sheet), and SMS consent are fully wired.
+ * Tapping the photo circle takes / chooses a photo, kept on the device only
+ * (like iOS) via `local-photos` keyed by the client id. "Import from Contacts"
+ * opens the system contact picker and fills name / phone / email. Birthday uses
+ * the native date picker (inline sheet on iOS, dialog on Android). Phone
+ * formatting, buffer time (via the shared time-wheel sheet), and SMS consent
+ * are fully wired.
  */
 
-import { LinearGradient } from 'expo-linear-gradient';
+import { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import type { SFSymbol } from 'expo-symbols';
-import { useMemo, useState, type ReactNode } from 'react';
-import { Alert, Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { Alert, Platform, Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { KeyboardAwareForm } from '@/components/keyboard-aware-form';
 
+import { pickDeviceContact, choosePhoneNumber } from '@/components/contacts-picker-sheet';
 import { Icon } from '@/components/icon';
+import { DatePickerSheet } from '@/components/sheets/date-picker-sheet';
 import { TimeWheelSheet } from '@/components/sheets/time-wheel-sheet';
 import { useClients } from '@/context/clients-store';
 import { clientInitials } from '@/models/client';
+import { choosePhoto, getPhoto, setPhoto } from '@/lib/local-photos';
 import { formatPhoneNumber } from '@/lib/phone';
-import { withOpacity } from '@/lib/color';
-import { Brand, iOSColors, lightShadow } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
-const SECTION_TITLE = '#4D4D59';
+// Required-field asterisks stay red (semantic).
 const REQUIRED_RED = '#F26666';
+
+const birthdayFmt = new Intl.DateTimeFormat('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+
+/** Noon local time, so the stored ISO day never shifts across time zones. */
+function noonISO(d: Date): string {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12).toISOString();
+}
+
+/** Parse a stored birthday ('YYYY-MM-DD' or full ISO) as a local calendar day. */
+function parseBirthday(value?: string): Date | null {
+  if (!value) return null;
+  const m = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const d = m ? new Date(+m[1], +m[2] - 1, +m[3], 12) : new Date(value);
+  return isNaN(d.getTime()) ? null : d;
+}
 
 function formatBuffer(h: number, m: number): string {
   if (h > 0 && m > 0) return `${h}h ${m}m`;
@@ -52,6 +71,18 @@ export function ClientForm({ editingId }: { editingId?: string }) {
   const [location, setLocation] = useState(editing?.location ?? '');
   const [notes, setNotes] = useState(editing?.notes ?? '');
   const [trackBirthday, setTrackBirthday] = useState(!!editing?.birthday);
+  const [birthday, setBirthday] = useState<string | undefined>(
+    () => (parseBirthday(editing?.birthday) ? noonISO(parseBirthday(editing?.birthday)!) : undefined),
+  );
+  const [birthdaySheet, setBirthdaySheet] = useState(false);
+  const [photoUri, setPhotoUri] = useState<string | undefined>(undefined);
+  const [importing, setImporting] = useState(false);
+
+  // Photos are device-local (never uploaded), keyed by client id.
+  useEffect(() => {
+    if (!editingId) return;
+    getPhoto('client', editingId).then(setPhotoUri);
+  }, [editingId]);
 
   const [hasBuffer, setHasBuffer] = useState((editing?.clientBlockTime ?? 0) > 0);
   const [bufferH, setBufferH] = useState(Math.floor((editing?.clientBlockTime ?? 0) / 60));
@@ -76,8 +107,8 @@ export function ClientForm({ editingId }: { editingId?: string }) {
       email: email || undefined,
       notes: notes || undefined,
       location: location || undefined,
-      birthday: trackBirthday ? editing?.birthday : undefined,
-      photoUri: editing?.photoUri,
+      birthday: trackBirthday ? birthday : undefined,
+      photoUri,
       clientBlockTime: blockTime,
       smsConsentGiven: smsConsent,
       smsConsentDate: smsConsent ? editing?.smsConsentDate ?? new Date().toISOString() : undefined,
@@ -88,8 +119,10 @@ export function ClientForm({ editingId }: { editingId?: string }) {
     try {
       if (editing) {
         await updateClient({ ...editing, ...base });
+        await setPhoto('client', editing.id, photoUri);
       } else {
-        await addClient(base);
+        const created = await addClient(base);
+        if (photoUri && created?.id) await setPhoto('client', created.id, photoUri);
       }
       router.back();
     } catch (e) {
@@ -99,51 +132,98 @@ export function ClientForm({ editingId }: { editingId?: string }) {
     }
   };
 
-  const stub = (msg: string) => Alert.alert('Coming soon', msg);
+  const pickPhoto = async () => {
+    const uri = await choosePhoto({ title: 'Client Photo', onRemove: photoUri ? () => setPhotoUri(undefined) : undefined });
+    if (uri) setPhotoUri(uri);
+  };
+
+  const importContact = async () => {
+    if (importing) return;
+    setImporting(true);
+    try {
+      const contact = await pickDeviceContact();
+      if (!contact) return;
+      const number = await choosePhoneNumber(contact);
+      if (contact.name) setName(contact.name);
+      if (number) setPhone(formatPhoneNumber(number));
+      const other = contact.phones.find((p) => p !== number);
+      if (other && !secondaryPhone) setSecondaryPhone(formatPhoneNumber(other));
+      if (contact.email) setEmail(contact.email);
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const birthdayDate = parseBirthday(birthday);
+
+  const openBirthday = () => {
+    const value = birthdayDate ?? new Date(new Date().getFullYear() - 30, 0, 1, 12);
+    if (Platform.OS === 'android') {
+      DateTimePickerAndroid.open({
+        value,
+        mode: 'date',
+        maximumDate: new Date(),
+        onChange: (e, d) => {
+          if (e.type === 'set' && d) setBirthday(noonISO(d));
+        },
+      });
+    } else {
+      if (!birthday) setBirthday(noonISO(value));
+      setBirthdaySheet(true);
+    }
+  };
 
   return (
     <View style={[styles.root, { backgroundColor: theme.background }]}>
       <SafeAreaView style={styles.safe} edges={['top']}>
         {/* Header */}
-        <View style={[styles.header, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
+        <View style={[styles.header, { backgroundColor: theme.cardBackground, borderBottomWidth: 1, borderBottomColor: theme.divider }]}>
           <Pressable onPress={() => router.back()} hitSlop={8} style={styles.back}>
-            <Icon name="chevron.left" size={16} weight="semibold" color={iOSColors.blue} />
-            <Text style={styles.backText}>Back</Text>
+            <Icon name="chevron.left" size={16} weight="semibold" color={theme.accent} />
+            <Text style={[styles.backText, { color: theme.accent }]}>Back</Text>
           </Pressable>
           <Text style={[styles.headerTitle, { color: theme.primaryText }]}>
             {editing ? 'Edit Client' : 'New Client'}
           </Text>
           <Pressable onPress={save} disabled={!canSave || saving}>
-            <Text style={[styles.saveCapsule, { backgroundColor: canSave ? iOSColors.blue : withOpacity(iOSColors.gray, 0.4) }]}>
+            <Text
+              style={[
+                styles.saveCapsule,
+                {
+                  backgroundColor: theme.accent,
+                  color: theme.onAccent,
+                  opacity: canSave ? 1 : 0.5,
+                  borderRadius: theme.isEditorial ? 2 : 999,
+                },
+              ]}>
               Save
             </Text>
           </Pressable>
         </View>
 
         <KeyboardAwareForm contentContainerStyle={styles.body}>
-          {/* Photo (deferred) */}
+          {/* Photo (device-local) */}
           <View style={styles.photoBlock}>
-            <Pressable onPress={() => stub('Photo picker is coming with a later phase.')}>
-              <LinearGradient
-                colors={[theme.gradientTop, theme.gradientBottom]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.photoCircle}>
-                {editing ? (
-                  <Text style={styles.photoInitials}>{clientInitials(name || '?')}</Text>
+            <Pressable onPress={pickPhoto} accessibilityLabel="Client photo">
+              <View style={[styles.photoCircle, { backgroundColor: theme.accentSoft }]}>
+                {photoUri ? (
+                  <Image source={{ uri: photoUri }} style={styles.photoImage} contentFit="cover" />
+                ) : editing ? (
+                  <Text style={[styles.photoInitials, { color: theme.accent }]}>{clientInitials(name || '?')}</Text>
                 ) : (
                   <>
-                    <Icon name="camera.fill" size={24} color={Brand.accent} />
-                    <Text style={[styles.photoLabel, { color: Brand.accent }]}>Add Photo</Text>
+                    <Icon name="camera.fill" size={24} color={theme.accent} />
+                    <Text style={[styles.photoLabel, { color: theme.accent }]}>Add Photo</Text>
                   </>
                 )}
-              </LinearGradient>
+              </View>
             </Pressable>
             <Pressable
-              onPress={() => stub('Import from Contacts is coming with a later phase.')}
-              style={styles.importRow}>
-              <Icon name="person.crop.circle.badge.plus" size={14} color={Brand.accent} />
-              <Text style={[styles.importText, { color: Brand.accent }]}>Import from Contacts</Text>
+              onPress={importContact}
+              disabled={importing}
+              style={[styles.importRow, { opacity: importing ? 0.5 : 1 }]}>
+              <Icon name="person.crop.circle.badge.plus" size={14} color={theme.accent} />
+              <Text style={[styles.importText, { color: theme.accent }]}>Import from Contacts</Text>
             </Pressable>
           </View>
 
@@ -173,17 +253,27 @@ export function ClientForm({ editingId }: { editingId?: string }) {
             </Field>
             <Divider />
             <Field label="Notes" icon="note.text">
-              <TextInput value={notes} onChangeText={setNotes} placeholder="Add notes about preferences" placeholderTextColor={withOpacity(iOSColors.gray, 0.5)} multiline style={[styles.input, styles.notes, { color: theme.primaryText }]} />
+              <TextInput value={notes} onChangeText={setNotes} placeholder="Add notes about preferences" placeholderTextColor={theme.tertiaryText} multiline style={[styles.input, styles.notes, { color: theme.primaryText }]} />
             </Field>
           </Section>
 
-          {/* Birthday (date picker deferred) */}
+          {/* Birthday */}
           <Section title="Birthday" icon="gift.fill">
             <ToggleRow icon="calendar" title="Track Birthday" value={trackBirthday} onChange={setTrackBirthday} />
             {trackBirthday ? (
-              <Text style={[styles.hint, { color: theme.secondaryText }]}>
-                Birthday date selection is coming with a later phase.
-              </Text>
+              <>
+                <Divider />
+                <Pressable onPress={openBirthday} style={styles.bufferRow}>
+                  <Icon name="gift.fill" size={16} color={theme.secondaryText} />
+                  <Text style={[styles.bufferLabel, { color: theme.secondaryText }]}>Date</Text>
+                  <View style={styles.bufferEnd}>
+                    <Text style={[styles.bufferValue, { color: birthdayDate ? theme.primaryText : theme.tertiaryText }]}>
+                      {birthdayDate ? birthdayFmt.format(birthdayDate) : 'Select date'}
+                    </Text>
+                    <Icon name="chevron.right" size={12} color={theme.secondaryText} />
+                  </View>
+                </Pressable>
+              </>
             ) : null}
           </Section>
 
@@ -223,6 +313,15 @@ export function ClientForm({ editingId }: { editingId?: string }) {
         </KeyboardAwareForm>
       </SafeAreaView>
 
+      {Platform.OS === 'ios' ? (
+        <DatePickerSheet
+          visible={birthdaySheet}
+          date={birthday ?? noonISO(new Date())}
+          onChange={(iso) => setBirthday(noonISO(new Date(iso)))}
+          onClose={() => setBirthdaySheet(false)}
+        />
+      ) : null}
+
       <TimeWheelSheet
         visible={bufferSheet}
         title="Buffer Time"
@@ -240,10 +339,10 @@ function Section({ title, icon, children }: { title: string; icon: SFSymbol; chi
   return (
     <View style={styles.section}>
       <View style={styles.sectionHead}>
-        <Icon name={icon} size={14} weight="semibold" color={Brand.accent} />
-        <Text style={styles.sectionHeadTitle}>{title}</Text>
+        <Icon name={icon} size={14} weight="semibold" color={theme.accent} />
+        <Text style={[styles.sectionHeadTitle, { color: theme.secondaryText }]}>{title}</Text>
       </View>
-      <View style={[styles.sectionCard, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>{children}</View>
+      <View style={[styles.sectionCard, theme.card]}>{children}</View>
     </View>
   );
 }
@@ -253,7 +352,7 @@ function Field({ label, required, icon, children }: { label: string; required?: 
   return (
     <View style={styles.field}>
       <View style={styles.fieldLabelRow}>
-        <Icon name={icon} size={14} color={Brand.accent} />
+        <Icon name={icon} size={14} color={theme.accent} />
         <Text style={[styles.fieldLabel, { color: theme.secondaryText }]}>{label}</Text>
         {required ? <Text style={styles.required}>*</Text> : null}
       </View>
@@ -271,9 +370,9 @@ function ToggleRow({ icon, title, value, onChange }: { icon: SFSymbol; title: st
   const theme = useAppTheme();
   return (
     <View style={styles.toggleRow}>
-      <Icon name={icon} size={14} color={Brand.accent} />
+      <Icon name={icon} size={14} color={theme.accent} />
       <Text style={[styles.toggleTitle, { color: theme.primaryText }]}>{title}</Text>
-      <Switch value={value} onValueChange={onChange} trackColor={{ true: Brand.accent, false: withOpacity(iOSColors.gray, 0.3) }} />
+      <Switch value={value} onValueChange={onChange} trackColor={{ true: theme.accent, false: theme.inputBackground }} />
     </View>
   );
 }
@@ -283,20 +382,21 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
   back: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  backText: { color: iOSColors.blue, fontSize: 16, fontWeight: '600' },
+  backText: { fontSize: 16, fontWeight: '600' },
   headerTitle: { fontSize: 18, fontWeight: '700' },
-  saveCapsule: { color: '#FFFFFF', fontSize: 16, fontWeight: '700', paddingHorizontal: 20, paddingVertical: 8, borderRadius: 999, overflow: 'hidden' },
+  saveCapsule: { fontSize: 16, fontWeight: '700', paddingHorizontal: 20, paddingVertical: 8, overflow: 'hidden' },
   body: { paddingBottom: 40, gap: 20, paddingTop: 24 },
   photoBlock: { alignItems: 'center', gap: 16 },
   photoCircle: { width: 100, height: 100, borderRadius: 50, alignItems: 'center', justifyContent: 'center', gap: 6 },
-  photoInitials: { fontSize: 32, fontWeight: '600', color: Brand.accent },
+  photoImage: { width: 100, height: 100, borderRadius: 50 },
+  photoInitials: { fontSize: 32, fontWeight: '600' },
   photoLabel: { fontSize: 12, fontWeight: '500' },
   importRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   importText: { fontSize: 14, fontWeight: '500' },
   section: { gap: 10 },
   sectionHead: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 20 },
-  sectionHeadTitle: { fontSize: 15, fontWeight: '700', color: SECTION_TITLE },
-  sectionCard: { marginHorizontal: 16, borderRadius: 14 },
+  sectionHeadTitle: { fontSize: 15, fontWeight: '700' },
+  sectionCard: { marginHorizontal: 16 },
   field: { paddingHorizontal: 16, paddingVertical: 12, gap: 6 },
   fieldLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   fieldLabel: { fontSize: 13, fontWeight: '500' },
@@ -305,7 +405,6 @@ const styles = StyleSheet.create({
   input: { fontSize: 16, paddingVertical: 4, textAlignVertical: 'center' },
   notes: { minHeight: 72, textAlignVertical: 'top' },
   divider: { height: StyleSheet.hairlineWidth, marginLeft: 52 },
-  hint: { fontSize: 12, paddingHorizontal: 16, paddingBottom: 12 },
   sectionDesc: { fontSize: 13, paddingHorizontal: 16, paddingBottom: 12 },
   toggleRow: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, paddingVertical: 12 },
   toggleTitle: { flex: 1, fontSize: 16 },

@@ -7,8 +7,6 @@
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Icon } from '@/components/icon';
-import { withOpacity } from '@/lib/color';
-import { iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
 const QUICK = [
@@ -29,7 +27,6 @@ export function TimeStepperSheet({
   minute,
   isPM,
   title,
-  accent,
   onChange,
   onClose,
 }: {
@@ -38,11 +35,14 @@ export function TimeStepperSheet({
   minute: number;
   isPM: boolean;
   title: string;
-  accent: string;
+  /** Ignored — the sheet always uses the look's accent. Kept for existing callers. */
+  accent?: string;
   onChange: (hour: number, minute: number, isPM: boolean) => void;
   onClose: () => void;
 }) {
   const theme = useAppTheme();
+  const accent = theme.accent;
+  const chipRadius = theme.isEditorial ? 2 : 999;
 
   const decHour = () => onChange(hour > 1 ? hour - 1 : 12, minute, isPM);
   const incHour = () => onChange(hour < 12 ? hour + 1 : 1, minute, isPM);
@@ -59,7 +59,7 @@ export function TimeStepperSheet({
           <Pressable onPress={onClose} hitSlop={8}>
             <Text style={[styles.cancel, { color: theme.secondaryText }]}>Cancel</Text>
           </Pressable>
-          <Text style={[styles.title, { color: theme.primaryText }]}>{title}</Text>
+          <Text style={theme.display(20)}>{title}</Text>
           <Pressable onPress={onClose} hitSlop={8}>
             <Text style={[styles.done, { color: accent }]}>Done</Text>
           </Pressable>
@@ -67,7 +67,7 @@ export function TimeStepperSheet({
 
         <ScrollView contentContainerStyle={styles.body}>
           <View style={styles.clockRow}>
-            <View style={[styles.unit, { backgroundColor: theme.cardBackground }]}>
+            <View style={[styles.unit, theme.card]}>
               <Text style={[styles.unitLabel, { color: theme.secondaryText }]}>Hour</Text>
               <View style={styles.unitControls}>
                 <Pressable onPress={decHour} hitSlop={6}><Icon name="minus.circle.fill" size={28} color={accent} /></Pressable>
@@ -78,7 +78,7 @@ export function TimeStepperSheet({
 
             <Text style={[styles.colon, { color: theme.secondaryText }]}>:</Text>
 
-            <View style={[styles.unit, { backgroundColor: theme.cardBackground }]}>
+            <View style={[styles.unit, theme.card]}>
               <Text style={[styles.unitLabel, { color: theme.secondaryText }]}>Min</Text>
               <View style={styles.unitControls}>
                 <Pressable onPress={decMin} hitSlop={6}><Icon name="minus.circle.fill" size={28} color={accent} /></Pressable>
@@ -90,18 +90,18 @@ export function TimeStepperSheet({
             <View style={styles.ampm}>
               <Pressable
                 onPress={() => onChange(hour, minute, false)}
-                style={[styles.ampmBtn, { backgroundColor: !isPM ? accent : withOpacity(iOSColors.gray, 0.2) }]}>
-                <Text style={[styles.ampmText, { color: !isPM ? '#FFFFFF' : theme.secondaryText }]}>AM</Text>
+                style={[styles.ampmBtn, { backgroundColor: !isPM ? accent : theme.cardBackground, borderRadius: theme.isEditorial ? 2 : 8 }]}>
+                <Text style={[styles.ampmText, { color: !isPM ? theme.onAccent : theme.secondaryText }]}>AM</Text>
               </Pressable>
               <Pressable
                 onPress={() => onChange(hour, minute, true)}
-                style={[styles.ampmBtn, { backgroundColor: isPM ? accent : withOpacity(iOSColors.gray, 0.2) }]}>
-                <Text style={[styles.ampmText, { color: isPM ? '#FFFFFF' : theme.secondaryText }]}>PM</Text>
+                style={[styles.ampmBtn, { backgroundColor: isPM ? accent : theme.cardBackground, borderRadius: theme.isEditorial ? 2 : 8 }]}>
+                <Text style={[styles.ampmText, { color: isPM ? theme.onAccent : theme.secondaryText }]}>PM</Text>
               </Pressable>
             </View>
           </View>
 
-          <Text style={[styles.preview, { color: accent, backgroundColor: withOpacity(accent, 0.1) }]}>{preview}</Text>
+          <Text style={[styles.preview, { color: accent, backgroundColor: theme.accentSoft, borderRadius: chipRadius }]}>{preview}</Text>
 
           <Text style={[styles.quickLabel, { color: theme.secondaryText }]}>Quick Select</Text>
           <View style={styles.quickGrid}>
@@ -111,8 +111,8 @@ export function TimeStepperSheet({
                 <Pressable
                   key={q.label}
                   onPress={() => onChange(q.h, q.m, q.pm)}
-                  style={[styles.chip, { borderColor: accent, backgroundColor: active ? accent : theme.cardBackground }]}>
-                  <Text style={[styles.chipText, { color: active ? '#FFFFFF' : accent }]}>{q.label}</Text>
+                  style={[styles.chip, { borderColor: active ? accent : theme.divider, backgroundColor: active ? accent : theme.cardBackground, borderRadius: chipRadius }]}>
+                  <Text style={[styles.chipText, { color: active ? theme.onAccent : accent }]}>{q.label}</Text>
                 </Pressable>
               );
             })}
@@ -125,24 +125,23 @@ export function TimeStepperSheet({
 
 const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.25)' },
-  sheet: { borderTopLeftRadius: 16, borderTopRightRadius: 16, maxHeight: '80%' },
+  sheet: { borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '80%' },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16 },
   cancel: { fontSize: 16, fontWeight: '500' },
-  title: { fontSize: 18, fontWeight: '700' },
   done: { fontSize: 16, fontWeight: '600' },
   body: { padding: 16, gap: 20, alignItems: 'center' },
   clockRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  unit: { alignItems: 'center', gap: 8, padding: 12, borderRadius: 12 },
+  unit: { alignItems: 'center', gap: 8, padding: 12 },
   unitLabel: { fontSize: 12, fontWeight: '500' },
   unitControls: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   unitValue: { fontSize: 36, fontWeight: '700', width: 44, textAlign: 'center' },
   colon: { fontSize: 36, fontWeight: '700' },
   ampm: { gap: 6 },
-  ampmBtn: { width: 50, height: 38, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  ampmBtn: { width: 50, height: 38, alignItems: 'center', justifyContent: 'center' },
   ampmText: { fontSize: 16, fontWeight: '700' },
-  preview: { fontSize: 18, fontWeight: '600', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 10, overflow: 'hidden' },
+  preview: { fontSize: 18, fontWeight: '600', paddingHorizontal: 20, paddingVertical: 10, overflow: 'hidden' },
   quickLabel: { fontSize: 12, fontWeight: '500' },
   quickGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8 },
-  chip: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 8, borderWidth: 1 },
+  chip: { paddingHorizontal: 14, paddingVertical: 10, borderWidth: 1 },
   chipText: { fontSize: 14, fontWeight: '500' },
 });

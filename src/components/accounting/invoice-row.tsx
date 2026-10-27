@@ -5,21 +5,21 @@
 import type { SFSymbol } from 'expo-symbols';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { Icon } from '@/components/icon';
+import { ThemedIconTile } from '@/components/themed';
 import { withOpacity } from '@/lib/color';
 import { invoiceDisplayName, invoiceTotalDue, type Invoice, type InvoiceStatus } from '@/models/invoice';
-import { iOSColors, lightShadow } from '@/theme/tokens';
+import { iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
 const usd = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
 const dueFmt = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
-export function statusColor(status: InvoiceStatus): string {
+export function statusColor(status: InvoiceStatus, accent: string = iOSColors.blue, muted: string = iOSColors.gray): string {
   switch (status) {
     case 'paid': return iOSColors.green;
-    case 'sent': return iOSColors.blue;
+    case 'sent': return accent;
     case 'cancelled': return iOSColors.red;
-    default: return iOSColors.gray;
+    default: return muted;
   }
 }
 
@@ -34,12 +34,10 @@ function statusIcon(status: InvoiceStatus): SFSymbol {
 
 export function InvoiceRow({ invoice }: { invoice: Invoice }) {
   const theme = useAppTheme();
-  const color = statusColor(invoice.status);
+  const color = statusColor(invoice.status, theme.accent, theme.secondaryText);
   return (
-    <View style={[styles.row, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
-      <View style={[styles.iconCircle, { backgroundColor: withOpacity(color, 0.12) }]}>
-        <Icon name={statusIcon(invoice.status)} size={18} color={color} />
-      </View>
+    <View style={[styles.row, theme.card]}>
+      <ThemedIconTile name={statusIcon(invoice.status)} size={44} />
       <View style={styles.body}>
         <Text style={[styles.name, { color: theme.primaryText }]} numberOfLines={1}>{invoiceDisplayName(invoice)}</Text>
         {invoice.clientName ? <Text style={[styles.client, { color: theme.secondaryText }]} numberOfLines={1}>{invoice.clientName}</Text> : null}
@@ -56,8 +54,7 @@ export function InvoiceRow({ invoice }: { invoice: Invoice }) {
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16, borderRadius: 12 },
-  iconCircle: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16 },
   body: { flex: 1, gap: 4 },
   name: { fontSize: 16, fontWeight: '600' },
   client: { fontSize: 14 },

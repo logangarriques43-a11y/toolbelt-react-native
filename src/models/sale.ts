@@ -2,8 +2,9 @@
  * Sale models — port of SaleTransaction / SaleItem (SaleTransactionManager.swift).
  * A completed sale from the Payments checkout (services, products, or a keypad
  * amount). Sales feed the Accounting hub's combined revenue + the Tax Dashboard's
- * collected-tax totals. Backend/provider sync fields are omitted (in-memory only);
- * real card capture (Stripe / Tap-to-Pay) lands as native modules later.
+ * collected-tax totals. Card / Digital / Tap to Pay sales carry the Stripe
+ * PaymentIntent id (paymentTransactionId + paymentProviderRef) and its status,
+ * matching the Swift SaleTransaction provider fields.
  */
 
 import type { SFSymbol } from 'expo-symbols';
@@ -51,9 +52,15 @@ export interface SaleTransaction {
   /** Percent applied, e.g. 8.25. */
   taxRate?: number;
   taxJurisdiction?: string;
-  /** Transient display details, populated when a card was used. */
+  /** Display details, populated when a card was used. */
   cardBrand?: string;
   cardLast4?: string;
+  /** Stripe PaymentIntent id for card / Tap to Pay sales (unset for cash). */
+  paymentTransactionId?: string;
+  /** Provider reference — also the PaymentIntent id for Stripe charges. */
+  paymentProviderRef?: string;
+  /** Provider status at the time of the sale, e.g. "succeeded". */
+  paymentStatus?: string;
 }
 
 /** Pre-tax total of the line items (or the keypad amount). */

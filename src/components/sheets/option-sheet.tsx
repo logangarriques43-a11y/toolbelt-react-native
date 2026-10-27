@@ -6,7 +6,6 @@
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Icon } from '@/components/icon';
-import { iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
 export interface Option<T> {
@@ -36,9 +35,9 @@ export function OptionSheet<T extends string | number>({
       <Pressable style={styles.backdrop} onPress={onClose} />
       <View style={[styles.sheet, { backgroundColor: theme.cardBackground }]}>
         <View style={styles.header}>
-          <Text style={[styles.title, { color: theme.primaryText }]}>{title}</Text>
+          <Text style={theme.display(20)}>{title}</Text>
           <Pressable onPress={onClose} hitSlop={8}>
-            <Text style={styles.done}>Done</Text>
+            <Text style={[styles.done, { color: theme.accent }]}>Done</Text>
           </Pressable>
         </View>
         <View style={[styles.divider, { backgroundColor: theme.divider }]} />
@@ -53,7 +52,7 @@ export function OptionSheet<T extends string | number>({
               style={styles.row}>
               <Text style={[styles.label, { color: theme.primaryText }]}>{opt.label}</Text>
               {opt.value === selected ? (
-                <Icon name="checkmark" size={16} color={iOSColors.blue} />
+                <Icon name="checkmark" size={16} color={theme.accent} />
               ) : null}
             </Pressable>
           ))}
@@ -65,10 +64,9 @@ export function OptionSheet<T extends string | number>({
 
 const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.25)' },
-  sheet: { borderTopLeftRadius: 16, borderTopRightRadius: 16, paddingBottom: 32, maxHeight: '70%' },
+  sheet: { borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingBottom: 32, maxHeight: '70%' },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16 },
-  title: { fontSize: 18, fontWeight: '700' },
-  done: { fontSize: 16, fontWeight: '600', color: iOSColors.blue },
+  done: { fontSize: 16, fontWeight: '600' },
   divider: { height: StyleSheet.hairlineWidth },
   list: { paddingHorizontal: 8 },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, paddingVertical: 16 },

@@ -1,18 +1,22 @@
 /**
  * StaffForm — add/edit a staff member. Port of AddStaffSheet (StaffView.swift).
- * Fields: photo (deferred stub), import-from-contacts (deferred stub), name,
- * role (free text + suggestions), phone, email, and the services this member
- * performs. Shared by `staff/new` and `staff/[id]`.
+ * Fields: photo (take / choose, kept on the device only via `local-photos`
+ * keyed by the staff id, like iOS), import-from-contacts (system contact
+ * picker → name / phone / email), name, role (free text + suggestions), phone,
+ * email, and the services this member performs. Shared by `staff/new` and
+ * `staff/[id]`.
  */
 
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import type { SFSymbol } from 'expo-symbols';
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Alert, Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { KeyboardAwareForm } from '@/components/keyboard-aware-form';
 
+import { choosePhoneNumber, pickDeviceContact } from '@/components/contacts-picker-sheet';
 import { DashboardGradient } from '@/components/dashboard-gradient';
 import { Icon } from '@/components/icon';
 import { ColorPickerSheet } from '@/components/sheets/color-picker-sheet';
@@ -22,11 +26,10 @@ import { StaffPermissionsSheet } from '@/components/staff/permissions-sheet';
 import { StaffWorkingHoursSheet } from '@/components/staff/working-hours-sheet';
 import { useServices } from '@/context/services-store';
 import { useStaff } from '@/context/staff-store';
-import { withOpacity } from '@/lib/color';
+import { choosePhoto, getPhoto, setPhoto } from '@/lib/local-photos';
 import { formatPhoneNumber } from '@/lib/phone';
 import { PERMISSIONS } from '@/models/permission';
 import { STAFF_ORANGE, staffInitials } from '@/models/staff';
-import { iOSColors, lightShadow } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
 const ROLE_OPTIONS = ['Stylist', 'Barber', 'Technician', 'Therapist', 'Assistant', 'Manager', 'Receptionist', 'Owner'].map(
@@ -57,11 +60,37 @@ export function StaffForm({ editingId }: { editingId?: string }) {
   const [showLunch, setShowLunch] = useState(false);
   const [showPermissions, setShowPermissions] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [photoUri, setPhotoUri] = useState<string | undefined>(undefined);
+  const [importing, setImporting] = useState(false);
+
+  useEffect(() => {
+    if (!editingId) return;
+    getPhoto('staff', editingId).then(setPhotoUri);
+  }, [editingId]);
 
   const enabledPermissions = editing ? PERMISSIONS.filter((p) => editing.permissions?.[p] === true).length : 0;
 
   const canSave = name.trim().length > 0 && role.trim().length > 0;
-  const stub = (msg: string) => Alert.alert('Coming soon', msg);
+
+  const pickPhoto = async () => {
+    const uri = await choosePhoto({ title: 'Staff Photo', onRemove: photoUri ? () => setPhotoUri(undefined) : undefined });
+    if (uri) setPhotoUri(uri);
+  };
+
+  const importContact = async () => {
+    if (importing) return;
+    setImporting(true);
+    try {
+      const contact = await pickDeviceContact();
+      if (!contact) return;
+      const number = await choosePhoneNumber(contact);
+      if (contact.name) setName(contact.name);
+      if (number) setPhone(formatPhoneNumber(number));
+      if (contact.email) setEmail(contact.email);
+    } finally {
+      setImporting(false);
+    }
+  };
 
   const toggleService = (id: string) =>
     setServiceIds((prev) => {
@@ -93,8 +122,13 @@ export function StaffForm({ editingId }: { editingId?: string }) {
     };
     setSaving(true);
     try {
-      if (editing) await updateStaff({ ...editing, ...base });
-      else await addStaff(base);
+      if (editing) {
+        await updateStaff({ ...editing, ...base });
+        await setPhoto('staff', editing.id, photoUri);
+      } else {
+        const created = await addStaff(base);
+        if (photoUri && created?.id) await setPhoto('staff', created.id, photoUri);
+      }
       router.back();
     } catch (e) {
       Alert.alert('Could not save', e instanceof Error ? e.message : 'Please try again.');
@@ -106,38 +140,50 @@ export function StaffForm({ editingId }: { editingId?: string }) {
   return (
     <DashboardGradient>
       <SafeAreaView style={styles.safe} edges={['top']}>
-        <View style={[styles.header, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
+        <View style={[styles.header, { backgroundColor: theme.background, borderBottomColor: theme.divider }]}>
           <Pressable onPress={() => router.back()} hitSlop={8} style={styles.back}>
-            <Icon name="chevron.left" size={16} weight="semibold" color={iOSColors.blue} />
-            <Text style={styles.backText}>Back</Text>
+            <Icon name="chevron.left" size={16} weight="semibold" color={theme.accent} />
+            <Text style={[styles.backText, { color: theme.accent }]}>Back</Text>
           </Pressable>
-          <Text style={[styles.headerTitle, { color: theme.primaryText }]}>{editing ? 'Edit Staff' : 'Add Staff'}</Text>
+          <Text style={theme.display(20)}>{editing ? 'Edit Staff' : 'Add Staff'}</Text>
           <Pressable onPress={save} disabled={!canSave || saving}>
-            <Text style={[styles.savePill, { backgroundColor: canSave ? STAFF_ORANGE : withOpacity(iOSColors.gray, 0.4) }]}>Save</Text>
+            <Text
+              style={[
+                styles.savePill,
+                {
+                  backgroundColor: canSave ? theme.accent : theme.inputBackground,
+                  color: canSave ? theme.onAccent : theme.tertiaryText,
+                  borderRadius: theme.isEditorial ? 2 : 999,
+                },
+              ]}>
+              Save
+            </Text>
           </Pressable>
         </View>
 
         <KeyboardAwareForm contentContainerStyle={styles.body}>
-          {/* Photo (deferred) */}
+          {/* Photo (device-local) */}
           <View style={styles.photoBlock}>
-            <Pressable onPress={() => stub('Photo picker arrives in a later phase.')} style={[styles.photoCircle, { backgroundColor: withOpacity(STAFF_ORANGE, 0.15) }]}>
-              {name ? (
-                <Text style={[styles.photoInitials, { color: STAFF_ORANGE }]}>{staffInitials(name)}</Text>
+            <Pressable onPress={pickPhoto} accessibilityLabel="Staff photo" style={[styles.photoCircle, { backgroundColor: theme.accentSoft, borderRadius: theme.isEditorial ? 2 : 45 }]}>
+              {photoUri ? (
+                <Image source={{ uri: photoUri }} style={[styles.photoImage, { borderRadius: theme.isEditorial ? 2 : 45 }]} contentFit="cover" />
+              ) : name ? (
+                <Text style={[styles.photoInitials, { color: theme.accent }]}>{staffInitials(name)}</Text>
               ) : (
                 <>
-                  <Icon name="camera.fill" size={22} color={STAFF_ORANGE} />
-                  <Text style={[styles.photoLabel, { color: STAFF_ORANGE }]}>Photo</Text>
+                  <Icon name="camera.fill" size={22} color={theme.accent} />
+                  <Text style={[styles.photoLabel, { color: theme.accent }]}>Photo</Text>
                 </>
               )}
             </Pressable>
-            <Pressable onPress={() => stub('Import from Contacts arrives in a later phase.')} style={[styles.importBtn, { borderColor: STAFF_ORANGE }]}>
-              <Icon name="person.crop.circle.badge.plus" size={18} color={STAFF_ORANGE} />
-              <Text style={[styles.importText, { color: STAFF_ORANGE }]}>Import from Contacts</Text>
+            <Pressable onPress={importContact} disabled={importing} style={[styles.importBtn, { borderColor: theme.divider, backgroundColor: theme.cardBackground, borderRadius: theme.isEditorial ? 2 : 999, opacity: importing ? 0.5 : 1 }]}>
+              <Icon name="person.crop.circle.badge.plus" size={18} color={theme.accent} />
+              <Text style={[styles.importText, { color: theme.accent }]}>Import from Contacts</Text>
             </Pressable>
           </View>
 
           {/* Fields */}
-          <View style={[styles.card, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
+          <View style={[styles.card, theme.card]}>
             <Row icon="person.fill" label="Name">
               <TextInput value={name} onChangeText={setName} placeholder="Full name" placeholderTextColor={theme.tertiaryText} style={[styles.input, { color: theme.primaryText }]} />
             </Row>
@@ -160,9 +206,9 @@ export function StaffForm({ editingId }: { editingId?: string }) {
               <>
                 <Divider />
                 <View style={styles.activeRow}>
-                  <Icon name="checkmark.circle.fill" size={16} color={STAFF_ORANGE} />
+                  <Icon name="checkmark.circle.fill" size={16} color={theme.accent} />
                   <Text style={[styles.activeLabel, { color: theme.primaryText }]}>Active</Text>
-                  <Switch value={isActive} onValueChange={setIsActive} trackColor={{ true: STAFF_ORANGE, false: withOpacity(iOSColors.gray, 0.3) }} />
+                  <Switch value={isActive} onValueChange={setIsActive} trackColor={{ true: theme.accent, false: theme.inputBackground }} />
                 </View>
               </>
             ) : null}
@@ -172,13 +218,13 @@ export function StaffForm({ editingId }: { editingId?: string }) {
           {services.length > 0 ? (
             <View style={styles.servicesBlock}>
               <View style={styles.servicesHead}>
-                <Icon name="scissors" size={15} color={STAFF_ORANGE} />
+                <Icon name="scissors" size={15} color={theme.accent} />
                 <Text style={[styles.servicesTitle, { color: theme.primaryText }]}>Services Provided</Text>
               </View>
               <Text style={[styles.servicesDesc, { color: theme.secondaryText }]}>
                 Select which services this staff member can perform.
               </Text>
-              <View style={[styles.card, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
+              <View style={[styles.card, theme.card]}>
                 {services.map((s, i) => {
                   const on = serviceIds.has(s.id);
                   return (
@@ -190,7 +236,7 @@ export function StaffForm({ editingId }: { editingId?: string }) {
                         <Icon
                           name={on ? 'checkmark.circle.fill' : 'circle'}
                           size={20}
-                          color={on ? STAFF_ORANGE : withOpacity(iOSColors.gray, 0.4)}
+                          color={on ? theme.accent : theme.tertiaryText}
                         />
                       </Pressable>
                     </View>
@@ -204,35 +250,35 @@ export function StaffForm({ editingId }: { editingId?: string }) {
           {editing ? (
             <View style={styles.servicesBlock}>
               <View style={styles.servicesHead}>
-                <Icon name="calendar" size={15} color={STAFF_ORANGE} />
+                <Icon name="calendar" size={15} color={theme.accent} />
                 <Text style={[styles.servicesTitle, { color: theme.primaryText }]}>Schedule & Calendar</Text>
               </View>
-              <View style={[styles.card, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
+              <View style={[styles.card, theme.card]}>
                 <Pressable onPress={() => setShowColor(true)} style={styles.linkRow}>
-                  <View style={[styles.colorSwatch, { backgroundColor: colorHex || withOpacity(iOSColors.gray, 0.25), borderColor: theme.divider }]} />
+                  <View style={[styles.colorSwatch, { backgroundColor: colorHex || theme.divider, borderColor: theme.divider }]} />
                   <View style={styles.linkText}>
                     <Text style={[styles.linkTitle, { color: theme.primaryText }]}>Calendar Color</Text>
                     <Text style={[styles.linkSub, { color: theme.secondaryText }]}>{colorHex ? 'Tints this person’s appointments' : 'No color — neutral cards'}</Text>
                   </View>
-                  <Icon name="chevron.right" size={14} color={theme.secondaryText} />
+                  <Icon name="chevron.right" size={14} color={theme.chevronTint} />
                 </Pressable>
                 <Divider />
                 <Pressable onPress={() => setShowHours(true)} style={styles.linkRow}>
-                  <Icon name="clock" size={18} color={STAFF_ORANGE} />
+                  <Icon name="clock" size={18} color={theme.accent} />
                   <View style={styles.linkText}>
                     <Text style={[styles.linkTitle, { color: theme.primaryText }]}>Working Hours</Text>
                     <Text style={[styles.linkSub, { color: theme.secondaryText }]}>{editing.workingHours.length ? 'Custom weekly hours set' : 'Follows business hours'}</Text>
                   </View>
-                  <Icon name="chevron.right" size={14} color={theme.secondaryText} />
+                  <Icon name="chevron.right" size={14} color={theme.chevronTint} />
                 </Pressable>
                 <Divider />
                 <Pressable onPress={() => setShowLunch(true)} style={styles.linkRow}>
-                  <Icon name="fork.knife" size={18} color={STAFF_ORANGE} />
+                  <Icon name="fork.knife" size={18} color={theme.accent} />
                   <View style={styles.linkText}>
                     <Text style={[styles.linkTitle, { color: theme.primaryText }]}>Lunch Breaks</Text>
                     <Text style={[styles.linkSub, { color: theme.secondaryText }]}>{editing.lunchBreaks.length ? `${editing.lunchBreaks.length} day${editing.lunchBreaks.length === 1 ? '' : 's'} blocked` : 'No lunch breaks'}</Text>
                   </View>
-                  <Icon name="chevron.right" size={14} color={theme.secondaryText} />
+                  <Icon name="chevron.right" size={14} color={theme.chevronTint} />
                 </Pressable>
               </View>
             </View>
@@ -242,19 +288,19 @@ export function StaffForm({ editingId }: { editingId?: string }) {
           {editing ? (
             <View style={styles.servicesBlock}>
               <View style={styles.servicesHead}>
-                <Icon name="lock.shield.fill" size={15} color={STAFF_ORANGE} />
+                <Icon name="lock.shield.fill" size={15} color={theme.accent} />
                 <Text style={[styles.servicesTitle, { color: theme.primaryText }]}>Access & Permissions</Text>
               </View>
-              <View style={[styles.card, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
+              <View style={[styles.card, theme.card]}>
                 <Pressable onPress={() => setShowPermissions(true)} style={styles.linkRow}>
-                  <Icon name="person.crop.circle.badge.checkmark" size={18} color={STAFF_ORANGE} />
+                  <Icon name="person.crop.circle.badge.checkmark" size={18} color={theme.accent} />
                   <View style={styles.linkText}>
                     <Text style={[styles.linkTitle, { color: theme.primaryText }]}>Permissions</Text>
                     <Text style={[styles.linkSub, { color: theme.secondaryText }]}>
                       {enabledPermissions} of {PERMISSIONS.length} permissions enabled
                     </Text>
                   </View>
-                  <Icon name="chevron.right" size={14} color={theme.secondaryText} />
+                  <Icon name="chevron.right" size={14} color={theme.chevronTint} />
                 </Pressable>
               </View>
             </View>
@@ -279,7 +325,7 @@ function Row({ icon, label, children }: { icon: SFSymbol; label: string; childre
   const theme = useAppTheme();
   return (
     <View style={styles.row}>
-      <Icon name={icon} size={16} color={STAFF_ORANGE} />
+      <Icon name={icon} size={16} color={theme.accent} />
       <Text numberOfLines={1} allowFontScaling={false} style={[styles.rowLabel, { color: theme.secondaryText }]}>{label}</Text>
       {children}
     </View>
@@ -293,19 +339,19 @@ function Divider() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth },
   back: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  backText: { color: iOSColors.blue, fontSize: 16, fontWeight: '600' },
-  headerTitle: { fontSize: 18, fontWeight: '700' },
-  savePill: { color: '#FFFFFF', fontSize: 16, fontWeight: '700', paddingHorizontal: 20, paddingVertical: 8, borderRadius: 999, overflow: 'hidden' },
+  backText: { fontSize: 16, fontWeight: '600' },
+  savePill: { fontSize: 16, fontWeight: '600', paddingHorizontal: 20, paddingVertical: 8, overflow: 'hidden' },
   body: { paddingVertical: 20, gap: 24 },
   photoBlock: { alignItems: 'center', gap: 16 },
-  photoCircle: { width: 90, height: 90, borderRadius: 45, alignItems: 'center', justifyContent: 'center', gap: 4 },
+  photoCircle: { width: 90, height: 90, alignItems: 'center', justifyContent: 'center', gap: 4 },
+  photoImage: { width: 90, height: 90 },
   photoInitials: { fontSize: 28, fontWeight: '600' },
   photoLabel: { fontSize: 11, fontWeight: '500' },
-  importBtn: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 12, borderWidth: 1.5 },
+  importBtn: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 20, paddingVertical: 12, borderWidth: 1 },
   importText: { fontSize: 15, fontWeight: '500' },
-  card: { marginHorizontal: 16, borderRadius: 14 },
+  card: { marginHorizontal: 16 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 14 },
   rowLabel: { fontSize: 13, fontWeight: '500', width: 60 },
   input: { flex: 1, fontSize: 16, paddingVertical: 4, textAlignVertical: 'center' },

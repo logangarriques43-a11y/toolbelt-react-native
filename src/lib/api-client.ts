@@ -5,7 +5,10 @@
  * - Attaches the Firebase ID token as `Authorization: Bearer <token>`.
  * - Unwraps the response defensively: some domains return `{ status, data }`,
  *   others (e.g. /clients) return bare JSON — `json.data ?? json` handles both.
- * - Maps errors to a typed ApiError (401 unauthorized, 403 2fa_required, other).
+ * - Maps errors to a typed ApiError (401 unauthorized, 403 2fa_required, other),
+ *   keeping the server's machine-readable `code` (e.g. BUSINESS_NAME_MISSING).
+ * - `onTwoFactorRequired(listener)` lets the app react once, globally, when any
+ *   request is refused with `2fa_required` (the error is still thrown as usual).
  */
 
 import { API_BASE_URL } from '@/config/api';
@@ -21,6 +24,20 @@ export class ApiError extends Error {
     super(message);
     this.name = 'ApiError';
   }
+}
+
+type TwoFactorListener = (error: ApiError) => void;
+const twoFactorListeners = new Set<TwoFactorListener>();
+
+/**
+ * Subscribe to `2fa_required` refusals from any request. Returns an
+ * unsubscribe function. Listeners are notified before the error is thrown.
+ */
+export function onTwoFactorRequired(listener: TwoFactorListener): () => void {
+  twoFactorListeners.add(listener);
+  return () => {
+    twoFactorListeners.delete(listener);
+  };
 }
 
 type Query = Record<string, string | number | boolean | undefined | null>;
@@ -68,13 +85,21 @@ async function request<T>(method: string, path: string, opts: RequestOptions = {
   if (!res.ok) {
     if (res.status === 401) throw new ApiError(401, 'Unauthorized — please sign in again.', 'unauthorized', json);
     if (res.status === 403 && (json as { code?: string })?.code === '2fa_required') {
-      throw new ApiError(403, 'Two-factor authentication required.', '2fa_required', json);
+      const err = new ApiError(403, 'Two-factor authentication required.', '2fa_required', json);
+      twoFactorListeners.forEach((l) => {
+        try {
+          l(err);
+        } catch {
+          // A listener must never break the request path.
+        }
+      });
+      throw err;
     }
     const msg =
       (json as { message?: string; error?: string })?.message ||
       (json as { error?: string })?.error ||
       `Request failed (${res.status})`;
-    throw new ApiError(res.status, msg, undefined, json);
+    throw new ApiError(res.status, msg, (json as { code?: string })?.code, json);
   }
 
   // Envelope-agnostic: unwrap `.data` when present, else return the bare body.

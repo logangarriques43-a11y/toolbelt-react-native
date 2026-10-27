@@ -8,7 +8,6 @@ import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Icon } from '@/components/icon';
-import { Brand } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
 export interface BackHeaderProps {
@@ -20,7 +19,7 @@ export interface BackHeaderProps {
 export function BackHeader({ label, tint, onPress }: BackHeaderProps) {
   const router = useRouter();
   const theme = useAppTheme();
-  const color = tint ?? (label ? Brand.accent : theme.secondaryText);
+  const color = tint ?? (label ? theme.accent : theme.secondaryText);
   const handlePress = onPress ?? (() => router.back());
 
   return (

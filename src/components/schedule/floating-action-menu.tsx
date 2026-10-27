@@ -4,7 +4,6 @@
  * Invoice actions and rotates the button to an ×.
  */
 
-import { LinearGradient } from 'expo-linear-gradient';
 import type { SFSymbol } from 'expo-symbols';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -12,7 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
 import { Icon } from '@/components/icon';
-import { iOSColors } from '@/theme/tokens';
+import { ThemedIconTile } from '@/components/themed';
 import { useAppTheme } from '@/theme/theme-context';
 
 const SPRING = { mass: 1, damping: 15, stiffness: 220 };
@@ -26,6 +25,7 @@ export function FloatingActionMenu({
   onTimeOff: () => void;
   onInvoice: () => void;
 }) {
+  const theme = useAppTheme();
   const insets = useSafeAreaInsets();
   const [open, setOpen] = useState(false);
   // Holds the icon's rotation IN DEGREES. Spring the shared value itself, then
@@ -54,35 +54,31 @@ export function FloatingActionMenu({
     <View style={[styles.wrap, { bottom: insets.bottom + 24 }]} pointerEvents="box-none">
       {open ? (
         <View style={styles.menu}>
-          <CompactButton icon="calendar.badge.plus" title="Appointment" color={iOSColors.blue} onPress={() => pick(onCreateAppointment)} />
-          <CompactButton icon="clock.badge.xmark" title="Time Off" color={iOSColors.orange} onPress={() => pick(onTimeOff)} />
-          <CompactButton icon="doc.text.fill" title="Invoice" color={iOSColors.green} onPress={() => pick(onInvoice)} />
+          <CompactButton icon="calendar.badge.plus" title="Appointment" onPress={() => pick(onCreateAppointment)} />
+          <CompactButton icon="clock.badge.xmark" title="Time Off" onPress={() => pick(onTimeOff)} />
+          <CompactButton icon="doc.text.fill" title="Invoice" onPress={() => pick(onInvoice)} />
         </View>
       ) : null}
 
       <Pressable onPress={toggle}>
-        <LinearGradient
-          colors={[iOSColors.blue, 'rgba(0,122,255,0.8)']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.fab}>
+        <View style={[styles.fab, { backgroundColor: theme.accent, borderRadius: theme.isEditorial ? 2 : 30 }]}>
           <Animated.View style={iconStyle}>
-            <Icon name={open ? 'xmark' : 'plus'} size={24} weight="bold" color="#FFFFFF" />
+            <Icon name={open ? 'xmark' : 'plus'} size={24} weight="bold" color={theme.onAccent} />
           </Animated.View>
-        </LinearGradient>
+        </View>
       </Pressable>
     </View>
   );
 }
 
-function CompactButton({ icon, title, color, onPress }: { icon: SFSymbol; title: string; color: string; onPress: () => void }) {
+function CompactButton({ icon, title, onPress }: { icon: SFSymbol; title: string; onPress: () => void }) {
   const theme = useAppTheme();
   return (
-    <Pressable onPress={onPress} style={[styles.compact, { backgroundColor: theme.cardBackground }]}>
+    <Pressable
+      onPress={onPress}
+      style={[styles.compact, { backgroundColor: theme.cardBackground, borderColor: theme.divider, borderRadius: theme.isEditorial ? 2 : 24 }]}>
       <Text style={[styles.compactTitle, { color: theme.primaryText }]}>{title}</Text>
-      <View style={[styles.compactIcon, { backgroundColor: color }]}>
-        <Icon name={icon} size={16} color="#FFFFFF" />
-      </View>
+      <ThemedIconTile name={icon} size={36} />
     </Pressable>
   );
 }
@@ -92,13 +88,8 @@ const styles = StyleSheet.create({
   menu: { alignItems: 'flex-end', gap: 10 },
   compact: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
-    paddingLeft: 14, paddingRight: 6, paddingVertical: 6, borderRadius: 24,
-    shadowColor: '#000000', shadowOpacity: 0.12, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 4,
+    paddingLeft: 14, paddingRight: 6, paddingVertical: 6, borderWidth: 1,
   },
   compactTitle: { fontSize: 14, fontWeight: '600' },
-  compactIcon: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  fab: {
-    width: 60, height: 60, borderRadius: 30, alignItems: 'center', justifyContent: 'center',
-    shadowColor: iOSColors.blue, shadowOpacity: 0.3, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 6,
-  },
+  fab: { width: 60, height: 60, alignItems: 'center', justifyContent: 'center' },
 });

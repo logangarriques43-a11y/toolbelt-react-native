@@ -11,7 +11,6 @@ import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Icon } from '@/components/icon';
 import { withOpacity } from '@/lib/color';
 import { timeOffBandLabel, timeOffCancelMessage, type TimeOffEvent } from '@/models/time-off';
-import { iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
 export function TimeOffBand({
@@ -63,7 +62,7 @@ export function TimeOffBand({
       onPress={confirm}
       style={[
         styles.band,
-        { top, left, width, height, borderColor: withOpacity(iOSColors.gray, 0.45), backgroundColor: withOpacity(iOSColors.gray, 0.18) },
+        { top, left, width, height, borderColor: theme.tertiaryText, backgroundColor: withOpacity(theme.inputBackground, 0.85) },
       ]}>
       {compact ? (
         height > 24 ? <Icon name={icon} size={10} color={theme.secondaryText} /> : null
@@ -71,7 +70,7 @@ export function TimeOffBand({
         <View style={styles.row}>
           <Icon name={icon} size={11} color={theme.secondaryText} />
           <Text numberOfLines={1} style={[styles.label, { color: theme.secondaryText }]}>{timeOffBandLabel(event)}</Text>
-          {canManage ? <Icon name="xmark.circle.fill" size={12} color={withOpacity(iOSColors.gray, 0.6)} /> : null}
+          {canManage ? <Icon name="xmark.circle.fill" size={12} color={theme.tertiaryText} /> : null}
         </View>
       )}
     </Pressable>

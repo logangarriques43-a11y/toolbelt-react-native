@@ -14,7 +14,7 @@ import { Icon } from '@/components/icon';
 import { KeyboardAwareForm } from '@/components/keyboard-aware-form';
 import { ScreenHeader } from '@/components/screen-header';
 import { OptionSheet } from '@/components/sheets/option-sheet';
-import { iOSColors } from '@/theme/tokens';
+import { ThemedButton, ThemedIconTile } from '@/components/themed';
 import { useAppTheme } from '@/theme/theme-context';
 
 const DUE_OPTIONS = [7, 14, 21, 30, 45, 60, 90].map((d) => ({ label: `Net ${d} — due in ${d} days`, value: d }));
@@ -44,9 +44,7 @@ export default function InvoiceSettings() {
       <SafeAreaView style={styles.safe} edges={['top']}>
         <ScreenHeader title="Invoice Settings" />
         <KeyboardAwareForm contentContainerStyle={styles.body}>
-          <View style={[styles.iconCircle, { backgroundColor: theme.iconBackground(iOSColors.blue) }]}>
-            <Icon name="doc.text.fill" size={30} color={iOSColors.blue} />
-          </View>
+          <ThemedIconTile name="doc.text.fill" size={72} filled />
 
           <View style={styles.form}>
             <View style={styles.field}>
@@ -97,9 +95,7 @@ export default function InvoiceSettings() {
             </View>
           </View>
 
-          <Pressable onPress={save} style={[styles.save, { backgroundColor: iOSColors.blue }]}>
-            <Text style={styles.saveText}>Save Settings</Text>
-          </Pressable>
+          <ThemedButton title="Save Settings" onPress={save} style={styles.save} />
         </KeyboardAwareForm>
       </SafeAreaView>
 
@@ -111,7 +107,6 @@ export default function InvoiceSettings() {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   body: { padding: 20, gap: 24, alignItems: 'center', paddingBottom: 40 },
-  iconCircle: { width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center' },
   form: { alignSelf: 'stretch', gap: 16 },
   field: { gap: 6 },
   label: { fontSize: 13, fontWeight: '600', letterSpacing: 0.5 },
@@ -122,6 +117,5 @@ const styles = StyleSheet.create({
   dueRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   dueText: { fontSize: 16 },
   multiline: { minHeight: 80, textAlignVertical: 'top' },
-  save: { alignSelf: 'stretch', paddingVertical: 16, borderRadius: 14, alignItems: 'center' },
-  saveText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
+  save: { alignSelf: 'stretch' },
 });

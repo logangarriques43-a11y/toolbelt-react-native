@@ -8,28 +8,22 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 
 import { AiSmsPaywall } from '@/components/sms/ai-sms-paywall';
 import { DashboardGradient } from '@/components/dashboard-gradient';
 import { Icon } from '@/components/icon';
+import { ThemedIconTile } from '@/components/themed';
 import { useSMS } from '@/context/sms-store';
 import { useAiSmsEntitlement } from '@/hooks/use-ai-sms-entitlement';
-import { withOpacity } from '@/lib/color';
 import {
   conversationDisplayName,
-  SMS_STATUS_COLORS,
   smsStatusIcon,
   smsTimeAgo,
   type SMSConversation,
   type SMSStatus,
 } from '@/models/sms';
-import { iOSColors, lightShadow } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
-const BLUE = '#4285F5';
-const PURPLE = '#9966E6';
-const GREEN = '#4CBF80';
 const FILTERS: { key: SMSStatus; label: string }[] = [
   { key: 'active', label: 'Active' },
   { key: 'escalated', label: 'Escalated' },
@@ -59,12 +53,12 @@ export default function SMSConversations() {
       <SafeAreaView style={styles.safe} edges={['top']}>
         <View style={styles.header}>
           <Pressable onPress={() => router.back()} style={styles.back} hitSlop={8}>
-            <Icon name="chevron.left" size={16} color={BLUE} weight="semibold" />
-            <Text style={[styles.backText, { color: BLUE }]}>Back</Text>
+            <Icon name="chevron.left" size={16} color={theme.accent} weight="semibold" />
+            <Text style={[styles.backText, { color: theme.accent }]}>Back</Text>
           </Pressable>
-          <Text style={[styles.headerTitle, { color: theme.primaryText }]}>AI Conversations</Text>
+          <Text style={[styles.headerTitle, theme.display(24)]}>AI Conversations</Text>
           <Pressable onPress={() => router.push('/sms-setup')} hitSlop={8} style={styles.gear}>
-            <Icon name="gear" size={20} color={BLUE} />
+            <Icon name="gear" size={20} color={theme.accent} />
           </Pressable>
         </View>
 
@@ -73,15 +67,17 @@ export default function SMSConversations() {
             const active = filter === f.key;
             return (
               <Pressable key={f.key} onPress={() => setFilter(f.key)}>
-                {active ? (
-                  <LinearGradient colors={[BLUE, PURPLE]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.chip}>
-                    <Text style={[styles.chipText, { color: '#FFFFFF' }]}>{f.label}</Text>
-                  </LinearGradient>
-                ) : (
-                  <View style={[styles.chip, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
-                    <Text style={[styles.chipText, { color: theme.primaryText }]}>{f.label}</Text>
-                  </View>
-                )}
+                <View
+                  style={[
+                    styles.chip,
+                    {
+                      backgroundColor: active ? theme.accent : theme.cardBackground,
+                      borderColor: active ? theme.accent : theme.divider,
+                      borderRadius: theme.isEditorial ? 2 : 20,
+                    },
+                  ]}>
+                  <Text style={[styles.chipText, { color: active ? theme.onAccent : theme.primaryText }]}>{f.label}</Text>
+                </View>
               </Pressable>
             );
           })}
@@ -90,7 +86,7 @@ export default function SMSConversations() {
         {list.length === 0 ? (
           <View style={styles.empty}>
             <Icon name="bubble.left.and.bubble.right" size={80} color={theme.tertiaryText} />
-            <Text style={[styles.emptyTitle, { color: theme.primaryText }]}>No Conversations Yet</Text>
+            <Text style={[styles.emptyTitle, theme.display(24)]}>No Conversations Yet</Text>
             <Text style={[styles.emptySub, { color: theme.secondaryText }]}>When clients text your AI number, their conversations will appear here.</Text>
           </View>
         ) : (
@@ -107,12 +103,9 @@ export default function SMSConversations() {
 
 function ConversationRow({ conversation, onPress }: { conversation: SMSConversation; onPress: () => void }) {
   const theme = useAppTheme();
-  const color = SMS_STATUS_COLORS[conversation.status];
   return (
-    <Pressable style={[styles.row, { backgroundColor: theme.cardBackground }, lightShadow(theme)]} onPress={onPress}>
-      <View style={[styles.avatar, { backgroundColor: withOpacity(color, 0.15) }]}>
-        <Icon name={smsStatusIcon(conversation.status)} size={20} color={color} />
-      </View>
+    <Pressable style={[styles.row, theme.card]} onPress={onPress}>
+      <ThemedIconTile name={smsStatusIcon(conversation.status)} size={44} />
       <View style={styles.flex}>
         <View style={styles.rowTop}>
           <Text style={[styles.name, { color: theme.primaryText }]} numberOfLines={1}>{conversationDisplayName(conversation)}</Text>
@@ -128,13 +121,13 @@ function ConversationRow({ conversation, onPress }: { conversation: SMSConversat
           )}
           {conversation.hasAppointment && (
             <View style={styles.meta}>
-              <Icon name="calendar.badge.checkmark" size={10} color={GREEN} />
-              <Text style={[styles.metaText, { color: GREEN }]}>Booked</Text>
+              <Icon name="calendar.badge.checkmark" size={10} color={theme.live} />
+              <Text style={[styles.metaText, { color: theme.live }]}>Booked</Text>
             </View>
           )}
         </View>
       </View>
-      <Icon name="chevron.right" size={14} color={withOpacity(iOSColors.gray, 0.5)} weight="medium" />
+      <Icon name="chevron.right" size={14} color={theme.chevronTint} weight="medium" />
     </Pressable>
   );
 }
@@ -145,17 +138,16 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', padding: 16 },
   back: { flexDirection: 'row', alignItems: 'center', gap: 4, minWidth: 70 },
   backText: { fontSize: 16, fontWeight: '600' },
-  headerTitle: { flex: 1, textAlign: 'center', fontSize: 24, fontWeight: '700' },
+  headerTitle: { flex: 1, textAlign: 'center' },
   gear: { minWidth: 70, alignItems: 'flex-end' },
   filters: { gap: 10, paddingHorizontal: 16, paddingBottom: 12 },
-  chip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
+  chip: { paddingHorizontal: 16, paddingVertical: 8, borderWidth: 1 },
   chipText: { fontSize: 14, fontWeight: '500' },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16, paddingHorizontal: 40 },
-  emptyTitle: { fontSize: 24, fontWeight: '700' },
+  emptyTitle: { textAlign: 'center' },
   emptySub: { fontSize: 16, textAlign: 'center' },
   list: { padding: 16, gap: 12, paddingBottom: 24 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16, borderRadius: 16 },
-  avatar: { width: 50, height: 50, borderRadius: 25, alignItems: 'center', justifyContent: 'center' },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16 },
   rowTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   name: { flex: 1, fontSize: 17, fontWeight: '600' },
   time: { fontSize: 12 },

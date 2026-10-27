@@ -6,7 +6,6 @@
  * deferred to Phase 6 — stock here is a plain per-product counter.
  */
 
-import { LinearGradient } from 'expo-linear-gradient';
 import type { SFSymbol } from 'expo-symbols';
 import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
@@ -16,12 +15,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { DashboardGradient } from '@/components/dashboard-gradient';
 import { KeyboardAwareForm } from '@/components/keyboard-aware-form';
 import { Icon } from '@/components/icon';
-import { BRAND_BLUE, BRAND_PURPLE } from '@/components/payments/checkout';
+import { ThemedButton, ThemedIconTile } from '@/components/themed';
 import { ColorPickerSheet } from '@/components/sheets/color-picker-sheet';
 import { useProducts } from '@/context/products-store';
 import { withOpacity } from '@/lib/color';
 import { DEFAULT_PRODUCT_COLOR, type Product } from '@/models/product';
-import { iOSColors, lightShadow } from '@/theme/tokens';
+import { iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
 const GREEN = '#33C773';
@@ -125,7 +124,7 @@ export function AddProductSheet({
         <SafeAreaView style={styles.flex} edges={['top', 'bottom']}>
           {/* Header */}
           <View style={[styles.header, { backgroundColor: theme.cardBackground }]}>
-            <Pressable onPress={onClose} style={[styles.roundBtn, { backgroundColor: theme.cardBackground }]}>
+            <Pressable onPress={onClose} style={[styles.roundBtn, { backgroundColor: theme.cardBackground, borderWidth: 1, borderColor: theme.divider }]}>
               <Icon name="xmark" size={16} color={theme.secondaryText} weight="medium" />
             </Pressable>
             <Text style={[styles.headerTitle, { color: theme.primaryText }]}>
@@ -137,7 +136,7 @@ export function AddProductSheet({
           <KeyboardAwareForm contentContainerStyle={styles.body}>
             {/* Preview */}
             <View style={styles.previewWrap}>
-              <View style={[styles.previewCard, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
+              <View style={[styles.previewCard, theme.card]}>
                 <View style={[styles.previewTop, { backgroundColor: color }]}>
                   <Text style={styles.previewInitials}>{initials(name || 'Product')}</Text>
                 </View>
@@ -157,7 +156,7 @@ export function AddProductSheet({
             <Section title="Basic info">
               <LabeledInput label="Product Name" value={name} onChange={setName} placeholder="e.g., Shampoo" />
               <Pressable
-                style={[styles.rowCard, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}
+                style={[styles.rowCard, theme.card]}
                 onPress={() => setShowColorPicker(true)}>
                 <View style={[styles.colorDot, { backgroundColor: color }]} />
                 <View style={styles.flex}>
@@ -228,7 +227,7 @@ export function AddProductSheet({
               />
               {salesTaxEnabled && (
                 <>
-                  <View style={[styles.taxInputCard, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
+                  <View style={[styles.taxInputCard, theme.card]}>
                     <Text style={[styles.smallLabel, { color: theme.secondaryText }]}>Tax Rate</Text>
                     <View style={styles.taxInputRow}>
                       <TextInput
@@ -244,7 +243,7 @@ export function AddProductSheet({
                   </View>
                   {taxRate > 0 && parsedPrice > 0 && (
                     <View style={styles.inlineNote}>
-                      <Icon name="info.circle.fill" size={14} color={withOpacity(iOSColors.blue, 0.7)} />
+                      <Icon name="info.circle.fill" size={14} color={theme.accent} />
                       <Text style={[styles.inlineNoteText, { color: theme.secondaryText }]}>
                         Tax: ${(parsedPrice * (taxRate / 100)).toFixed(2)} — Total: $
                         {(parsedPrice * (1 + taxRate / 100)).toFixed(2)}
@@ -257,12 +256,12 @@ export function AddProductSheet({
 
             {/* Description */}
             <Section title="Description">
-              <View style={[styles.notesCard, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
+              <View style={[styles.notesCard, theme.card]}>
                 <TextInput
                   value={description}
                   onChangeText={setDescription}
                   placeholder="Add a description for this product..."
-                  placeholderTextColor={withOpacity(iOSColors.gray, 0.5)}
+                  placeholderTextColor={theme.tertiaryText}
                   multiline
                   style={[styles.notesInput, { color: theme.primaryText }]}
                 />
@@ -278,20 +277,14 @@ export function AddProductSheet({
           </KeyboardAwareForm>
 
           {/* Save */}
-          <View style={[styles.footer, { backgroundColor: theme.cardBackground }]}>
-            <Pressable onPress={save} disabled={!isValid}>
-              {isValid ? (
-                <LinearGradient colors={[BRAND_BLUE, BRAND_PURPLE]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.saveBtn}>
-                  <Icon name={editingProduct ? 'checkmark.circle.fill' : 'plus.circle.fill'} size={18} color="#FFFFFF" />
-                  <Text style={styles.saveText}>{editingProduct ? 'Update Product' : 'Add Product'}</Text>
-                </LinearGradient>
-              ) : (
-                <View style={[styles.saveBtn, { backgroundColor: withOpacity(iOSColors.gray, 0.4) }]}>
-                  <Icon name={editingProduct ? 'checkmark.circle.fill' : 'plus.circle.fill'} size={18} color="#FFFFFF" />
-                  <Text style={styles.saveText}>{editingProduct ? 'Update Product' : 'Add Product'}</Text>
-                </View>
-              )}
-            </Pressable>
+          <View style={[styles.footer, { backgroundColor: theme.cardBackground, borderTopWidth: 1, borderTopColor: theme.divider }]}>
+            <ThemedButton
+              title={editingProduct ? 'Update Product' : 'Add Product'}
+              icon={editingProduct ? 'checkmark.circle.fill' : 'plus.circle.fill'}
+              kind="accent"
+              onPress={save}
+              disabled={!isValid}
+            />
           </View>
         </SafeAreaView>
       </DashboardGradient>
@@ -314,7 +307,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   const theme = useAppTheme();
   return (
     <View style={styles.section}>
-      <Text style={[styles.sectionTitle, { color: theme.primaryText }]}>{title}</Text>
+      <Text style={theme.display(20, '500')}>{title}</Text>
       {children}
     </View>
   );
@@ -337,7 +330,7 @@ function LabeledInput({
 }) {
   const theme = useAppTheme();
   return (
-    <View style={[styles.inputCard, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
+    <View style={[styles.inputCard, theme.card]}>
       <Text style={[styles.smallLabel, { color: theme.secondaryText }]}>{label}</Text>
       <TextInput
         value={value}
@@ -355,7 +348,7 @@ function LabeledInput({
 function PriceInput({ label, value, onChange }: { label: string; value: string; onChange: (t: string) => void }) {
   const theme = useAppTheme();
   return (
-    <View style={[styles.inputCard, styles.flex, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
+    <View style={[styles.inputCard, styles.flex, theme.card]}>
       <Text style={[styles.smallLabel, { color: theme.secondaryText }]}>{label}</Text>
       <View style={styles.priceInputRow}>
         <Text style={[styles.rowValue, { color: theme.secondaryText }]}>$</Text>
@@ -387,17 +380,15 @@ function ToggleRow({
 }) {
   const theme = useAppTheme();
   return (
-    <View style={[styles.rowCard, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
-      <View style={[styles.toggleIcon, { backgroundColor: withOpacity(BRAND_BLUE, 0.12) }]}>
-        <Icon name={icon} size={16} color={BRAND_BLUE} />
-      </View>
+    <View style={[styles.rowCard, theme.card]}>
+      <ThemedIconTile name={icon} size={36} />
       <Text style={[styles.rowValue, styles.flex, { color: theme.primaryText }]}>{title}</Text>
       {info && (
         <Pressable hitSlop={8} onPress={() => Alert.alert(title, info)}>
           <Icon name="info.circle" size={16} color={theme.secondaryText} />
         </Pressable>
       )}
-      <Switch value={value} onValueChange={onChange} />
+      <Switch value={value} onValueChange={onChange} trackColor={{ true: theme.accent, false: theme.divider }} />
     </View>
   );
 }
@@ -410,7 +401,7 @@ const styles = StyleSheet.create({
   body: { padding: 16, paddingBottom: 100, gap: 24 },
   // Preview
   previewWrap: { alignItems: 'center' },
-  previewCard: { width: 160, borderRadius: 12, overflow: 'hidden' },
+  previewCard: { width: 160, overflow: 'hidden' },
   previewTop: { height: 80, alignItems: 'center', justifyContent: 'center' },
   previewInitials: { fontSize: 28, fontWeight: '700', color: '#FFFFFF' },
   previewBody: { paddingHorizontal: 8, paddingVertical: 12, alignItems: 'center', gap: 4 },
@@ -419,28 +410,24 @@ const styles = StyleSheet.create({
   previewMargin: { fontSize: 11, fontWeight: '500' },
   // Sections
   section: { gap: 16 },
-  sectionTitle: { fontSize: 20, fontWeight: '700' },
-  inputCard: { padding: 14, borderRadius: 12, gap: 4 },
+  inputCard: { padding: 14, gap: 4 },
   smallLabel: { fontSize: 12 },
   rowValue: { fontSize: 16 },
-  rowCard: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: 12 },
+  rowCard: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 },
   colorDot: { width: 24, height: 24, borderRadius: 12 },
   priceRow: { flexDirection: 'row', gap: 12 },
   priceInputRow: { flexDirection: 'row', alignItems: 'center', gap: 2 },
   profitRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 4 },
   profitText: { fontSize: 13, fontWeight: '500' },
   profitMargin: { fontSize: 13 },
-  toggleIcon: { width: 32, height: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   inlineNote: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 4 },
   inlineNoteText: { fontSize: 12, flex: 1 },
-  taxInputCard: { padding: 14, borderRadius: 12, gap: 4 },
+  taxInputCard: { padding: 14, gap: 4 },
   taxInputRow: { flexDirection: 'row', alignItems: 'center' },
   percent: { fontSize: 16, fontWeight: '500' },
-  notesCard: { borderRadius: 12, padding: 12 },
+  notesCard: { padding: 12 },
   notesInput: { fontSize: 15, minHeight: 80, textAlignVertical: 'top' },
   deleteBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, paddingVertical: 16, borderRadius: 12 },
   deleteText: { fontSize: 16, fontWeight: '600' },
   footer: { paddingHorizontal: 20, paddingVertical: 16 },
-  saveBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 16, borderRadius: 14 },
-  saveText: { color: '#FFFFFF', fontSize: 17, fontWeight: '600' },
 });

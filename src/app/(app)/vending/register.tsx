@@ -12,11 +12,10 @@ import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/icon';
+import { ThemedButton, ThemedIconTile } from '@/components/themed';
 import { KeyboardAwareForm } from '@/components/keyboard-aware-form';
 import { useVendors } from '@/context/vendor-store';
-import { withOpacity } from '@/lib/color';
 import { DEFAULT_VENDOR_CATEGORIES, VENDOR_TYPES, type VendorType } from '@/models/vendor';
-import { iOSColors, lightShadow } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
 export default function VendorRegister() {
@@ -120,15 +119,15 @@ export default function VendorRegister() {
     <SafeAreaView style={[styles.safe, { backgroundColor: theme.background }]} edges={['top']}>
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} style={styles.back} hitSlop={8}>
-          <Icon name="house.fill" size={20} color={iOSColors.blue} />
+          <Icon name="house.fill" size={20} color={theme.accent} />
         </Pressable>
         <View style={styles.flex} />
       </View>
 
       <KeyboardAwareForm contentContainerStyle={styles.body}>
         <View style={styles.intro}>
-          <Icon name="storefront.fill" size={40} color={iOSColors.green} />
-          <Text style={[styles.introTitle, { color: theme.primaryText }]}>{editing ? 'Edit Your Listing' : 'Register Your Business'}</Text>
+          <ThemedIconTile name="storefront.fill" size={64} filled />
+          <Text style={[theme.display(22, '500'), styles.introTitle]}>{editing ? 'Edit Your Listing' : 'Register Your Business'}</Text>
           <Text style={[styles.introSub, { color: theme.secondaryText }]}>Make your products discoverable to small businesses on ToolBelt</Text>
         </View>
 
@@ -141,9 +140,9 @@ export default function VendorRegister() {
             {VENDOR_TYPES.map((t) => {
               const active = vendorType === t.type;
               return (
-                <Pressable key={t.type} onPress={() => setVendorType(t.type)} style={[styles.typePill, { backgroundColor: active ? iOSColors.blue : theme.background, borderColor: active ? 'transparent' : withOpacity(iOSColors.gray, 0.3) }]}>
-                  <Icon name={t.icon} size={14} color={active ? '#FFFFFF' : theme.primaryText} />
-                  <Text style={[styles.typeText, { color: active ? '#FFFFFF' : theme.primaryText }]}>{t.label}</Text>
+                <Pressable key={t.type} onPress={() => setVendorType(t.type)} style={[styles.typePill, { borderRadius: theme.isEditorial ? 2 : 999, backgroundColor: active ? theme.accent : theme.background, borderColor: active ? theme.accent : theme.divider }]}>
+                  <Icon name={t.icon} size={14} color={active ? theme.onAccent : theme.primaryText} />
+                  <Text style={[styles.typeText, { color: active ? theme.onAccent : theme.primaryText }]}>{t.label}</Text>
                 </Pressable>
               );
             })}
@@ -165,8 +164,8 @@ export default function VendorRegister() {
             {DEFAULT_VENDOR_CATEGORIES.map((c) => {
               const active = categories.includes(c);
               return (
-                <Pressable key={c} onPress={() => toggleCategory(c)} style={[styles.catCell, { backgroundColor: active ? withOpacity(iOSColors.blue, 0.08) : theme.background }]}>
-                  <Icon name={active ? 'checkmark.circle.fill' : 'circle'} size={16} color={active ? iOSColors.blue : theme.secondaryText} />
+                <Pressable key={c} onPress={() => toggleCategory(c)} style={[styles.catCell, { backgroundColor: active ? theme.accentSoft : theme.background }]}>
+                  <Icon name={active ? 'checkmark.circle.fill' : 'circle'} size={16} color={active ? theme.accent : theme.secondaryText} />
                   <Text style={[styles.catText, { color: theme.primaryText }]} numberOfLines={1}>{c}</Text>
                 </Pressable>
               );
@@ -196,7 +195,7 @@ export default function VendorRegister() {
               <Text style={[styles.toggleTitle, { color: theme.primaryText }]}>Ships nationwide</Text>
               <Text style={[styles.toggleSub, { color: theme.secondaryText }]}>Visible to every business in the US, regardless of distance.</Text>
             </View>
-            <Switch value={shipsNationwide} onValueChange={setShipsNationwide} />
+            <Switch value={shipsNationwide} onValueChange={setShipsNationwide} trackColor={{ true: theme.accent, false: theme.divider }} />
           </View>
           {!shipsNationwide && (
             <>
@@ -213,14 +212,17 @@ export default function VendorRegister() {
           <Field label="Lead Time (days)" value={leadTimeDays} onChangeText={(t) => setLeadTimeDays(t.replace(/[^0-9]/g, ''))} placeholder="3" keyboardType="number-pad" />
           <View style={styles.toggleRow}>
             <Text style={[styles.toggleTitle, styles.flex, { color: theme.primaryText }]}>Accepts Returns</Text>
-            <Switch value={acceptsReturns} onValueChange={setAcceptsReturns} />
+            <Switch value={acceptsReturns} onValueChange={setAcceptsReturns} trackColor={{ true: theme.accent, false: theme.divider }} />
           </View>
         </Section>
 
-        <Pressable onPress={submit} disabled={!isValid} style={[styles.submit, { backgroundColor: isValid ? iOSColors.blue : iOSColors.gray }]}>
-          <Icon name="checkmark.shield.fill" size={16} color="#FFFFFF" />
-          <Text style={styles.submitText}>{editing ? 'Save Changes' : 'Submit for Verification'}</Text>
-        </Pressable>
+        <ThemedButton
+          title={editing ? 'Save Changes' : 'Submit for Verification'}
+          icon="checkmark.shield.fill"
+          kind="accent"
+          onPress={submit}
+          disabled={!isValid}
+        />
       </KeyboardAwareForm>
     </SafeAreaView>
   );
@@ -229,7 +231,7 @@ export default function VendorRegister() {
 function Section({ title, children }: { title: string; children: import('react').ReactNode }) {
   const theme = useAppTheme();
   return (
-    <View style={[styles.section, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
+    <View style={[styles.section, theme.card]}>
       <Text style={[styles.sectionTitle, { color: theme.primaryText }]}>{title}</Text>
       {children}
     </View>
@@ -245,7 +247,7 @@ function Field({ label, multiline, ...props }: { label: string; multiline?: bool
         {...props}
         multiline={multiline}
         placeholderTextColor={theme.secondaryText}
-        style={[multiline ? styles.inputMultiline : styles.input, { backgroundColor: theme.background, color: theme.primaryText, borderColor: withOpacity(iOSColors.gray, 0.2) }]}
+        style={[multiline ? styles.inputMultiline : styles.input, { backgroundColor: theme.background, color: theme.primaryText, borderColor: theme.divider }]}
       />
     </View>
   );
@@ -259,16 +261,16 @@ const styles = StyleSheet.create({
   backText: { fontSize: 16, fontWeight: '500' },
   body: { padding: 20, gap: 20, paddingBottom: 40 },
   intro: { alignItems: 'center', gap: 8 },
-  introTitle: { fontSize: 22, fontWeight: '700' },
+  introTitle: { textAlign: 'center' },
   introSub: { fontSize: 14, textAlign: 'center' },
-  section: { borderRadius: 14, padding: 16, gap: 12 },
+  section: { padding: 16, gap: 12 },
   sectionTitle: { fontSize: 16, fontWeight: '700' },
   field: { gap: 6 },
   fieldLabel: { fontSize: 13, fontWeight: '500' },
   input: { paddingHorizontal: 12, paddingVertical: 10, borderRadius: 10, borderWidth: 1, fontSize: 15 },
   inputMultiline: { minHeight: 80, padding: 10, borderRadius: 10, borderWidth: 1, fontSize: 15, textAlignVertical: 'top' },
   typeRow: { gap: 10 },
-  typePill: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1 },
+  typePill: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1 },
   typeText: { fontSize: 13, fontWeight: '500' },
   hint: { fontSize: 13 },
   catGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
@@ -279,6 +281,4 @@ const styles = StyleSheet.create({
   toggleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   toggleTitle: { fontSize: 14, fontWeight: '500' },
   toggleSub: { fontSize: 12, marginTop: 2 },
-  submit: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 16, borderRadius: 14 },
-  submitText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
 });

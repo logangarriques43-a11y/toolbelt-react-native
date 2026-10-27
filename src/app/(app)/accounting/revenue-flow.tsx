@@ -17,9 +17,9 @@ import { useAccounting } from '@/context/accounting-store';
 import { useExpenses } from '@/context/expenses-store';
 import { withOpacity } from '@/lib/color';
 import { compactMoney } from '@/lib/compact-money';
-import { buildSankeyLayout, groupExpenseCategories, groupIncomeSources, SANKEY_REVENUE, type FlowGroup } from '@/lib/sankey';
+import { buildSankeyLayout, groupExpenseCategories, groupIncomeSources, type FlowGroup } from '@/lib/sankey';
 import { periodContains, type Transaction, type TransactionPeriod } from '@/models/transaction';
-import { iOSColors, lightShadow } from '@/theme/tokens';
+import { iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
 const usd = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
@@ -59,16 +59,16 @@ export default function RevenueFlow() {
         <ScrollView contentContainerStyle={styles.body}>
           <PeriodPills period={period} onSelect={setPeriod} />
 
-          <View style={[styles.summary, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
+          <View style={[styles.summary, theme.card]}>
             <Metric label="Income" value={totalIncome} color={iOSColors.green} />
             <Metric label="Expenses" value={totalExpenses} color={iOSColors.red} />
-            <Metric label="Net" value={net} color={SANKEY_REVENUE} />
+            <Metric label="Net" value={net} color={theme.accent} />
           </View>
 
           {totalIncome > 0 ? (
-            <Pressable onPress={() => setExpanded(true)} style={[styles.card, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
+            <Pressable onPress={() => setExpanded(true)} style={[styles.card, theme.card]}>
               <View style={styles.cardHead}>
-                <Icon name="chart.bar.xaxis.ascending" size={14} color={SANKEY_REVENUE} />
+                <Icon name="chart.bar.xaxis.ascending" size={14} color={theme.accent} />
                 <Text style={[styles.cardTitle, { color: theme.primaryText }]}>Money Flow</Text>
                 <Text style={[styles.expandHint, { color: theme.secondaryText }]}>Tap to expand</Text>
                 <Icon name="arrow.up.left.and.arrow.down.right" size={10} color={theme.secondaryText} />
@@ -78,7 +78,7 @@ export default function RevenueFlow() {
               </View>
             </Pressable>
           ) : (
-            <View style={[styles.empty, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
+            <View style={[styles.empty, theme.card]}>
               <Icon name="chart.bar.xaxis.ascending" size={36} color={theme.secondaryText} />
               <Text style={[styles.emptyTitle, { color: theme.primaryText }]}>No revenue data</Text>
               <Text style={[styles.emptySub, { color: theme.secondaryText }]}>Record income to see your money flow</Text>
@@ -112,7 +112,7 @@ function ExpandedSankey({ visible, onClose, initialPeriod }: { visible: boolean;
         <SafeAreaView style={styles.safe} edges={['top']}>
           <View style={styles.expHeader}>
             <View>
-              <Text style={[styles.expTitle, { color: theme.primaryText }]}>Money Flow</Text>
+              <Text style={theme.display(20, '500')}>Money Flow</Text>
               <Text style={[styles.expPeriod, { color: theme.secondaryText }]}>{period}</Text>
             </View>
             <Pressable onPress={onClose} hitSlop={8}>
@@ -125,7 +125,7 @@ function ExpandedSankey({ visible, onClose, initialPeriod }: { visible: boolean;
           <View style={styles.miniRow}>
             <Mini label="Income" value={totalIncome} color={iOSColors.green} />
             <Mini label="Expenses" value={totalExpenses} color={iOSColors.red} />
-            <Mini label="Net" value={net} color={SANKEY_REVENUE} />
+            <Mini label="Net" value={net} color={theme.accent} />
           </View>
 
           {totalIncome > 0 ? (
@@ -156,8 +156,8 @@ function PeriodPills({ period, onSelect }: { period: TransactionPeriod; onSelect
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pills}>
       {PERIODS.map((p) => (
-        <Pressable key={p} onPress={() => onSelect(p)} style={[styles.pill, { borderColor: withOpacity(iOSColors.blue, 0.4), backgroundColor: period === p ? iOSColors.blue : theme.cardBackground }]}>
-          <Text style={[styles.pillText, { color: period === p ? '#FFFFFF' : iOSColors.blue }]}>{p}</Text>
+        <Pressable key={p} onPress={() => onSelect(p)} style={[styles.pill, { borderRadius: theme.isEditorial ? 2 : 999, borderColor: period === p ? theme.accent : theme.divider, backgroundColor: period === p ? theme.accent : theme.cardBackground }]}>
+          <Text style={[styles.pillText, { color: period === p ? theme.onAccent : theme.primaryText }]}>{p}</Text>
         </Pressable>
       ))}
     </ScrollView>
@@ -167,7 +167,7 @@ function PeriodPills({ period, onSelect }: { period: TransactionPeriod; onSelect
 function Metric({ label, value, color }: { label: string; value: number; color: string }) {
   const theme = useAppTheme();
   return (
-    <View style={[styles.metric, { backgroundColor: withOpacity(color, 0.06) }]}>
+    <View style={[styles.metric, { backgroundColor: theme.inputBackground }]}>
       <Text style={[styles.metricLabel, { color: theme.secondaryText }]}>{label}</Text>
       <Text style={[styles.metricValue, { color }]} numberOfLines={1}>{usd.format(value)}</Text>
     </View>
@@ -177,7 +177,7 @@ function Metric({ label, value, color }: { label: string; value: number; color: 
 function Mini({ label, value, color }: { label: string; value: number; color: string }) {
   const theme = useAppTheme();
   return (
-    <View style={[styles.mini, { backgroundColor: withOpacity(color, 0.06) }]}>
+    <View style={[styles.mini, { backgroundColor: theme.inputBackground }]}>
       <Text style={[styles.miniLabel, { color: theme.secondaryText }]}>{label}</Text>
       <Text style={[styles.miniValue, { color }]} numberOfLines={1}>{compactMoney(value)}</Text>
     </View>
@@ -189,7 +189,7 @@ function Breakdown({ title, items, total }: { title: string; items: FlowGroup[];
   return (
     <View style={styles.section}>
       <Text style={[styles.sectionTitle, { color: theme.primaryText }]}>{title}</Text>
-      <View style={[styles.breakdownCard, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
+      <View style={[styles.breakdownCard, theme.card]}>
         {items.map((item) => (
           <View key={item.name} style={styles.breakdownRow}>
             <View style={[styles.dot, { backgroundColor: item.color }]} />
@@ -207,23 +207,23 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   body: { paddingBottom: 30, gap: 14, paddingTop: 12 },
   pills: { gap: 8, paddingHorizontal: 16 },
-  pill: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 16, borderWidth: 1 },
+  pill: { paddingHorizontal: 14, paddingVertical: 6, borderWidth: 1 },
   pillText: { fontSize: 13, fontWeight: '500' },
-  summary: { flexDirection: 'row', gap: 8, padding: 12, marginHorizontal: 16, borderRadius: 12 },
+  summary: { flexDirection: 'row', gap: 8, padding: 12, marginHorizontal: 16 },
   metric: { flex: 1, alignItems: 'center', gap: 4, paddingVertical: 8, borderRadius: 8 },
   metricLabel: { fontSize: 10, fontWeight: '500' },
   metricValue: { fontSize: 14, fontWeight: '700' },
-  card: { marginHorizontal: 16, padding: 12, borderRadius: 12, gap: 8 },
+  card: { marginHorizontal: 16, padding: 12, gap: 8 },
   cardHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   cardTitle: { flex: 1, fontSize: 15, fontWeight: '600' },
   expandHint: { fontSize: 11 },
   chart: { height: 180, borderRadius: 8, overflow: 'hidden' },
-  empty: { marginHorizontal: 16, alignItems: 'center', gap: 8, paddingVertical: 32, borderRadius: 12 },
+  empty: { marginHorizontal: 16, alignItems: 'center', gap: 8, paddingVertical: 32 },
   emptyTitle: { fontSize: 15, fontWeight: '600' },
   emptySub: { fontSize: 13, textAlign: 'center' },
   section: { gap: 8, paddingHorizontal: 16 },
   sectionTitle: { fontSize: 14, fontWeight: '600' },
-  breakdownCard: { borderRadius: 12 },
+  breakdownCard: {},
   breakdownRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 8 },
   dot: { width: 8, height: 8, borderRadius: 4 },
   breakdownName: { flex: 1, fontSize: 13, fontWeight: '500' },
@@ -231,7 +231,6 @@ const styles = StyleSheet.create({
   breakdownPct: { fontSize: 11, width: 42, textAlign: 'right' },
   // Expanded
   expHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 8 },
-  expTitle: { fontSize: 20, fontWeight: '700' },
   expPeriod: { fontSize: 12 },
   miniRow: { flexDirection: 'row', gap: 10, paddingHorizontal: 16, paddingVertical: 10 },
   mini: { flex: 1, alignItems: 'center', gap: 2, paddingVertical: 6, borderRadius: 8 },

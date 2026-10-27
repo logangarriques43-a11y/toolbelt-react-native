@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { DashboardGradient } from '@/components/dashboard-gradient';
 import { Icon } from '@/components/icon';
 import { ScreenHeader } from '@/components/screen-header';
-import { iOSColors, lightShadow } from '@/theme/tokens';
+import { ThemedIconTile } from '@/components/themed';
 import { useAppTheme } from '@/theme/theme-context';
 
 const FEATURES = [
@@ -35,19 +35,17 @@ export default function Subscription() {
       <SafeAreaView style={styles.safe} edges={['top']}>
         <ScreenHeader title="Plan & Features" />
         <ScrollView contentContainerStyle={styles.body}>
-          <View style={[styles.iconCircle, { backgroundColor: theme.iconBackground(iOSColors.purple) }]}>
-            <Icon name="star.fill" size={30} color={iOSColors.purple} />
-          </View>
+          <ThemedIconTile name="star.fill" size={72} filled />
 
-          <Text style={[styles.heading, { color: theme.primaryText }]}>Everything included</Text>
+          <Text style={theme.display(22)}>Everything included</Text>
           <Text style={[styles.sub, { color: theme.secondaryText }]}>
             Your ToolBelt account includes all of the features below.
           </Text>
 
-          <View style={[styles.card, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
+          <View style={[styles.card, theme.card]}>
             {FEATURES.map((f) => (
               <View key={f} style={styles.featureRow}>
-                <Icon name="checkmark.circle.fill" size={16} color={iOSColors.green} />
+                <Icon name="checkmark.circle.fill" size={16} color={theme.accent} />
                 <Text style={[styles.featureText, { color: theme.primaryText }]}>{f}</Text>
               </View>
             ))}
@@ -61,10 +59,8 @@ export default function Subscription() {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   body: { padding: 16, gap: 16, alignItems: 'center', paddingBottom: 40 },
-  iconCircle: { width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center' },
-  heading: { fontSize: 20, fontWeight: '700' },
   sub: { fontSize: 14, textAlign: 'center' },
-  card: { alignSelf: 'stretch', borderRadius: 16, padding: 16, gap: 14, marginTop: 4 },
+  card: { alignSelf: 'stretch', padding: 16, gap: 14, marginTop: 4 },
   featureRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   featureText: { fontSize: 15 },
 });

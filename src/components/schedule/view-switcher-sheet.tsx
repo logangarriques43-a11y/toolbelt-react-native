@@ -8,9 +8,9 @@ import type { SFSymbol } from 'expo-symbols';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Icon } from '@/components/icon';
+import { ThemedIconTile } from '@/components/themed';
 import { withOpacity } from '@/lib/color';
-import { STAFF_ORANGE, staffInitials, type StaffMember } from '@/models/staff';
-import { iOSColors } from '@/theme/tokens';
+import { staffInitials, type StaffMember } from '@/models/staff';
 import { useAppTheme } from '@/theme/theme-context';
 
 export type ScheduleViewType = 'schedule' | 'day' | 'threeDay' | 'week' | 'month';
@@ -51,9 +51,9 @@ export function ViewSwitcherSheet({
       <Pressable style={styles.backdrop} onPress={onClose} />
       <View style={[styles.sheet, { backgroundColor: theme.cardBackground }]}>
         <View style={styles.header}>
-          <Text style={[styles.title, { color: theme.primaryText }]}>Calendar View</Text>
+          <Text style={theme.display(20)}>Calendar View</Text>
           <Pressable onPress={onClose} hitSlop={8}>
-            <Text style={styles.done}>Done</Text>
+            <Text style={[styles.done, { color: theme.accent }]}>Done</Text>
           </Pressable>
         </View>
         <View style={[styles.divider, { backgroundColor: theme.divider }]} />
@@ -66,15 +66,13 @@ export function ViewSwitcherSheet({
                 key={o.value}
                 disabled={!o.enabled}
                 onPress={() => { onSelect(o.value); onClose(); }}
-                style={[styles.row, active ? { backgroundColor: withOpacity(iOSColors.blue, 0.1) } : null, !o.enabled ? styles.disabled : null]}>
-                <View style={[styles.iconWrap, { backgroundColor: withOpacity(iOSColors.blue, 0.12) }]}>
-                  <Icon name={o.icon} size={18} color={iOSColors.blue} />
-                </View>
+                style={[styles.row, { borderRadius: theme.cornerRadius }, active ? { backgroundColor: theme.accentSoft } : null, !o.enabled ? styles.disabled : null]}>
+                <ThemedIconTile name={o.icon} size={44} filled={active} />
                 <View style={styles.rowText}>
                   <Text style={[styles.rowLabel, { color: theme.primaryText }]}>{o.label}</Text>
                   <Text style={[styles.rowDesc, { color: theme.secondaryText }]}>{o.desc}</Text>
                 </View>
-                {active ? <Icon name="checkmark.circle.fill" size={22} color={iOSColors.blue} /> : null}
+                {active ? <Icon name="checkmark.circle.fill" size={22} color={theme.accent} /> : null}
               </Pressable>
             );
           })}
@@ -91,7 +89,7 @@ export function ViewSwitcherSheet({
                   key={m.id}
                   label={m.name}
                   initials={staffInitials(m.name)}
-                  color={m.colorHex || STAFF_ORANGE}
+                  color={m.colorHex || undefined}
                   active={selectedStaffId === m.id}
                   onPress={() => { onSelectStaff!(m.id); onClose(); }}
                 />
@@ -105,15 +103,13 @@ export function ViewSwitcherSheet({
             <View style={[styles.divider, { backgroundColor: theme.divider }]} />
             <Pressable
               onPress={() => { onClose(); onWorkingHours(); }}
-              style={[styles.row, styles.footerRow]}>
-              <View style={[styles.iconWrap, { backgroundColor: withOpacity(iOSColors.blue, 0.12) }]}>
-                <Icon name="clock" size={18} color={iOSColors.blue} />
-              </View>
+              style={[styles.row, styles.footerRow, { borderRadius: theme.cornerRadius }]}>
+              <ThemedIconTile name="clock" size={44} />
               <View style={styles.rowText}>
                 <Text style={[styles.rowLabel, { color: theme.primaryText }]}>Working Hours</Text>
                 <Text style={[styles.rowDesc, { color: theme.secondaryText }]}>Set your weekly schedule</Text>
               </View>
-              <Icon name="chevron.right" size={14} color={theme.secondaryText} />
+              <Icon name="chevron.right" size={14} color={theme.chevronTint} />
             </Pressable>
           </>
         ) : null}
@@ -124,11 +120,13 @@ export function ViewSwitcherSheet({
 
 function StaffChip({ label, initials, color, active, onPress }: { label: string; initials: string; color?: string; active: boolean; onPress: () => void }) {
   const theme = useAppTheme();
-  const tint = color ?? iOSColors.blue;
+  const tint = color ?? theme.accent;
+  // User-picked staff colours keep white initials; the "All" chip uses the accent.
+  const activeFg = color ? '#FFFFFF' : theme.onAccent;
   return (
     <Pressable onPress={onPress} style={styles.chip}>
-      <View style={[styles.chipAvatar, { backgroundColor: active ? tint : withOpacity(tint, 0.15), borderColor: active ? tint : 'transparent' }]}>
-        <Text style={[styles.chipInitials, { color: active ? '#FFFFFF' : tint }]} numberOfLines={1}>{initials}</Text>
+      <View style={[styles.chipAvatar, { backgroundColor: active ? tint : color ? withOpacity(tint, 0.15) : theme.accentSoft, borderColor: active ? tint : 'transparent' }]}>
+        <Text style={[styles.chipInitials, { color: active ? activeFg : tint }]} numberOfLines={1}>{initials}</Text>
       </View>
       <Text style={[styles.chipLabel, { color: active ? theme.primaryText : theme.secondaryText, fontWeight: active ? '700' : '500' }]} numberOfLines={1}>{label}</Text>
     </Pressable>
@@ -143,16 +141,14 @@ const styles = StyleSheet.create({
   chipAvatar: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', borderWidth: 2 },
   chipInitials: { fontSize: 14, fontWeight: '700' },
   chipLabel: { fontSize: 11, textAlign: 'center' },
-  sheet: { borderTopLeftRadius: 16, borderTopRightRadius: 16, paddingBottom: 32 },
+  sheet: { borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingBottom: 32 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16 },
-  title: { fontSize: 18, fontWeight: '700' },
-  done: { fontSize: 16, fontWeight: '600', color: iOSColors.blue },
+  done: { fontSize: 16, fontWeight: '600' },
   divider: { height: StyleSheet.hairlineWidth },
   list: { padding: 12, gap: 4 },
   footerRow: { marginHorizontal: 12, marginTop: 8 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 12, borderRadius: 12 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 12 },
   disabled: { opacity: 0.45 },
-  iconWrap: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   rowText: { flex: 1, gap: 2 },
   rowLabel: { fontSize: 16, fontWeight: '600' },
   rowDesc: { fontSize: 13 },

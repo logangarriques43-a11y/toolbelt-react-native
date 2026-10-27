@@ -6,9 +6,7 @@
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Icon } from '@/components/icon';
-import { withOpacity } from '@/lib/color';
 import type { PriceType } from '@/models/service';
-import { iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
 const OPTIONS: { type: PriceType; desc: string }[] = [
@@ -37,9 +35,9 @@ export function PriceTypeSheet({
           <Pressable onPress={onClose} hitSlop={8}>
             <Text style={[styles.cancel, { color: theme.secondaryText }]}>Cancel</Text>
           </Pressable>
-          <Text style={[styles.title, { color: theme.primaryText }]}>Price Type</Text>
+          <Text style={theme.display(20)}>Price Type</Text>
           <Pressable onPress={onClose} hitSlop={8}>
-            <Text style={styles.done}>Done</Text>
+            <Text style={[styles.done, { color: theme.accent }]}>Done</Text>
           </Pressable>
         </View>
         <View style={[styles.divider, { backgroundColor: theme.divider }]} />
@@ -56,16 +54,17 @@ export function PriceTypeSheet({
                 }}
                 style={[
                   styles.option,
-                  active ? { backgroundColor: withOpacity(iOSColors.blue, 0.1) } : null,
+                  { borderRadius: theme.cornerRadius },
+                  active ? { backgroundColor: theme.accentSoft } : null,
                 ]}>
                 <View style={styles.optionText}>
                   <Text style={[styles.optionTitle, { color: theme.primaryText }]}>{type}</Text>
                   <Text style={[styles.optionDesc, { color: theme.secondaryText }]}>{desc}</Text>
                 </View>
                 {active ? (
-                  <Icon name="checkmark.circle.fill" size={24} color={iOSColors.blue} />
+                  <Icon name="checkmark.circle.fill" size={24} color={theme.accent} />
                 ) : (
-                  <View style={[styles.radio, { borderColor: withOpacity(iOSColors.gray, 0.3) }]} />
+                  <View style={[styles.radio, { borderColor: theme.divider }]} />
                 )}
               </Pressable>
             );
@@ -78,11 +77,10 @@ export function PriceTypeSheet({
 
 const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.25)' },
-  sheet: { borderTopLeftRadius: 16, borderTopRightRadius: 16, paddingBottom: 32 },
+  sheet: { borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingBottom: 32 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16 },
   cancel: { fontSize: 16, fontWeight: '500' },
-  title: { fontSize: 18, fontWeight: '700' },
-  done: { fontSize: 16, fontWeight: '600', color: iOSColors.blue },
+  done: { fontSize: 16, fontWeight: '600' },
   divider: { height: StyleSheet.hairlineWidth },
   options: { padding: 16, gap: 8 },
   option: {
@@ -90,7 +88,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 16,
-    borderRadius: 12,
   },
   optionText: { gap: 4, flex: 1 },
   optionTitle: { fontSize: 16, fontWeight: '500' },

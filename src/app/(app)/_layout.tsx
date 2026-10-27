@@ -1,5 +1,6 @@
-import { Stack } from 'expo-router';
-import { useEffect } from 'react';
+import { Stack, useRouter } from 'expo-router';
+import { useEffect, useRef } from 'react';
+import { Alert } from 'react-native';
 
 import { AccountingProvider } from '@/context/accounting-store';
 import { AppointmentFormProvider } from '@/context/appointment-form';
@@ -19,19 +20,65 @@ import { StaffProvider } from '@/context/staff-store';
 import { TimeOffProvider } from '@/context/time-off-store';
 import { VendorProvider } from '@/context/vendor-store';
 import { WorkingHoursProvider } from '@/context/working-hours-store';
+import { useSession } from '@/context/session';
+import { onTwoFactorRequired } from '@/lib/api-client';
 
 /**
- * Authenticated business-owner stack. Dashboard hub + feature screens.
+ * Authenticated stack (owner or staff). Dashboard hub + feature screens.
  * Data stores (clients, services, appointments, staff, …) are scoped to the signed-in area.
  */
+
 /**
- * Configures the permission session as owner on entry. The RN app has no
- * staff-login flow yet (Firebase auth = Stream B), so the authenticated area is
- * always the owner; when staff login lands, it would call configureAsStaff.
+ * Configures the permission session from the auth session: owners pass every
+ * check; staff are gated by their permission map from GET /staff/me (cached per
+ * uid for offline launches; missing key = denied).
  */
-function OwnerConfig() {
-  const { configureAsOwner } = usePermissions();
-  useEffect(() => { configureAsOwner(); }, [configureAsOwner]);
+function SessionPermissionsConfig() {
+  const { role, staff } = useSession();
+  const { configureAsOwner, configureAsStaff, reset } = usePermissions();
+  const permissions = staff?.permissions;
+  useEffect(() => {
+    if (role === 'owner') configureAsOwner();
+    else if (role === 'staff') configureAsStaff(permissions ?? {});
+    else reset();
+  }, [role, permissions, configureAsOwner, configureAsStaff, reset]);
+  return null;
+}
+
+/**
+ * When any request is refused with `2fa_required` (the backend enforces
+ * two-step sign-in on payments, payouts, tax, clients…), explain once and offer
+ * the Security screen. Further refusals while the alert is up are ignored.
+ */
+function TwoFactorRequiredAlert() {
+  const router = useRouter();
+  const showing = useRef(false);
+  useEffect(
+    () =>
+      onTwoFactorRequired(() => {
+        if (showing.current) return;
+        showing.current = true;
+        const done = () => {
+          showing.current = false;
+        };
+        Alert.alert(
+          'Two-step sign-in required',
+          'This part of ToolBelt needs a session that passed two-step sign-in. Set up an authenticator app in Security, then sign out and sign back in with your code.',
+          [
+            { text: 'Not Now', style: 'cancel', onPress: done },
+            {
+              text: 'Open Security',
+              onPress: () => {
+                done();
+                router.push('/security');
+              },
+            },
+          ],
+          { cancelable: true, onDismiss: done },
+        );
+      }),
+    [router],
+  );
   return null;
 }
 
@@ -55,7 +102,8 @@ export default function AppLayout() {
                               <VendorProvider>
                                 <AppointmentsProvider>
                                   <AppointmentFormProvider>
-                                    <OwnerConfig />
+                                    <SessionPermissionsConfig />
+                                    <TwoFactorRequiredAlert />
                                     <Stack screenOptions={{ headerShown: false }} />
                                   </AppointmentFormProvider>
                                 </AppointmentsProvider>

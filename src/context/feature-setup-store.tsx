@@ -1,12 +1,16 @@
 /**
  * Feature setup store — RN counterpart to FeatureSetupManager.swift.
- * Tracks which Payments features the owner has enabled. In-memory only (the
- * Swift build also persists per-feature settings + backend-syncs them — deferred).
+ * Tracks which Payments features the owner has enabled, kept on the device in
+ * AsyncStorage (iOS keeps the same state in UserDefaults; its `/features`
+ * backend sync has no server route, so there is nothing to sync to yet).
  */
 
-import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
 import type { PaymentFeatureId } from '@/models/payment-feature';
+
+const STORAGE_KEY = 'paymentFeatures.enabled';
 
 export interface FeatureSetupStore {
   isEnabled: (id: PaymentFeatureId) => boolean;
@@ -20,31 +24,31 @@ const FeatureSetupContext = createContext<FeatureSetupStore | null>(null);
 export function FeatureSetupProvider({ children }: { children: ReactNode }) {
   const [enabled, setEnabled] = useState<Set<PaymentFeatureId>>(() => new Set());
 
-  const value = useMemo<FeatureSetupStore>(
-    () => ({
+  useEffect(() => {
+    AsyncStorage.getItem(STORAGE_KEY)
+      .then((v) => {
+        if (!v) return;
+        const ids = JSON.parse(v);
+        if (Array.isArray(ids)) setEnabled(new Set(ids as PaymentFeatureId[]));
+      })
+      .catch(() => {});
+  }, []);
+
+  const value = useMemo<FeatureSetupStore>(() => {
+    const update = (change: (next: Set<PaymentFeatureId>) => void) =>
+      setEnabled((prev) => {
+        const next = new Set(prev);
+        change(next);
+        AsyncStorage.setItem(STORAGE_KEY, JSON.stringify([...next])).catch(() => {});
+        return next;
+      });
+    return {
       isEnabled: (id) => enabled.has(id),
-      enable: (id) =>
-        setEnabled((prev) => {
-          const next = new Set(prev);
-          next.add(id);
-          return next;
-        }),
-      disable: (id) =>
-        setEnabled((prev) => {
-          const next = new Set(prev);
-          next.delete(id);
-          return next;
-        }),
-      toggle: (id) =>
-        setEnabled((prev) => {
-          const next = new Set(prev);
-          if (next.has(id)) next.delete(id);
-          else next.add(id);
-          return next;
-        }),
-    }),
-    [enabled],
-  );
+      enable: (id) => update((next) => next.add(id)),
+      disable: (id) => update((next) => next.delete(id)),
+      toggle: (id) => update((next) => (next.has(id) ? next.delete(id) : next.add(id))),
+    };
+  }, [enabled]);
 
   return <FeatureSetupContext.Provider value={value}>{children}</FeatureSetupContext.Provider>;
 }

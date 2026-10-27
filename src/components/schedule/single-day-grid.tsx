@@ -30,7 +30,6 @@ import { effectiveHours, isEffectiveWorkingTime, staffTint } from '@/lib/staff-s
 import type { Appointment } from '@/models/appointment';
 import { blockingTimeOff } from '@/models/time-off';
 import type { StaffMember } from '@/models/staff';
-import { iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
 const LABELS = timeSlotLabels();
@@ -58,7 +57,7 @@ export function SingleDayGrid({
   const { can } = usePermissions();
   const { width } = useWindowDimensions();
   const scrollRef = useRef<ScrollView>(null);
-  const nonWorking = withOpacity(iOSColors.gray, 0.08);
+  const nonWorking = withOpacity(theme.inputBackground, 0.6);
   const eff = effectiveHours(date, getSchedule(date), selectedStaff);
 
   const canManageTimeOff = can('manageTimeOff');
@@ -102,7 +101,7 @@ export function SingleDayGrid({
           {LABELS.map((label, i) => {
             const working = isEffectiveWorkingTime(eff, Math.floor(i / 2), (i % 2) * 30);
             return (
-              <View key={i} style={[styles.slot, { borderTopColor: withOpacity(iOSColors.gray, 0.25) }]}>
+              <View key={i} style={[styles.slot, { borderTopColor: theme.divider }]}>
                 <Text numberOfLines={1} allowFontScaling={false} style={[styles.slotLabel, { color: theme.secondaryText }]}>{label}</Text>
                 <View style={[styles.slotColumn, { borderLeftColor: theme.divider, backgroundColor: working ? 'transparent' : nonWorking }]} />
               </View>
@@ -113,10 +112,10 @@ export function SingleDayGrid({
           {today ? (
             <View style={[styles.indicator, { top: indicatorY }]} pointerEvents="none">
               <View style={styles.indicatorTimeWrap}>
-                <Text numberOfLines={1} allowFontScaling={false} style={styles.indicatorTime}>{indicatorTime}</Text>
+                <Text numberOfLines={1} allowFontScaling={false} style={[styles.indicatorTime, { color: theme.onAccent, backgroundColor: theme.accent }]}>{indicatorTime}</Text>
               </View>
-              <View style={styles.indicatorDot} />
-              <View style={styles.indicatorLine} />
+              <View style={[styles.indicatorDot, { backgroundColor: theme.accent }]} />
+              <View style={[styles.indicatorLine, { backgroundColor: theme.accent }]} />
             </View>
           ) : null}
 
@@ -165,7 +164,7 @@ const styles = StyleSheet.create({
   slotColumn: { flex: 1, borderLeftWidth: 1 },
   indicator: { position: 'absolute', left: 0, right: 0, height: 16, flexDirection: 'row', alignItems: 'center', zIndex: 100 },
   indicatorTimeWrap: { width: TIME_COL_WIDTH, alignItems: 'center' },
-  indicatorTime: { fontSize: 10, fontWeight: '700', color: '#FFFFFF', backgroundColor: iOSColors.red, paddingHorizontal: 5, paddingVertical: 2, borderRadius: 999, overflow: 'hidden' },
-  indicatorDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: iOSColors.red },
-  indicatorLine: { flex: 1, height: 2, backgroundColor: iOSColors.red },
+  indicatorTime: { fontSize: 10, fontWeight: '700', paddingHorizontal: 5, paddingVertical: 2, borderRadius: 999, overflow: 'hidden' },
+  indicatorDot: { width: 10, height: 10, borderRadius: 5 },
+  indicatorLine: { flex: 1, height: 2 },
 });

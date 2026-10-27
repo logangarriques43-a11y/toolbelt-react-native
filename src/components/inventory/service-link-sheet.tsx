@@ -11,11 +11,11 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 
 import { Icon } from '@/components/icon';
+import { ThemedButton, ThemedIconTile } from '@/components/themed';
 import { KeyboardAwareForm } from '@/components/keyboard-aware-form';
 import { useInventory } from '@/context/inventory-store';
 import { useServices } from '@/context/services-store';
 import { uuid } from '@/lib/id';
-import { withOpacity } from '@/lib/color';
 import type { ServiceUsageRate } from '@/models/inventory';
 import { iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
@@ -107,7 +107,7 @@ export function ServiceLinkContent({
   return (
     <KeyboardAwareForm contentContainerStyle={styles.body}>
       <View style={styles.center}>
-        <Icon name="link.circle.fill" size={44} color={iOSColors.purple} />
+        <ThemedIconTile name="link.circle.fill" size={60} filled />
       </View>
       <Text style={[styles.intro, { color: theme.secondaryText }]}>Link this product to services and set re-order rules.</Text>
 
@@ -115,18 +115,18 @@ export function ServiceLinkContent({
       <Text style={[styles.label, { color: theme.secondaryText }]}>What services use this product?</Text>
       <Text style={[styles.hint, { color: theme.secondaryText }]}>Tap a service to link it, then set how many uses before it depletes the product.</Text>
       {services.length === 0 ? (
-        <View style={[styles.noteBox, { backgroundColor: theme.divider }]}>
+        <View style={[styles.noteBox, { backgroundColor: theme.inputBackground }]}>
           <Text style={[styles.noteText, { color: theme.secondaryText }]}>No services yet. You can link services later from the item's detail page.</Text>
         </View>
       ) : (
         services.map((service) => {
           const linked = rates[service.id] != null;
           return (
-            <View key={service.id} style={[styles.serviceRow, { backgroundColor: linked ? withOpacity(iOSColors.blue, 0.08) : theme.divider, borderColor: linked ? iOSColors.blue : 'transparent' }]}>
+            <View key={service.id} style={[styles.serviceRow, { backgroundColor: linked ? theme.accentSoft : theme.inputBackground, borderColor: linked ? theme.accent : 'transparent' }]}>
               <Pressable style={styles.serviceHead} onPress={() => toggleService(service.id)}>
                 <View style={[styles.serviceDot, { backgroundColor: service.colorHex }]} />
                 <Text style={[styles.serviceName, styles.flex, { color: theme.primaryText }]}>{service.name}</Text>
-                <Icon name={linked ? 'checkmark.circle.fill' : 'circle'} size={20} color={linked ? iOSColors.blue : withOpacity(iOSColors.gray, 0.5)} />
+                <Icon name={linked ? 'checkmark.circle.fill' : 'circle'} size={20} color={linked ? theme.accent : theme.tertiaryText} />
               </Pressable>
               {linked && (
                 <View style={styles.refillRow}>
@@ -137,7 +137,7 @@ export function ServiceLinkContent({
                     placeholder="uses"
                     placeholderTextColor={theme.secondaryText}
                     keyboardType="number-pad"
-                    style={[styles.refillInput, { backgroundColor: theme.cardBackground, color: theme.primaryText, borderColor: withOpacity(iOSColors.gray, 0.3) }]}
+                    style={[styles.refillInput, { backgroundColor: theme.cardBackground, color: theme.primaryText, borderColor: theme.fieldBorder }]}
                   />
                   <Text style={[styles.refillText, styles.flex, { color: theme.secondaryText }]} numberOfLines={1}>uses of {service.name}.</Text>
                 </View>
@@ -148,15 +148,15 @@ export function ServiceLinkContent({
       )}
 
       {/* Auto-calculate */}
-      <View style={[styles.toggleCard, { backgroundColor: theme.divider }]}>
-        <Icon name="function" size={22} color={iOSColors.purple} />
+      <View style={[styles.toggleCard, { backgroundColor: theme.inputBackground }]}>
+        <Icon name="function" size={22} color={theme.accent} />
         <View style={styles.flex}>
           <Text style={[styles.toggleTitle, { color: theme.primaryText }]}>Auto-calculate re-order?</Text>
           <Text style={[styles.toggleSub, { color: theme.secondaryText }]}>
             {multiple ? "Blend each service's refill rate and trigger the re-order when combined usage hits the limit." : 'Available when two or more services share this product.'}
           </Text>
         </View>
-        <Switch value={autoCalc} onValueChange={setAutoCalc} disabled={!multiple} />
+        <Switch value={autoCalc} onValueChange={setAutoCalc} disabled={!multiple} trackColor={{ true: theme.accent, false: theme.divider }} />
       </View>
 
       {/* Re-order quantity */}
@@ -168,23 +168,23 @@ export function ServiceLinkContent({
         placeholder="e.g. 10"
         placeholderTextColor={theme.secondaryText}
         keyboardType="number-pad"
-        style={[styles.input, { backgroundColor: theme.divider, color: theme.primaryText }]}
+        style={[styles.input, { backgroundColor: theme.inputBackground, color: theme.primaryText }]}
       />
 
       {/* Auto re-order */}
-      <View style={[styles.toggleCard, { backgroundColor: theme.divider }]}>
-        <Icon name="arrow.triangle.2.circlepath.circle.fill" size={22} color={iOSColors.orange} />
+      <View style={[styles.toggleCard, { backgroundColor: theme.inputBackground }]}>
+        <Icon name="arrow.triangle.2.circlepath.circle.fill" size={22} color={theme.accent} />
         <View style={styles.flex}>
           <Text style={[styles.toggleTitle, { color: theme.primaryText }]}>Auto re-order?</Text>
           <Text style={[styles.toggleSub, { color: theme.secondaryText }]}>Place the order automatically when the threshold is hit. Off = you get a notification and place it manually.</Text>
         </View>
-        <Switch value={autoReorder} onValueChange={setAutoReorder} />
+        <Switch value={autoReorder} onValueChange={setAutoReorder} trackColor={{ true: theme.accent, false: theme.divider }} />
       </View>
 
       {/* Vendor */}
       <Text style={[styles.label, { color: theme.secondaryText }]}>Where do you re-order from?</Text>
       <Text style={[styles.hint, { color: theme.secondaryText }]}>Paste the direct product page URL. The app opens that URL so you can re-order in one tap.</Text>
-      <View style={[styles.noteBox, { backgroundColor: theme.divider }]}>
+      <View style={[styles.noteBox, { backgroundColor: theme.inputBackground }]}>
         <Text style={[styles.noteText, { color: theme.secondaryText }]}>No vendors yet. Add one in the Vendors section first, then link it here. (Vendor marketplace arrives in Phase 6d.)</Text>
       </View>
       <Text style={[styles.subLabel, { color: theme.secondaryText }]}>Re-order link (optional)</Text>
@@ -196,7 +196,7 @@ export function ServiceLinkContent({
         autoCapitalize="none"
         autoCorrect={false}
         keyboardType="url"
-        style={[styles.input, { backgroundColor: theme.divider, color: theme.primaryText }]}
+        style={[styles.input, { backgroundColor: theme.inputBackground, color: theme.primaryText }]}
       />
       {urlInvalid && <Text style={[styles.warn, { color: iOSColors.orange }]}>That doesn't look like a full web address. Include http:// or https://.</Text>}
       <Text style={[styles.subLabel, { color: theme.secondaryText }]}>Vendor SKU (optional)</Text>
@@ -205,12 +205,10 @@ export function ServiceLinkContent({
         onChangeText={setVendorSku}
         placeholder="How the vendor lists this item"
         placeholderTextColor={theme.secondaryText}
-        style={[styles.input, { backgroundColor: theme.divider, color: theme.primaryText }]}
+        style={[styles.input, { backgroundColor: theme.inputBackground, color: theme.primaryText }]}
       />
 
-      <Pressable onPress={save} style={[styles.saveBtn, { backgroundColor: iOSColors.blue }]}>
-        <Text style={styles.saveText}>Add to Inventory</Text>
-      </Pressable>
+      <ThemedButton title="Add to Inventory" onPress={save} style={styles.saveBtn} />
     </KeyboardAwareForm>
   );
 }
@@ -237,6 +235,5 @@ const styles = StyleSheet.create({
   toggleSub: { fontSize: 12, marginTop: 4 },
   input: { padding: 14, borderRadius: 10, fontSize: 16 },
   warn: { fontSize: 12 },
-  saveBtn: { alignItems: 'center', justifyContent: 'center', paddingVertical: 16, borderRadius: 12, marginTop: 8 },
-  saveText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
+  saveBtn: { marginTop: 8 },
 });

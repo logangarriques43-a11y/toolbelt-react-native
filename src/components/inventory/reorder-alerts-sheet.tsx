@@ -12,7 +12,7 @@ import { Icon } from '@/components/icon';
 import { useInventory } from '@/context/inventory-store';
 import { withOpacity } from '@/lib/color';
 import { type InventoryItem } from '@/models/inventory';
-import { iOSColors, lightShadow } from '@/theme/tokens';
+import { iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
 export function ReorderAlertsSheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
@@ -36,7 +36,7 @@ export function ReorderAlertsSheet({ visible, onClose }: { visible: boolean; onC
         <View style={styles.grabber} />
         <View style={styles.header}>
           <Pressable onPress={onClose} hitSlop={8}>
-            <Text style={styles.action}>Close</Text>
+            <Text style={[styles.action, { color: theme.accent }]}>Close</Text>
           </Pressable>
           <Text style={[styles.title, { color: theme.primaryText }]}>Reorder Alerts</Text>
           <Text style={[styles.action, styles.hidden]}>Close</Text>
@@ -63,8 +63,8 @@ export function ReorderAlertsSheet({ visible, onClose }: { visible: boolean; onC
             <Icon name="gearshape.fill" size={14} color={theme.secondaryText} />
             <Text style={[styles.settingsTitle, { color: theme.primaryText }]}>Notification Settings</Text>
           </View>
-          <View style={[styles.settingsCard, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
-            <ToggleRow icon="bell.fill" iconColor={iOSColors.blue} title="Enable Alerts" subtitle="Get notified about stock levels" value={alertsEnabled} onChange={setAlertsEnabled} />
+          <View style={[styles.settingsCard, theme.card]}>
+            <ToggleRow icon="bell.fill" iconColor={theme.accent} title="Enable Alerts" subtitle="Get notified about stock levels" value={alertsEnabled} onChange={setAlertsEnabled} />
             <View style={[styles.divider, { backgroundColor: theme.divider }]} />
             <ToggleRow icon="xmark.circle.fill" iconColor={iOSColors.red} title="Out of Stock" subtitle="Alert when quantity reaches 0" value={outOfStockAlerts} onChange={setOutOfStockAlerts} disabled={!alertsEnabled} />
             <View style={[styles.divider, { backgroundColor: theme.divider }]} />
@@ -75,9 +75,9 @@ export function ReorderAlertsSheet({ visible, onClose }: { visible: boolean; onC
           {low.length > 0 && <AlertSection title="Low Stock" icon="exclamationmark.triangle.fill" color={iOSColors.orange} items={low} onRestock={restock} />}
 
           {total === 0 && (
-            <View style={[styles.allClear, { backgroundColor: withOpacity(iOSColors.green, 0.05) }]}>
+            <View style={[styles.allClear, { backgroundColor: withOpacity(iOSColors.green, 0.05), borderRadius: theme.cornerRadius }]}>
               <Icon name="checkmark.seal.fill" size={50} color={iOSColors.green} />
-              <Text style={[styles.allClearTitle, { color: theme.primaryText }]}>All Stocked Up!</Text>
+              <Text style={theme.display(22)}>All Stocked Up!</Text>
               <Text style={[styles.allClearSub, { color: theme.secondaryText }]}>All inventory items are above their reorder levels. No action needed right now.</Text>
             </View>
           )}
@@ -112,7 +112,7 @@ function ToggleRow({
         <Text style={[styles.toggleTitle, { color: theme.primaryText }]}>{title}</Text>
         <Text style={[styles.toggleSub, { color: theme.secondaryText }]}>{subtitle}</Text>
       </View>
-      <Switch value={value} onValueChange={onChange} disabled={disabled} />
+      <Switch value={value} onValueChange={onChange} disabled={disabled} trackColor={{ true: theme.accent, false: theme.divider }} />
     </View>
   );
 }
@@ -150,7 +150,7 @@ function AlertSection({
             <Text style={[styles.alertReorder, { color: theme.secondaryText }]}>Reorder at {item.reorderLevel}</Text>
           </View>
           <Pressable onPress={() => onRestock(item)} hitSlop={6}>
-            <Icon name="arrow.clockwise.circle.fill" size={28} color={iOSColors.blue} />
+            <Icon name="arrow.clockwise.circle.fill" size={28} color={theme.accent} />
           </Pressable>
         </View>
       ))}
@@ -165,7 +165,7 @@ const styles = StyleSheet.create({
   grabber: { alignSelf: 'center', width: 40, height: 6, borderRadius: 3, backgroundColor: 'rgba(150,150,150,0.5)', marginTop: 12, marginBottom: 8 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
   title: { fontSize: 18, fontWeight: '700' },
-  action: { fontSize: 16, color: iOSColors.blue },
+  action: { fontSize: 16 },
   hidden: { opacity: 0 },
   body: { padding: 16, gap: 20 },
   banner: { flexDirection: 'row', alignItems: 'center', gap: 16, padding: 16, borderRadius: 14, borderWidth: 1 },
@@ -174,7 +174,7 @@ const styles = StyleSheet.create({
   bannerSub: { fontSize: 13, marginTop: 4 },
   settingsHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   settingsTitle: { fontSize: 14, fontWeight: '600' },
-  settingsCard: { borderRadius: 12, marginTop: -8 },
+  settingsCard: { marginTop: -8, overflow: 'hidden' },
   toggleRow: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14 },
   dim: { opacity: 0.5 },
   toggleTitle: { fontSize: 15, fontWeight: '500' },
@@ -191,7 +191,6 @@ const styles = StyleSheet.create({
   alertStock: { alignItems: 'flex-end' },
   alertQty: { fontSize: 15, fontWeight: '700' },
   alertReorder: { fontSize: 11, marginTop: 2 },
-  allClear: { alignItems: 'center', gap: 12, paddingVertical: 30, paddingHorizontal: 16, borderRadius: 14 },
-  allClearTitle: { fontSize: 18, fontWeight: '700' },
+  allClear: { alignItems: 'center', gap: 12, paddingVertical: 30, paddingHorizontal: 16 },
   allClearSub: { fontSize: 14, textAlign: 'center' },
 });

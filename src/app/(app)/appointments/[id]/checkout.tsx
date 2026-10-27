@@ -1,27 +1,43 @@
 /**
  * Checkout — port of CheckoutView.swift.
- * Service line + summary + discount sheet + payment-method sheet. Real payment
- * processing is Phase 5; "Take payment" records nothing and returns.
+ * Service line + summary + discount sheet + payment-method sheet. "Take
+ * payment" records the appointment as a sale: Cash records directly, Card
+ * charges through Stripe PaymentSheet and Tap to Pay through Stripe Terminal
+ * (the screen sits inside PaymentsTerminalProvider), recording the
+ * PaymentIntent id and card details on success.
  */
 
-import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { SFSymbol } from 'expo-symbols';
 import { useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DashboardGradient } from '@/components/dashboard-gradient';
 import { Icon } from '@/components/icon';
 import { KeyboardAwareForm } from '@/components/keyboard-aware-form';
+import { ThemedButton, ThemedIconTile } from '@/components/themed';
 import { withOpacity } from '@/lib/color';
 import { useAppointments } from '@/context/appointments-store';
-import { Brand, iOSColors, lightShadow } from '@/theme/tokens';
+import { useSales } from '@/context/sales-store';
+import { uuid } from '@/lib/id';
+import { alertChargeError, saleFieldsFor, useCardCharge, type ChargeResult } from '@/lib/stripe-charge';
+import { PaymentsTerminalProvider, useTapToPay } from '@/lib/stripe-terminal';
+import type { PaymentMethod } from '@/models/sale';
+import { iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
 const GREEN = '#4CBF80';
 
-export default function Checkout() {
+export default function CheckoutScreen() {
+  return (
+    <PaymentsTerminalProvider>
+      <Checkout />
+    </PaymentsTerminalProvider>
+  );
+}
+
+function Checkout() {
   const theme = useAppTheme();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -37,14 +53,59 @@ export default function Checkout() {
   const serviceName = appt?.serviceName ?? 'Service';
   const serviceColor = appt?.serviceColor ?? iOSColors.blue;
 
+  const sales = useSales();
+  const chargeCard = useCardCharge();
+  const tapToPay = useTapToPay();
+  const [charging, setCharging] = useState<PaymentMethod | null>(null);
+
+  const recordSale = (method: PaymentMethod, payment?: ChargeResult) => {
+    sales.addSale({
+      date: new Date().toISOString(),
+      items: [{ id: uuid(), name: serviceName, colorHex: serviceColor, price: subtotal, quantity: 1 }],
+      totalAmount: total,
+      paymentMethod: method,
+      clientId: appt?.clientId,
+      clientName: appt?.clientName,
+      notes: discount > 0 ? `Discount -$${discount.toFixed(2)}` : '',
+      isKeypadSale: false,
+      ...(payment ? saleFieldsFor(payment) : {}),
+    });
+    setPaymentSheet(false);
+    router.back();
+  };
+
+  const takePayment = async (method: PaymentMethod) => {
+    if (charging) return;
+    if (method === 'Cash') {
+      recordSale(method);
+      return;
+    }
+    const description = `${serviceName}${appt?.clientName ? ` — ${appt.clientName}` : ''}`;
+    setCharging(method);
+    try {
+      const result =
+        method === 'Tap to Pay'
+          ? await tapToPay.charge({ amount: total, description })
+          : await chargeCard({ amount: total, description });
+      if (result) recordSale(method, result);
+    } catch (err) {
+      alertChargeError(err, () => {
+        setPaymentSheet(false);
+        router.push('/payout');
+      });
+    } finally {
+      setCharging(null);
+    }
+  };
+
   return (
     <DashboardGradient>
       <SafeAreaView style={styles.safe} edges={['top']}>
-        <View style={[styles.header, { backgroundColor: withOpacity(theme.cardBackground, 0.9) }]}>
+        <View style={[styles.header, { backgroundColor: theme.background, borderBottomColor: theme.divider }]}>
           <Pressable onPress={() => router.back()} hitSlop={8} style={styles.headerBtn}>
-            <Icon name="chevron.left" size={20} weight="semibold" color={iOSColors.blue} />
+            <Icon name="chevron.left" size={20} weight="semibold" color={theme.accent} />
           </Pressable>
-          <Text style={[styles.headerTitle, { color: theme.primaryText }]}>Checkout</Text>
+          <Text style={theme.display(24)}>Checkout</Text>
           <View style={styles.headerBtn} />
         </View>
 
@@ -52,12 +113,12 @@ export default function Checkout() {
           {/* Services */}
           <View style={styles.section}>
             <Text style={[styles.label, { color: theme.secondaryText }]}>Services</Text>
-            <View style={[styles.card, styles.serviceRow, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
+            <View style={[styles.card, styles.serviceRow, theme.card]}>
               <View style={[styles.serviceIcon, { backgroundColor: withOpacity(serviceColor, 0.2) }]}>
                 <Icon name="tag.fill" size={16} color={serviceColor} />
               </View>
               <Text style={[styles.serviceName, { color: theme.primaryText }]}>{serviceName}</Text>
-              <Text style={[styles.servicePrice, { color: theme.primaryText, borderColor: withOpacity(iOSColors.gray, 0.3) }]}>
+              <Text style={[styles.servicePrice, { color: theme.primaryText, borderColor: theme.divider, borderRadius: theme.isEditorial ? 2 : 999 }]}>
                 ${Math.round(subtotal)}
               </Text>
             </View>
@@ -66,7 +127,7 @@ export default function Checkout() {
           {/* Summary */}
           <View style={styles.section}>
             <Text style={[styles.label, { color: theme.secondaryText }]}>Summary</Text>
-            <View style={[styles.card, { backgroundColor: theme.cardBackground }, lightShadow(theme), styles.summary]}>
+            <View style={[styles.card, theme.card, styles.summary]}>
               {discount > 0 ? (
                 <>
                   <View style={styles.summaryRow}>
@@ -81,8 +142,8 @@ export default function Checkout() {
                 </>
               ) : null}
               <View style={styles.summaryRow}>
-                <Text style={[styles.totalText, { color: theme.primaryText }]}>Total:</Text>
-                <Text style={[styles.totalText, { color: theme.primaryText }]}>${Math.round(total)}</Text>
+                <Text style={theme.display(20, '500')}>Total:</Text>
+                <Text style={theme.display(20, '500')}>${Math.round(total)}</Text>
               </View>
             </View>
           </View>
@@ -90,25 +151,26 @@ export default function Checkout() {
           {/* To charge */}
           <View style={styles.charge}>
             <View style={styles.chargeRow}>
-              <Text style={[styles.chargeLabel, { color: theme.primaryText }]}>To Charge:</Text>
-              <Text style={[styles.chargeAmount, { color: Brand.accent }]}>${Math.round(total)}</Text>
+              <Text style={theme.display(20)}>To Charge:</Text>
+              <Text style={[theme.display(24, '500'), { color: theme.accent }]}>${Math.round(total)}</Text>
             </View>
 
-            <Pressable onPress={() => setDiscountSheet(true)} style={[styles.discountBtn, { borderColor: Brand.accent }]}>
-              <Text style={[styles.discountText, { color: Brand.accent }]}>Add discount</Text>
-            </Pressable>
+            <ThemedButton title="Add discount" kind="quiet" onPress={() => setDiscountSheet(true)} />
 
-            <Pressable onPress={() => setPaymentSheet(true)}>
-              <LinearGradient colors={[Brand.accent, '#8066F2']} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }} style={styles.payBtn}>
-                <Text style={styles.payText}>Take payment</Text>
-              </LinearGradient>
-            </Pressable>
+            <ThemedButton title="Take payment" kind="inverse" onPress={() => setPaymentSheet(true)} />
           </View>
         </ScrollView>
       </SafeAreaView>
 
       <DiscountSheet visible={discountSheet} maxDiscount={subtotal} onApply={setDiscount} onClose={() => setDiscountSheet(false)} />
-      <PaymentSheet visible={paymentSheet} amount={total} onClose={() => setPaymentSheet(false)} onComplete={() => { setPaymentSheet(false); router.back(); }} />
+      <PaymentSheet
+        visible={paymentSheet}
+        amount={total}
+        charging={charging}
+        status={tapToPay.status}
+        onClose={() => !charging && setPaymentSheet(false)}
+        onSelect={takePayment}
+      />
     </DashboardGradient>
   );
 }
@@ -130,17 +192,17 @@ function DiscountSheet({ visible, maxDiscount, onApply, onClose }: { visible: bo
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
       <DashboardGradient>
         <SafeAreaView style={styles.safe} edges={['top']}>
-          <View style={[styles.header, { backgroundColor: withOpacity(theme.cardBackground, 0.9) }]}>
-            <Pressable onPress={onClose} hitSlop={8}><Text style={styles.sheetAction}>Cancel</Text></Pressable>
-            <Text style={[styles.headerTitle, { color: theme.primaryText }]}>Add Discount</Text>
-            <Pressable onPress={apply} hitSlop={8}><Text style={styles.sheetAction}>Apply</Text></Pressable>
+          <View style={[styles.header, { backgroundColor: theme.background, borderBottomColor: theme.divider }]}>
+            <Pressable onPress={onClose} hitSlop={8}><Text style={[styles.sheetAction, { color: theme.accent }]}>Cancel</Text></Pressable>
+            <Text style={theme.display(24)}>Add Discount</Text>
+            <Pressable onPress={apply} hitSlop={8}><Text style={[styles.sheetAction, { color: theme.accent }]}>Apply</Text></Pressable>
           </View>
 
           <KeyboardAwareForm contentContainerStyle={styles.discountBody}>
-            <View style={[styles.segmented, { backgroundColor: theme.divider }]}>
+            <View style={[styles.segmented, { backgroundColor: theme.inputBackground, borderRadius: theme.isEditorial ? 2 : 24 }]}>
               {(['percentage', 'fixed'] as const).map((t) => (
-                <Pressable key={t} onPress={() => setType(t)} style={[styles.segment, type === t ? { backgroundColor: Brand.accent } : null]}>
-                  <Text style={[styles.segmentText, { color: type === t ? '#FFFFFF' : theme.secondaryText }]}>
+                <Pressable key={t} onPress={() => setType(t)} style={[styles.segment, { borderRadius: theme.isEditorial ? 2 : 20 }, type === t ? { backgroundColor: theme.accent } : null]}>
+                  <Text style={[styles.segmentText, { color: type === t ? theme.onAccent : theme.secondaryText }]}>
                     {t === 'percentage' ? 'Percentage' : 'Fixed Amount'}
                   </Text>
                 </Pressable>
@@ -163,8 +225,8 @@ function DiscountSheet({ visible, maxDiscount, onApply, onClose }: { visible: bo
             {type === 'percentage' ? (
               <View style={styles.quickRow}>
                 {[10, 15, 20, 25].map((p) => (
-                  <Pressable key={p} onPress={() => setValue(String(p))} style={[styles.quickChip, { borderColor: Brand.accent }]}>
-                    <Text style={[styles.quickChipText, { color: Brand.accent }]}>{p}%</Text>
+                  <Pressable key={p} onPress={() => setValue(String(p))} style={[styles.quickChip, { borderColor: theme.divider, backgroundColor: theme.cardBackground, borderRadius: theme.isEditorial ? 2 : 999 }]}>
+                    <Text style={[styles.quickChipText, { color: theme.accent }]}>{p}%</Text>
                   </Pressable>
                 ))}
               </View>
@@ -176,38 +238,57 @@ function DiscountSheet({ visible, maxDiscount, onApply, onClose }: { visible: bo
   );
 }
 
-function PaymentSheet({ visible, amount, onClose, onComplete }: { visible: boolean; amount: number; onClose: () => void; onComplete: () => void }) {
+function PaymentSheet({
+  visible,
+  amount,
+  charging,
+  status,
+  onClose,
+  onSelect,
+}: {
+  visible: boolean;
+  amount: number;
+  charging: PaymentMethod | null;
+  status: string | null;
+  onClose: () => void;
+  onSelect: (method: PaymentMethod) => void;
+}) {
   const theme = useAppTheme();
-  const methods: { label: string; icon: SFSymbol; color: string }[] = [
-    { label: 'Cash', icon: 'banknote.fill', color: GREEN },
-    { label: 'Card', icon: 'creditcard.fill', color: Brand.accent },
-    { label: 'Apple Pay', icon: 'apple.logo', color: theme.primaryText },
-    { label: 'Other', icon: 'ellipsis.circle.fill', color: iOSColors.gray },
+  const methods: { label: PaymentMethod; icon: SFSymbol }[] = [
+    { label: 'Cash', icon: 'banknote.fill' },
+    { label: 'Card', icon: 'creditcard.fill' },
+    { label: 'Tap to Pay', icon: 'wave.3.right' },
   ];
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
       <DashboardGradient>
         <SafeAreaView style={styles.safe} edges={['top']}>
-          <View style={[styles.header, { backgroundColor: withOpacity(theme.cardBackground, 0.9) }]}>
-            <Pressable onPress={onClose} hitSlop={8}><Text style={styles.sheetAction}>Cancel</Text></Pressable>
-            <Text style={[styles.headerTitle, { color: theme.primaryText }]}>Payment Method</Text>
+          <View style={[styles.header, { backgroundColor: theme.background, borderBottomColor: theme.divider }]}>
+            <Pressable onPress={onClose} hitSlop={8}><Text style={[styles.sheetAction, { color: theme.accent }]}>Cancel</Text></Pressable>
+            <Text style={theme.display(24)}>Payment Method</Text>
             <View style={styles.headerBtn} />
           </View>
 
           <View style={styles.paymentBody}>
-            <Text style={[styles.paymentAmount, { color: Brand.accent }]}>${Math.round(amount)}</Text>
-            <Text style={[styles.paymentSub, { color: theme.secondaryText }]}>Select payment method</Text>
+            <Text style={[styles.paymentAmount, theme.display(48, '500'), { color: theme.accent }]}>${Math.round(amount)}</Text>
+            <Text style={[styles.paymentSub, { color: theme.secondaryText }]}>{status ?? 'Select payment method'}</Text>
 
             <View style={styles.methods}>
               {methods.map((m) => (
-                <Pressable key={m.label} onPress={onComplete} style={[styles.methodRow, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
-                  <View style={[styles.methodIcon, { backgroundColor: withOpacity(m.color, 0.15) }]}>
-                    <Icon name={m.icon} size={20} color={m.color} />
-                  </View>
+                <Pressable
+                  key={m.label}
+                  onPress={() => onSelect(m.label)}
+                  disabled={charging != null}
+                  style={[styles.methodRow, theme.card, charging != null && charging !== m.label && styles.dimmed]}>
+                  <ThemedIconTile name={m.icon} size={44} />
                   <Text style={[styles.methodLabel, { color: theme.primaryText }]}>{m.label}</Text>
                   <View style={styles.flex} />
-                  <Icon name="chevron.right" size={14} color={theme.secondaryText} />
+                  {charging === m.label ? (
+                    <ActivityIndicator color={theme.accent} />
+                  ) : (
+                    <Icon name="chevron.right" size={14} color={theme.chevronTint} />
+                  )}
                 </Pressable>
               ))}
             </View>
@@ -220,47 +301,39 @@ function PaymentSheet({ visible, amount, onClose, onComplete }: { visible: boole
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth },
   headerBtn: { width: 44, height: 44, alignItems: 'flex-start', justifyContent: 'center' },
-  headerTitle: { fontSize: 24, fontWeight: '700' },
-  sheetAction: { fontSize: 16, color: iOSColors.blue },
+  sheetAction: { fontSize: 16 },
   body: { paddingVertical: 20, gap: 20 },
   section: { gap: 12, paddingHorizontal: 20 },
   label: { fontSize: 14, fontWeight: '500' },
-  card: { borderRadius: 12, padding: 16 },
+  card: { padding: 16 },
   serviceRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   serviceIcon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   serviceName: { flex: 1, fontSize: 16, fontWeight: '500' },
-  servicePrice: { fontSize: 16, fontWeight: '600', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8, borderWidth: 1, overflow: 'hidden' },
+  servicePrice: { fontSize: 16, fontWeight: '600', paddingHorizontal: 16, paddingVertical: 8, borderWidth: 1, overflow: 'hidden' },
   summary: { gap: 12 },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between' },
   summaryText: { fontSize: 16 },
   summaryDivider: { height: StyleSheet.hairlineWidth },
-  totalText: { fontSize: 18, fontWeight: '700' },
   charge: { gap: 16, paddingHorizontal: 20, paddingTop: 8 },
   chargeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
-  chargeLabel: { fontSize: 20, fontWeight: '600' },
-  chargeAmount: { fontSize: 24, fontWeight: '700' },
-  discountBtn: { paddingVertical: 14, borderRadius: 25, borderWidth: 2, alignItems: 'center' },
-  discountText: { fontSize: 16, fontWeight: '600' },
-  payBtn: { paddingVertical: 16, borderRadius: 25, alignItems: 'center' },
-  payText: { color: '#FFFFFF', fontSize: 18, fontWeight: '700' },
   discountBody: { padding: 20, gap: 24, paddingTop: 24 },
-  segmented: { flexDirection: 'row', padding: 4, borderRadius: 24 },
-  segment: { flex: 1, paddingVertical: 12, borderRadius: 20, alignItems: 'center' },
+  segmented: { flexDirection: 'row', padding: 4 },
+  segment: { flex: 1, paddingVertical: 12, alignItems: 'center' },
   segmentText: { fontSize: 14, fontWeight: '500' },
   discountInputRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   discountSymbol: { fontSize: 24, fontWeight: '700' },
   discountInput: { fontSize: 48, fontWeight: '700', textAlign: 'center', minWidth: 120 },
   quickRow: { flexDirection: 'row', justifyContent: 'center', gap: 12 },
-  quickChip: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, borderWidth: 1 },
+  quickChip: { paddingHorizontal: 16, paddingVertical: 10, borderWidth: 1 },
   quickChipText: { fontSize: 14, fontWeight: '500' },
   paymentBody: { padding: 20, gap: 20, alignItems: 'center' },
-  paymentAmount: { fontSize: 48, fontWeight: '700', paddingTop: 20 },
+  paymentAmount: { paddingTop: 20 },
   paymentSub: { fontSize: 16 },
   methods: { gap: 12, alignSelf: 'stretch' },
-  methodRow: { flexDirection: 'row', alignItems: 'center', gap: 16, padding: 16, borderRadius: 12 },
-  methodIcon: { width: 50, height: 50, borderRadius: 25, alignItems: 'center', justifyContent: 'center' },
+  methodRow: { flexDirection: 'row', alignItems: 'center', gap: 16, padding: 16 },
   methodLabel: { fontSize: 18, fontWeight: '500' },
   flex: { flex: 1 },
+  dimmed: { opacity: 0.5 },
 });

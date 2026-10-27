@@ -9,7 +9,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { withOpacity } from '@/lib/color';
 import { blockMetrics } from '@/lib/schedule-layout';
 import type { Appointment } from '@/models/appointment';
-import { iOSColors } from '@/theme/tokens';
+import { useAppTheme } from '@/theme/theme-context';
 
 export function CompactAppointmentBlock({
   appointment: a,
@@ -23,6 +23,7 @@ export function CompactAppointmentBlock({
   /** Assigned staff member's color; when set, shows a slim left accent strip. */
   staffTint?: string | null;
 }) {
+  const theme = useAppTheme();
   // Clamped to end-of-day (mirrors Swift SingleDayBlockMetrics) so an overnight
   // or bad-data 1440+min appointment can't overrun the grid bottom.
   const { core: apptH, processing: procH, blocked: blockH } = blockMetrics(a);
@@ -72,8 +73,8 @@ export function CompactAppointmentBlock({
             {
               height: blockH,
               width,
-              backgroundColor: withOpacity(iOSColors.gray, 0.3),
-              borderColor: withOpacity(iOSColors.gray, 0.5),
+              backgroundColor: theme.inputBackground,
+              borderColor: theme.divider,
               borderBottomLeftRadius: 4,
               borderBottomRightRadius: 4,
             },

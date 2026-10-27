@@ -1,15 +1,30 @@
 /**
  * Sales store — RN counterpart to SaleTransactionManager.swift.
- * In-memory sale transactions from the Payments checkout. Exposes period-aware
+ * Sale transactions from the Payments checkout, backed by `/transactions` via
+ * React Query (the same records the iOS app shows). Exposes period-aware
  * revenue + collected-tax totals that fold into the Accounting hub and Tax
- * Dashboard (mirrors Swift `revenue(for:)`). Backend webhook sync is omitted.
+ * Dashboard (mirrors Swift `revenue(for:)`).
+ *
+ * Writes are OPTIMISTIC like the other stores: `addSale` returns the sale
+ * immediately (so the checkout can show its receipt), then swaps in the saved
+ * row; failures roll back and alert. Card / Tap to Pay sales carry their
+ * Stripe PaymentIntent id (paymentTransactionId / paymentProviderRef /
+ * paymentStatus) through to `/transactions`; because the customer has already
+ * been charged, those saves retry once before rolling back, and the failure
+ * alert names the payment so it can be reconciled from Stripe.
  */
 
-import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { createContext, useContext, useMemo, type ReactNode } from 'react';
+import { Alert } from 'react-native';
 
+import { createTransaction, deleteTransaction, listTransactions } from '@/api/transactions';
+import { ApiError } from '@/lib/api-client';
 import { uuid } from '@/lib/id';
 import type { SaleTransaction } from '@/models/sale';
 import { periodContains, type TransactionPeriod } from '@/models/transaction';
+
+export const SALES_QUERY_KEY = ['sales'] as const;
 
 export interface SalesStore {
   sales: SaleTransaction[];
@@ -24,27 +39,78 @@ export interface SalesStore {
 
 const SalesContext = createContext<SalesStore | null>(null);
 
+function alertFailure(action: string, err: unknown) {
+  const message =
+    err instanceof ApiError ? err.message : 'Please check your connection and try again.';
+  Alert.alert(`Couldn't ${action}`, message);
+}
+
+const PAID_RETRY_DELAY_MS = 2000;
+
+/** Save a sale; a sale that was already charged gets one retry. */
+async function saveSale(input: Omit<SaleTransaction, 'id'>): Promise<SaleTransaction> {
+  try {
+    return await createTransaction(input);
+  } catch (err) {
+    if (!input.paymentTransactionId) throw err;
+    await new Promise((r) => setTimeout(r, PAID_RETRY_DELAY_MS));
+    return createTransaction(input);
+  }
+}
+
 export function SalesProvider({ children }: { children: ReactNode }) {
-  const [sales, setSales] = useState<SaleTransaction[]>([]);
+  const qc = useQueryClient();
+  const query = useQuery({ queryKey: SALES_QUERY_KEY, queryFn: listTransactions });
+
+  const read = () => qc.getQueryData<SaleTransaction[]>(SALES_QUERY_KEY) ?? [];
+  const write = (next: SaleTransaction[]) => qc.setQueryData(SALES_QUERY_KEY, next);
 
   const value = useMemo<SalesStore>(() => {
+    const sales = query.data ?? [];
     const salesFor = (period: TransactionPeriod) =>
       sales
         .filter((s) => periodContains(period, s.date))
         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     return {
       sales,
-      addSale: (s) => {
-        const sale: SaleTransaction = { ...s, id: uuid() };
-        setSales((prev) => [sale, ...prev]);
+      addSale: (input) => {
+        const sale: SaleTransaction = { ...input, id: `optimistic-${uuid()}` };
+        write([sale, ...read()]);
+        saveSale(input)
+          .then((saved) =>
+            // Keep the local line items (and their ids); take the server id.
+            write(read().map((s) => (s.id === sale.id ? { ...sale, id: saved.id } : s))),
+          )
+          .catch((err) => {
+            write(read().filter((s) => s.id !== sale.id));
+            if (input.paymentTransactionId) {
+              const message = err instanceof ApiError ? err.message : 'Please check your connection.';
+              Alert.alert(
+                "Payment taken, sale not saved",
+                `The card payment went through (Stripe payment ${input.paymentTransactionId}), but the sale couldn't be recorded: ${message}`,
+              );
+            } else {
+              alertFailure('save sale', err);
+            }
+          });
         return sale;
       },
-      deleteSale: (id) => setSales((prev) => prev.filter((s) => s.id !== id)),
+      deleteSale: (id) => {
+        const prev = read();
+        write(prev.filter((s) => s.id !== id));
+        if (id.startsWith('optimistic-')) return;
+        deleteTransaction(id).catch((err) => {
+          write(prev);
+          alertFailure('delete sale', err);
+        });
+      },
       salesFor,
       revenue: (period) => salesFor(period).reduce((sum, s) => sum + s.totalAmount, 0),
       taxCollected: (period) => salesFor(period).reduce((sum, s) => sum + (s.taxAmount ?? 0), 0),
     };
-  }, [sales]);
+    // handlers close over stable refs (qc); re-derive when the list changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query.data]);
 
   return <SalesContext.Provider value={value}>{children}</SalesContext.Provider>;
 }

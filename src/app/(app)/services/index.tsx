@@ -14,7 +14,6 @@ import { ScreenHeader } from '@/components/screen-header';
 import { SwipeToDelete } from '@/components/swipe-to-delete';
 import { useServices } from '@/context/services-store';
 import { priceDisplay, type Service } from '@/models/service';
-import { Radius, cardShadow, iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
 export default function ServicesScreen() {
@@ -35,7 +34,7 @@ export default function ServicesScreen() {
           title="Services"
           right={
             <Pressable onPress={help} hitSlop={8}>
-              <Icon name="questionmark.circle" size={20} color={iOSColors.blue} />
+              <Icon name="questionmark.circle" size={20} color={theme.accent} />
             </Pressable>
           }
         />
@@ -43,7 +42,7 @@ export default function ServicesScreen() {
         {services.length === 0 ? (
           <View style={styles.empty}>
             <Icon name="scissors.circle.fill" size={80} color={theme.tertiaryText} />
-            <Text style={[styles.emptyTitle, { color: theme.primaryText }]}>No Services Yet</Text>
+            <Text style={[styles.emptyTitle, theme.display(24)]}>No Services Yet</Text>
             <Text style={[styles.emptySub, { color: theme.secondaryText }]}>
               Add your first service to get started
             </Text>
@@ -69,8 +68,8 @@ function ServiceCard({ service, onPress }: { service: Service; onPress: () => vo
   return (
     <Pressable
       onPress={onPress}
-      style={[styles.card, { backgroundColor: theme.cardBackground }, cardShadow(theme)]}>
-      <View style={[styles.dot, { backgroundColor: service.colorHex, shadowColor: service.colorHex }]} />
+      style={[styles.card, theme.card]}>
+      <View style={[styles.dot, { backgroundColor: service.colorHex }]} />
 
       <View style={styles.cardBody}>
         <Text style={[styles.name, { color: theme.primaryText }]}>{service.name}</Text>
@@ -82,8 +81,8 @@ function ServiceCard({ service, onPress }: { service: Service; onPress: () => vo
           {service.noDoubleBooking ? (
             <>
               <Text style={[styles.meta, { color: theme.secondaryText }]}>•</Text>
-              <Icon name="lock.fill" size={10} color={iOSColors.orange} />
-              <Text style={[styles.meta, { color: iOSColors.orange, fontWeight: '500' }]}>
+              <Icon name="lock.fill" size={10} color={theme.accent} />
+              <Text style={[styles.meta, { color: theme.accent, fontWeight: '500' }]}>
                 No double booking
               </Text>
             </>
@@ -92,8 +91,8 @@ function ServiceCard({ service, onPress }: { service: Service; onPress: () => vo
       </View>
 
       <View style={styles.priceWrap}>
-        <Text style={[styles.price, { color: theme.primaryText }]}>${priceDisplay(service)}</Text>
-        <Icon name="chevron.right" size={14} color={theme.secondaryText} />
+        <Text style={theme.display(20, '500')}>${priceDisplay(service)}</Text>
+        <Icon name="chevron.right" size={14} color={theme.chevronTint} />
       </View>
     </Pressable>
   );
@@ -102,7 +101,7 @@ function ServiceCard({ service, onPress }: { service: Service; onPress: () => vo
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16, padding: 24 },
-  emptyTitle: { fontSize: 24, fontWeight: '700' },
+  emptyTitle: { textAlign: 'center' },
   emptySub: { fontSize: 16, textAlign: 'center' },
   list: { paddingHorizontal: 16, paddingBottom: 100, gap: 12 },
   card: {
@@ -110,15 +109,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 16,
     padding: 20,
-    borderRadius: Radius.card,
   },
   dot: {
     width: 16,
     height: 16,
     borderRadius: 8,
-    shadowOpacity: 0.5,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
   },
   cardBody: { flex: 1, gap: 6 },
   name: { fontSize: 18, fontWeight: '600' },
@@ -127,5 +122,4 @@ const styles = StyleSheet.create({
   // ("Fixed"->"Fixe", "Variable"->"Variabl") when it's measured content-width.
   meta: { fontSize: 14, paddingRight: 2 },
   priceWrap: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  price: { fontSize: 20, fontWeight: '700' },
 });

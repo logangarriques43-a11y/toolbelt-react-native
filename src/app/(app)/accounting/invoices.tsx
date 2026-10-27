@@ -16,10 +16,11 @@ import { DashboardGradient } from '@/components/dashboard-gradient';
 import { Icon } from '@/components/icon';
 import { ScreenHeader } from '@/components/screen-header';
 import { SwipeToDelete } from '@/components/swipe-to-delete';
+import { ThemedButton } from '@/components/themed';
 import { useInvoices } from '@/context/invoices-store';
 import { useSession } from '@/context/session';
 import { invoiceDisplayName, type Invoice, type InvoiceStatus } from '@/models/invoice';
-import { iOSColors, lightShadow } from '@/theme/tokens';
+import { lightShadow } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
 const FILTERS: { label: string; value: InvoiceStatus | 'all' }[] = [
@@ -54,7 +55,7 @@ export default function Invoices() {
           title="Invoices"
           right={
             <Pressable onPress={() => router.push('/accounting/create-invoice')} hitSlop={8}>
-              <Icon name="plus" size={20} weight="semibold" color={iOSColors.blue} />
+              <Icon name="plus" size={20} weight="semibold" color={theme.accent} />
             </Pressable>
           }
         />
@@ -72,8 +73,8 @@ export default function Invoices() {
 
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pills}>
             {FILTERS.map((f) => (
-              <Pressable key={f.value} onPress={() => setFilter(f.value)} style={[styles.pill, { borderColor: iOSColors.blue, backgroundColor: filter === f.value ? iOSColors.blue : theme.cardBackground }]}>
-                <Text style={[styles.pillText, { color: filter === f.value ? '#FFFFFF' : iOSColors.blue }]}>{f.label}</Text>
+              <Pressable key={f.value} onPress={() => setFilter(f.value)} style={[styles.pill, { borderRadius: theme.isEditorial ? 2 : 999, borderColor: filter === f.value ? theme.accent : theme.divider, backgroundColor: filter === f.value ? theme.accent : theme.cardBackground }]}>
+                <Text style={[styles.pillText, { color: filter === f.value ? theme.onAccent : theme.primaryText }]}>{f.label}</Text>
               </Pressable>
             ))}
           </ScrollView>
@@ -84,9 +85,7 @@ export default function Invoices() {
             <Icon name="doc.text.magnifyingglass" size={50} color={theme.tertiaryText} />
             <Text style={[styles.emptyText, { color: theme.secondaryText }]}>{search ? 'No results found' : 'No invoices yet'}</Text>
             {!search && filter === 'all' ? (
-              <Pressable onPress={() => router.push('/accounting/create-invoice')} style={[styles.createBtn, { backgroundColor: iOSColors.blue }]}>
-                <Text style={styles.createText}>Create your first invoice</Text>
-              </Pressable>
+              <ThemedButton title="Create your first invoice" kind="accent" onPress={() => router.push('/accounting/create-invoice')} />
             ) : null}
           </View>
         ) : (
@@ -113,11 +112,9 @@ const styles = StyleSheet.create({
   search: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, marginHorizontal: 16, borderRadius: 12 },
   searchInput: { flex: 1, fontSize: 15, paddingVertical: 4, textAlignVertical: 'center' },
   pills: { gap: 10, paddingHorizontal: 16 },
-  pill: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, borderWidth: 1 },
+  pill: { paddingHorizontal: 16, paddingVertical: 8, borderWidth: 1 },
   pillText: { fontSize: 14, fontWeight: '500' },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16 },
   emptyText: { fontSize: 18, fontWeight: '500' },
-  createBtn: { paddingHorizontal: 24, paddingVertical: 12, borderRadius: 20 },
-  createText: { color: '#FFFFFF', fontSize: 15, fontWeight: '600' },
   list: { padding: 16, gap: 12, paddingBottom: 40 },
 });

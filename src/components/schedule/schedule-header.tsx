@@ -1,21 +1,19 @@
 /**
  * ScheduleHeader + DropdownDatePicker — port of ScheduleHeader.swift.
- * Hamburger menu, calendar-settings, and AI Assistant are stubbed (2d / later);
+ * Hamburger menu and calendar-settings are stubbed (2d / later); the old AI
+ * Assistant button is gone (the home-screen AI helper replaces it, as on iOS);
  * Home returns to the dashboard, and the month dropdown opens a mini calendar
  * with per-day appointment color dots.
  */
 
 import { useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { runOnJS } from 'react-native-reanimated';
-import { LinearGradient } from 'expo-linear-gradient';
 
 import { Icon } from '@/components/icon';
-import { withOpacity } from '@/lib/color';
 import { isToday } from '@/lib/schedule-layout';
 import type { Appointment } from '@/models/appointment';
-import { Brand, iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
 const monthYearFmt = new Intl.DateTimeFormat('en-US', { month: 'short', year: 'numeric' });
@@ -43,32 +41,25 @@ export function ScheduleHeader({
 }) {
   const theme = useAppTheme();
   const [showPicker, setShowPicker] = useState(false);
-  const stub = (what: string) => Alert.alert('Coming soon', `${what} arrives in a later phase.`);
 
   return (
     <View>
-      <View style={[styles.row, { backgroundColor: withOpacity(theme.cardBackground, 0.95) }]}>
+      <View style={[styles.row, { backgroundColor: theme.background, borderBottomColor: theme.divider }]}>
         <Pressable onPress={onMenu} hitSlop={6} style={styles.iconBtn}>
-          <Icon name="line.3.horizontal" size={20} color={iOSColors.blue} />
+          <Icon name="line.3.horizontal" size={20} color={theme.accent} />
         </Pressable>
         <Pressable onPress={onHome} hitSlop={6} style={styles.iconBtn}>
-          <Icon name="house.fill" size={20} color={iOSColors.blue} />
+          <Icon name="house.fill" size={20} color={theme.accent} />
         </Pressable>
         <Pressable onPress={() => setShowPicker((s) => !s)} style={styles.monthBtn}>
-          <Text style={[styles.month, { color: theme.primaryText }]}>{monthYearFmt.format(displayedDate)}</Text>
+          <Text style={theme.display(20, '500')}>{monthYearFmt.format(displayedDate)}</Text>
           <Icon name={showPicker ? 'chevron.up' : 'chevron.down'} size={10} weight="semibold" color={theme.secondaryText} />
         </Pressable>
 
         <View style={styles.spacer} />
 
-        <Pressable onPress={onOpenSwitcher} hitSlop={6} style={[styles.settingsBtn, { backgroundColor: theme.cardBackground }]}>
-          <Icon name="slider.horizontal.3" size={16} color={Brand.accent} />
-        </Pressable>
-        <Pressable onPress={() => stub('The AI Assistant')}>
-          <LinearGradient colors={Brand.gradient} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }} style={styles.aiBtn}>
-            <Icon name="sparkles" size={11} color="#FFFFFF" />
-            <Text numberOfLines={1} allowFontScaling={false} style={styles.aiText}>AI Assistant</Text>
-          </LinearGradient>
+        <Pressable onPress={onOpenSwitcher} hitSlop={6} style={[styles.settingsBtn, { backgroundColor: theme.accentSoft, borderRadius: theme.isEditorial ? 2 : 16 }]}>
+          <Icon name="slider.horizontal.3" size={16} color={theme.accent} />
         </Pressable>
       </View>
 
@@ -124,7 +115,7 @@ function DropdownDatePicker({
     });
 
   return (
-    <View style={[styles.dropdown, { backgroundColor: theme.cardBackground, shadowColor: theme.shadowColor }]}>
+    <View style={[styles.dropdown, { backgroundColor: theme.cardBackground, borderBottomColor: theme.divider }]}>
       <Text style={[styles.dropdownTitle, { color: theme.primaryText }]}>{fullMonthFmt.format(pickerMonth)}</Text>
       <View style={styles.dowRow}>
         {DOW.map((d, i) => (
@@ -143,14 +134,14 @@ function DropdownDatePicker({
                 <View
                   style={[
                     styles.cellCircle,
-                    selected ? { backgroundColor: iOSColors.blue } : null,
-                    !selected && today ? { borderWidth: 2, borderColor: iOSColors.blue } : null,
+                    selected ? { backgroundColor: theme.accent } : null,
+                    !selected && today ? { borderWidth: 2, borderColor: theme.accent } : null,
                   ]}>
                   <Text
                     style={[
                       styles.cellDay,
                       {
-                        color: selected ? '#FFFFFF' : inMonth ? theme.primaryText : withOpacity(iOSColors.gray, 0.4),
+                        color: selected ? theme.onAccent : inMonth ? theme.primaryText : theme.tertiaryText,
                         fontWeight: today || selected ? '700' : '400',
                       },
                     ]}>
@@ -172,15 +163,12 @@ function DropdownDatePicker({
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 8 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth },
   iconBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
   monthBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  month: { fontSize: 16, fontWeight: '700' },
   spacer: { flex: 1 },
   settingsBtn: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  aiBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, paddingHorizontal: 14, height: 36, borderRadius: 18, marginRight: 8 },
-  aiText: { color: '#FFFFFF', fontSize: 11, fontWeight: '600' },
-  dropdown: { padding: 16, gap: 4, shadowOpacity: 0.15, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
+  dropdown: { padding: 16, gap: 4, borderBottomWidth: StyleSheet.hairlineWidth },
   dropdownTitle: { fontSize: 16, fontWeight: '600', textAlign: 'center', paddingTop: 4 },
   dowRow: { flexDirection: 'row', paddingBottom: 4 },
   dow: { flex: 1, textAlign: 'center', fontSize: 12, fontWeight: '500' },

@@ -9,7 +9,6 @@ import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { DashboardGradient } from '@/components/dashboard-gradient';
-import { withOpacity } from '@/lib/color';
 import { iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
@@ -54,9 +53,9 @@ export function ColorPickerSheet({
             <Pressable onPress={onClose} hitSlop={8}>
               <Text style={[styles.cancel, { color: theme.secondaryText }]}>Cancel</Text>
             </Pressable>
-            <Text style={[styles.title, { color: theme.primaryText }]}>Pick a Color</Text>
+            <Text style={theme.display(20)}>Pick a Color</Text>
             <Pressable onPress={onClose} hitSlop={8}>
-              <Text style={styles.done}>Done</Text>
+              <Text style={[styles.done, { color: theme.accent }]}>Done</Text>
             </Pressable>
           </View>
 
@@ -71,7 +70,7 @@ export function ColorPickerSheet({
                     onPress={() => onSelect(c)}
                     style={[
                       styles.swatch,
-                      { backgroundColor: c, borderColor: active ? iOSColors.blue : 'transparent' },
+                      { backgroundColor: c, borderColor: active ? theme.accent : 'transparent' },
                     ]}
                   />
                 );
@@ -82,12 +81,12 @@ export function ColorPickerSheet({
             <View
               style={[
                 styles.previewCard,
-                { backgroundColor: theme.cardBackground },
+                theme.card,
               ]}>
               <View
                 style={[
                   styles.preview,
-                  { backgroundColor: selected, borderColor: withOpacity(iOSColors.gray, 0.3) },
+                  { backgroundColor: selected, borderColor: theme.divider },
                 ]}
               />
             </View>
@@ -107,12 +106,11 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   cancel: { fontSize: 16, fontWeight: '500' },
-  title: { fontSize: 20, fontWeight: '700' },
-  done: { fontSize: 16, fontWeight: '600', color: iOSColors.blue },
+  done: { fontSize: 16, fontWeight: '600' },
   body: { padding: 16, gap: 16, paddingBottom: 40 },
   section: { fontSize: 18, fontWeight: '600' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 20, justifyContent: 'space-between' },
   swatch: { width: 50, height: 50, borderRadius: 25, borderWidth: 3 },
-  previewCard: { padding: 16, borderRadius: 12 },
+  previewCard: { padding: 16 },
   preview: { height: 80, borderRadius: 12, borderWidth: 1 },
 });

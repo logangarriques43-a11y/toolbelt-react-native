@@ -10,12 +10,13 @@ import { Alert, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, TextInpu
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/icon';
+import { ThemedIconTile } from '@/components/themed';
 import { KeyboardAwareForm } from '@/components/keyboard-aware-form';
 import { OptionSheet } from '@/components/sheets/option-sheet';
 import { useVendors } from '@/context/vendor-store';
 import { withOpacity } from '@/lib/color';
 import { vendorProductPriceDisplay, vendorStatusColor, type VendorProduct } from '@/models/vendor';
-import { iOSColors, lightShadow } from '@/theme/tokens';
+import { iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
 const UNIT_OPTIONS = ['each', 'bottle', 'case', 'kg', 'lb', 'oz', 'g', 'ml', 'L', 'box', 'pack'];
@@ -42,12 +43,12 @@ export default function MyVendorProducts() {
     <SafeAreaView style={[styles.safe, { backgroundColor: theme.background }]} edges={['top']}>
       <View style={[styles.header, { backgroundColor: withOpacity(theme.cardBackground, 0.7) }]}>
         <Pressable onPress={() => router.back()} style={styles.back} hitSlop={8}>
-          <Icon name="house.fill" size={20} color={iOSColors.blue} />
+          <Icon name="house.fill" size={20} color={theme.accent} />
         </Pressable>
         <Text style={[styles.headerTitle, { color: theme.primaryText }]}>My Products</Text>
         {my ? (
           <Pressable onPress={() => setEditor({ open: true, product: null })} hitSlop={8} style={styles.addBtn}>
-            <Icon name="plus" size={18} color={iOSColors.blue} weight="bold" />
+            <Icon name="plus" size={18} color={theme.accent} weight="bold" />
           </Pressable>
         ) : (
           <View style={styles.addBtn} />
@@ -56,13 +57,13 @@ export default function MyVendorProducts() {
 
       {!my ? (
         <View style={styles.empty}>
-          <Icon name="storefront" size={56} color={withOpacity(iOSColors.gray, 0.4)} />
+          <Icon name="storefront" size={56} color={theme.tertiaryText} />
           <Text style={[styles.emptyTitle, { color: theme.primaryText }]}>No vendor registered yet</Text>
           <Text style={[styles.emptySub, { color: theme.secondaryText }]}>Register your business as a vendor first, then come back to list your products.</Text>
         </View>
       ) : products.length === 0 ? (
         <View style={styles.empty}>
-          <Icon name="shippingbox" size={56} color={withOpacity(iOSColors.gray, 0.4)} />
+          <Icon name="shippingbox" size={56} color={theme.tertiaryText} />
           <Text style={[styles.emptyTitle, { color: theme.primaryText }]}>No products yet</Text>
           <Text style={[styles.emptySub, { color: theme.secondaryText }]}>Tap + to add the first product you sell through your vendor listing.</Text>
           {statusBanner && <Text style={[styles.emptyStatus, { color: statusBanner.color }]}>{statusBanner.msg}</Text>}
@@ -75,16 +76,14 @@ export default function MyVendorProducts() {
             </View>
           )}
           {products.map((p) => (
-            <Pressable key={p.id} style={[styles.row, { backgroundColor: theme.cardBackground }, lightShadow(theme)]} onPress={() => setEditor({ open: true, product: p })}>
-              <View style={[styles.rowIcon, { backgroundColor: withOpacity(iOSColors.indigo, 0.12) }]}>
-                <Icon name="cube.box.fill" size={20} color={iOSColors.indigo} />
-              </View>
+            <Pressable key={p.id} style={[styles.row, theme.card]} onPress={() => setEditor({ open: true, product: p })}>
+              <ThemedIconTile name="cube.box.fill" size={44} />
               <View style={styles.flex}>
                 <View style={styles.rowNameRow}>
                   <Text style={[styles.rowName, { color: theme.primaryText }]}>{p.name}</Text>
                   {!p.isActive && (
-                    <View style={[styles.hidden, { backgroundColor: withOpacity(iOSColors.gray, 0.18) }]}>
-                      <Text style={[styles.hiddenText, { color: iOSColors.gray }]}>HIDDEN</Text>
+                    <View style={[styles.hidden, { backgroundColor: theme.inputBackground }]}>
+                      <Text style={[styles.hiddenText, { color: theme.secondaryText }]}>HIDDEN</Text>
                     </View>
                   )}
                 </View>
@@ -175,11 +174,11 @@ function ProductEditor({ visible, product, vendorId, onClose }: { visible: boole
       <SafeAreaView style={[styles.safe, { backgroundColor: theme.background }]} edges={['top', 'bottom']}>
         <View style={[styles.editorHeader, { borderBottomColor: theme.divider }]}>
           <Pressable onPress={onClose} hitSlop={8}>
-            <Text style={[styles.cancel, { color: iOSColors.blue }]}>Cancel</Text>
+            <Text style={[styles.cancel, { color: theme.accent }]}>Cancel</Text>
           </Pressable>
           <Text style={[styles.headerTitle, { color: theme.primaryText }]}>{editing ? 'Edit Product' : 'New Product'}</Text>
           <Pressable onPress={save} disabled={!canSave} hitSlop={8}>
-            <Text style={[styles.save, { color: canSave ? iOSColors.blue : iOSColors.gray }]}>Save</Text>
+            <Text style={[styles.save, { color: canSave ? theme.accent : theme.tertiaryText }]}>Save</Text>
           </Pressable>
         </View>
         <KeyboardAwareForm contentContainerStyle={styles.editorBody}>
@@ -192,7 +191,7 @@ function ProductEditor({ visible, product, vendorId, onClose }: { visible: boole
             </View>
             <View style={styles.flex}>
               <Text style={[styles.fieldLabel, { color: theme.secondaryText }]}>Unit</Text>
-              <Pressable onPress={() => setShowUnit(true)} style={[styles.input, styles.unitBtn, { backgroundColor: theme.cardBackground, borderColor: withOpacity(iOSColors.gray, 0.2) }]}>
+              <Pressable onPress={() => setShowUnit(true)} style={[styles.input, styles.unitBtn, { backgroundColor: theme.cardBackground, borderColor: theme.divider }]}>
                 <Text style={{ color: theme.primaryText, fontSize: 15 }}>{unit}</Text>
                 <Icon name="chevron.up.chevron.down" size={11} color={theme.secondaryText} />
               </Pressable>
@@ -207,9 +206,9 @@ function ProductEditor({ visible, product, vendorId, onClose }: { visible: boole
             </View>
           </View>
           <EField label="Categories (comma separated)" value={tags} onChangeText={setTags} placeholder="hair" autoCapitalize="none" />
-          <View style={[styles.toggleRow, { backgroundColor: theme.cardBackground }]}>
+          <View style={[styles.toggleRow, { backgroundColor: theme.cardBackground, borderWidth: 1, borderColor: theme.divider }]}>
             <Text style={[styles.toggleTitle, styles.flex, { color: theme.primaryText }]}>Listed for buyers</Text>
-            <Switch value={isActive} onValueChange={setIsActive} />
+            <Switch value={isActive} onValueChange={setIsActive} trackColor={{ true: theme.accent, false: theme.divider }} />
           </View>
           {editing && (
             <Pressable onPress={del} style={[styles.deleteBtn, { backgroundColor: withOpacity(iOSColors.red, 0.08) }]}>
@@ -240,7 +239,7 @@ function EField({ label, multiline, ...props }: { label: string; multiline?: boo
         {...props}
         multiline={multiline}
         placeholderTextColor={theme.secondaryText}
-        style={[multiline ? styles.inputMultiline : styles.input, { backgroundColor: theme.cardBackground, color: theme.primaryText, borderColor: withOpacity(iOSColors.gray, 0.2) }]}
+        style={[multiline ? styles.inputMultiline : styles.input, { backgroundColor: theme.cardBackground, color: theme.primaryText, borderColor: theme.divider }]}
       />
     </View>
   );
@@ -261,8 +260,7 @@ const styles = StyleSheet.create({
   list: { padding: 16, gap: 10 },
   banner: { padding: 14, borderRadius: 10 },
   bannerText: { fontSize: 12, fontWeight: '500', textAlign: 'center' },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: 12 },
-  rowIcon: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 },
   rowNameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   rowName: { fontSize: 16, fontWeight: '600' },
   hidden: { paddingHorizontal: 5, paddingVertical: 2, borderRadius: 4 },

@@ -12,6 +12,7 @@ import { Linking, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'r
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/icon';
+import { ThemedButton, ThemedIconTile } from '@/components/themed';
 import { useVendors } from '@/context/vendor-store';
 import { withOpacity } from '@/lib/color';
 import {
@@ -24,7 +25,6 @@ import {
   type Vendor,
   type VendorReview,
 } from '@/models/vendor';
-import { iOSColors, lightShadow } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
 const dateFmt = new Intl.DateTimeFormat('en-US', { dateStyle: 'medium' });
@@ -42,7 +42,7 @@ export default function VendorDetail() {
       <SafeAreaView style={[styles.safe, { backgroundColor: theme.background }]} edges={['top']}>
         <View style={styles.missing}>
           <Text style={{ color: theme.secondaryText }}>Vendor not found.</Text>
-          <Pressable onPress={() => router.back()}><Text style={{ color: iOSColors.blue, fontWeight: '600' }}>Go Back</Text></Pressable>
+          <Pressable onPress={() => router.back()}><Text style={{ color: theme.accent, fontWeight: '600' }}>Go Back</Text></Pressable>
         </View>
       </SafeAreaView>
     );
@@ -65,21 +65,21 @@ export default function VendorDetail() {
         {/* Header */}
         <View style={styles.header}>
           <Pressable onPress={() => router.back()} style={styles.back} hitSlop={8}>
-            <Icon name="house.fill" size={20} color={iOSColors.blue} />
+            <Icon name="house.fill" size={20} color={theme.accent} />
           </Pressable>
           <Pressable onPress={() => vendors.toggleFavorite(vendor.id)} hitSlop={8}>
-            <Icon name={fav ? 'star.fill' : 'star'} size={20} color={iOSColors.orange} weight="semibold" />
+            <Icon name={fav ? 'star.fill' : 'star'} size={20} color={theme.accent} weight="semibold" />
           </Pressable>
         </View>
 
         {/* Profile card */}
-        <View style={[styles.card, styles.profile, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
-          <View style={[styles.avatar, { backgroundColor: withOpacity(iOSColors.blue, 0.15) }]}>
-            <Text style={[styles.avatarText, { color: iOSColors.blue }]}>{vendorInitials(vendor.businessName)}</Text>
+        <View style={[styles.card, styles.profile, theme.card]}>
+          <View style={[styles.avatar, { backgroundColor: theme.accentSoft }]}>
+            <Text style={[styles.avatarText, { color: theme.accent }]}>{vendorInitials(vendor.businessName)}</Text>
           </View>
           <View style={styles.nameRow}>
-            <Text style={[styles.name, { color: theme.primaryText }]}>{vendor.businessName}</Text>
-            {vendor.status === 'verified' && <Icon name="checkmark.seal.fill" size={16} color={iOSColors.blue} />}
+            <Text style={theme.display(22, '500')}>{vendor.businessName}</Text>
+            {vendor.status === 'verified' && <Icon name="checkmark.seal.fill" size={16} color={theme.accent} />}
           </View>
           <View style={styles.typeRow}>
             <Icon name={vendorTypeIcon(vendor.vendorType)} size={13} color={theme.secondaryText} />
@@ -88,7 +88,7 @@ export default function VendorDetail() {
           {vendor.totalReviews > 0 && (
             <View style={styles.stars}>
               {[1, 2, 3, 4, 5].map((s) => (
-                <Icon key={s} name={s <= vendor.averageRating ? 'star.fill' : 'star'} size={16} color={iOSColors.orange} />
+                <Icon key={s} name={s <= vendor.averageRating ? 'star.fill' : 'star'} size={16} color={theme.accent} />
               ))}
               <Text style={[styles.starCount, { color: theme.secondaryText }]}>({vendor.totalReviews})</Text>
             </View>
@@ -98,25 +98,22 @@ export default function VendorDetail() {
             <Text style={[styles.statusText, { color: statusColor }]}>{vendorStatusLabel(vendor.status)}</Text>
           </View>
           <View style={styles.actionRow}>
-            <Pressable onPress={() => setShowContact(true)} style={[styles.primaryBtn, { backgroundColor: iOSColors.blue }]}>
-              <Icon name="envelope.fill" size={14} color="#FFFFFF" />
-              <Text style={styles.primaryBtnText}>Contact</Text>
-            </Pressable>
-            <Pressable onPress={requestQuote} disabled={!vendor.email} style={[styles.secondaryBtn, { backgroundColor: withOpacity(iOSColors.blue, 0.1) }]}>
-              <Icon name="doc.text.below.ecg" size={14} color={iOSColors.blue} />
-              <Text style={[styles.secondaryBtnText, { color: iOSColors.blue }]}>Request Quote</Text>
+            <ThemedButton title="Contact" icon="envelope.fill" kind="accent" onPress={() => setShowContact(true)} style={styles.primaryBtn} />
+            <Pressable onPress={requestQuote} disabled={!vendor.email} style={[styles.secondaryBtn, { backgroundColor: theme.accentSoft, borderRadius: theme.isEditorial ? 2 : 999 }]}>
+              <Icon name="doc.text.below.ecg" size={14} color={theme.accent} />
+              <Text style={[styles.secondaryBtnText, { color: theme.accent }]}>Request Quote</Text>
             </Pressable>
           </View>
         </View>
 
         {/* Categories */}
         {vendor.categories.length > 0 && (
-          <View style={[styles.card, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
+          <View style={[styles.card, theme.card]}>
             <Text style={[styles.cardTitle, { color: theme.primaryText }]}>Supply Categories</Text>
             <View style={styles.chips}>
               {vendor.categories.map((c) => (
-                <View key={c} style={[styles.chip, { backgroundColor: withOpacity(iOSColors.blue, 0.1) }]}>
-                  <Text style={[styles.chipText, { color: iOSColors.blue }]}>{c}</Text>
+                <View key={c} style={[styles.chip, { backgroundColor: theme.accentSoft, borderRadius: theme.isEditorial ? 2 : 999 }]}>
+                  <Text style={[styles.chipText, { color: theme.accent }]}>{c}</Text>
                 </View>
               ))}
             </View>
@@ -124,7 +121,7 @@ export default function VendorDetail() {
         )}
 
         {/* Order details */}
-        <View style={[styles.card, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
+        <View style={[styles.card, theme.card]}>
           <Text style={[styles.cardTitle, { color: theme.primaryText }]}>Order Details</Text>
           {vendor.descriptionText.length > 0 && <Text style={[styles.desc, { color: theme.secondaryText }]}>{vendor.descriptionText}</Text>}
           <DetailRow icon="dollarsign.circle" label="Minimum Order" value={vendor.minimumOrderAmount > 0 ? `$${vendor.minimumOrderAmount.toFixed(2)}` : 'No minimum'} />
@@ -134,7 +131,7 @@ export default function VendorDetail() {
         </View>
 
         {/* Contact & location */}
-        <View style={[styles.card, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
+        <View style={[styles.card, theme.card]}>
           <Text style={[styles.cardTitle, { color: theme.primaryText }]}>Contact & Location</Text>
           {vendor.contactName.length > 0 && <DetailRow icon="person.fill" label="Contact" value={vendor.contactName} />}
           {vendor.email.length > 0 && <DetailRow icon="envelope.fill" label="Email" value={vendor.email} />}
@@ -144,7 +141,7 @@ export default function VendorDetail() {
         </View>
 
         {/* Reviews */}
-        <View style={[styles.card, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
+        <View style={[styles.card, theme.card]}>
           <View style={styles.reviewsHead}>
             <Text style={[styles.cardTitle, { color: theme.primaryText }]}>Reviews</Text>
             <Text style={[styles.reviewCount, { color: theme.secondaryText }]}>{reviews.length}</Text>
@@ -166,7 +163,7 @@ function DetailRow({ icon, label, value }: { icon: SFSymbol; label: string; valu
   const theme = useAppTheme();
   return (
     <View style={styles.detailRow}>
-      <Icon name={icon} size={15} color={iOSColors.blue} />
+      <Icon name={icon} size={15} color={theme.accent} />
       <View style={styles.flex}>
         <Text style={[styles.detailLabel, { color: theme.secondaryText }]}>{label}</Text>
         <Text style={[styles.detailValue, { color: theme.primaryText }]}>{value}</Text>
@@ -178,12 +175,12 @@ function DetailRow({ icon, label, value }: { icon: SFSymbol; label: string; valu
 function ReviewRow({ review }: { review: VendorReview }) {
   const theme = useAppTheme();
   return (
-    <View style={[styles.review, { backgroundColor: theme.background }]}>
+    <View style={[styles.review, { backgroundColor: theme.inputBackground }]}>
       <View style={styles.reviewTop}>
         <Text style={[styles.reviewer, { color: theme.primaryText }]}>{review.reviewerName || 'Anonymous'}</Text>
         <View style={styles.reviewStars}>
           {[1, 2, 3, 4, 5].map((s) => (
-            <Icon key={s} name={s <= review.rating ? 'star.fill' : 'star'} size={11} color={iOSColors.orange} />
+            <Icon key={s} name={s <= review.rating ? 'star.fill' : 'star'} size={11} color={theme.accent} />
           ))}
         </View>
       </View>
@@ -195,23 +192,21 @@ function ReviewRow({ review }: { review: VendorReview }) {
 
 function ContactSheet({ vendor, visible, onClose }: { vendor: Vendor; visible: boolean; onClose: () => void }) {
   const theme = useAppTheme();
-  const options: { icon: SFSymbol; label: string; value: string; color: string; url: string }[] = [];
-  if (vendor.email) options.push({ icon: 'envelope.fill', label: 'Email', value: vendor.email, color: iOSColors.blue, url: `mailto:${vendor.email}` });
-  if (vendor.phoneNumber) options.push({ icon: 'phone.fill', label: 'Phone', value: vendor.phoneNumber, color: iOSColors.green, url: `tel:${vendor.phoneNumber.replace(/[^0-9+]/g, '')}` });
-  if (vendor.website) options.push({ icon: 'globe', label: 'Website', value: vendor.website, color: iOSColors.purple, url: vendor.website.startsWith('http') ? vendor.website : `https://${vendor.website}` });
+  const options: { icon: SFSymbol; label: string; value: string; url: string }[] = [];
+  if (vendor.email) options.push({ icon: 'envelope.fill', label: 'Email', value: vendor.email, url: `mailto:${vendor.email}` });
+  if (vendor.phoneNumber) options.push({ icon: 'phone.fill', label: 'Phone', value: vendor.phoneNumber, url: `tel:${vendor.phoneNumber.replace(/[^0-9+]/g, '')}` });
+  if (vendor.website) options.push({ icon: 'globe', label: 'Website', value: vendor.website, url: vendor.website.startsWith('http') ? vendor.website : `https://${vendor.website}` });
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose} />
       <View style={[styles.sheet, { backgroundColor: theme.cardBackground }]}>
-        <View style={styles.grabber} />
-        <Text style={[styles.sheetTitle, { color: theme.primaryText }]}>Contact {vendor.businessName}</Text>
+        <View style={[styles.grabber, { backgroundColor: theme.divider }]} />
+        <Text style={[theme.display(20, '500'), styles.sheetTitle]}>Contact {vendor.businessName}</Text>
         <View style={styles.sheetOptions}>
           {options.map((o) => (
-            <Pressable key={o.label} onPress={() => Linking.openURL(o.url)} style={[styles.contactOption, { backgroundColor: theme.background }]}>
-              <View style={[styles.contactIcon, { backgroundColor: withOpacity(o.color, 0.1) }]}>
-                <Icon name={o.icon} size={20} color={o.color} />
-              </View>
+            <Pressable key={o.label} onPress={() => Linking.openURL(o.url)} style={[styles.contactOption, { backgroundColor: theme.background, borderWidth: 1, borderColor: theme.divider }]}>
+              <ThemedIconTile name={o.icon} size={44} />
               <View style={styles.flex}>
                 <Text style={[styles.detailLabel, { color: theme.secondaryText }]}>{o.label}</Text>
                 <Text style={[styles.contactValue, { color: theme.primaryText }]}>{o.value}</Text>
@@ -232,12 +227,11 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 16 },
   back: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   backText: { fontSize: 16, fontWeight: '500' },
-  card: { borderRadius: 16, padding: 16, marginHorizontal: 20, gap: 12 },
+  card: { padding: 16, marginHorizontal: 20, gap: 12 },
   profile: { alignItems: 'center', paddingVertical: 20 },
   avatar: { width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center' },
   avatarText: { fontSize: 28, fontWeight: '600' },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  name: { fontSize: 22, fontWeight: '700' },
   typeRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   typeText: { fontSize: 14, fontWeight: '500' },
   stars: { flexDirection: 'row', alignItems: 'center', gap: 4 },
@@ -246,13 +240,12 @@ const styles = StyleSheet.create({
   statusDot: { width: 8, height: 8, borderRadius: 4 },
   statusText: { fontSize: 13, fontWeight: '500' },
   actionRow: { flexDirection: 'row', gap: 10, alignSelf: 'stretch', paddingHorizontal: 4, marginTop: 4 },
-  primaryBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 12, borderRadius: 12 },
-  primaryBtnText: { color: '#FFFFFF', fontSize: 14, fontWeight: '600' },
-  secondaryBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 12, borderRadius: 12 },
+  primaryBtn: { flex: 1, paddingVertical: 12 },
+  secondaryBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 12 },
   secondaryBtnText: { fontSize: 14, fontWeight: '600' },
   cardTitle: { fontSize: 16, fontWeight: '700' },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20 },
+  chip: { paddingHorizontal: 14, paddingVertical: 7 },
   chipText: { fontSize: 13, fontWeight: '500' },
   desc: { fontSize: 14, lineHeight: 20 },
   detailRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
@@ -269,10 +262,9 @@ const styles = StyleSheet.create({
   reviewDate: { fontSize: 11 },
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' },
   sheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 40, gap: 16 },
-  grabber: { alignSelf: 'center', width: 40, height: 5, borderRadius: 3, backgroundColor: 'rgba(150,150,150,0.4)' },
-  sheetTitle: { fontSize: 20, fontWeight: '700', textAlign: 'center' },
+  grabber: { alignSelf: 'center', width: 40, height: 5, borderRadius: 3 },
+  sheetTitle: { textAlign: 'center' },
   sheetOptions: { gap: 12 },
   contactOption: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 14, borderRadius: 12 },
-  contactIcon: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   contactValue: { fontSize: 15, marginTop: 2 },
 });

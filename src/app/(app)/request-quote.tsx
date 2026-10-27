@@ -4,14 +4,17 @@
  * pulled read-only from the account so the owner only types what they want; the
  * form shows exactly what would be sent and where a reply lands.
  *
- * Swift POSTs to /support/quote-request (emails support). The RN app makes no
- * backend calls, so submit simulates the send — the UI (sending → sent success
- * panel) matches the native flow. Backend wiring is Stream B (deferred).
+ * Send POSTs /support/quote-request {name, businessName, description, topic},
+ * which emails the ToolBelt team with the owner's sign-in email as reply-to.
+ * `topic` comes from the `?topic=` param ("website_app" from Custom Website,
+ * "api_key" for API access) and defaults to "website_app". The route is
+ * rate-limited (3 per 10 min); 400 / 429 / 503 come back with user-ready
+ * messages, shown as-is in an alert. Success swaps to the "Request sent!" panel.
  */
 
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { KeyboardAwareForm } from '@/components/keyboard-aware-form';
@@ -20,8 +23,9 @@ import { DashboardGradient } from '@/components/dashboard-gradient';
 import { Icon } from '@/components/icon';
 import { ScreenHeader } from '@/components/screen-header';
 import { useSession } from '@/context/session';
+import { api, ApiError } from '@/lib/api-client';
 import { withOpacity } from '@/lib/color';
-import { iOSColors, lightShadow } from '@/theme/tokens';
+import { iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
 const PLACEHOLDER =
@@ -31,17 +35,33 @@ export default function RequestQuote() {
   const theme = useAppTheme();
   const router = useRouter();
   const { account } = useSession();
+  const params = useLocalSearchParams<{ topic?: string }>();
+  const topic = params.topic === 'api_key' ? 'api_key' : 'website_app';
 
   const [description, setDescription] = useState('');
   const [state, setState] = useState<'idle' | 'sending' | 'sent'>('idle');
 
   const canSubmit = state !== 'sending' && description.trim().length > 0;
 
-  const submit = () => {
+  const submit = async () => {
     if (!canSubmit) return;
     setState('sending');
-    // Simulate the network round-trip (no backend in the RN build).
-    setTimeout(() => setState('sent'), 900);
+    try {
+      await api.post<{ ok: boolean; messageId?: string }>('/support/quote-request', {
+        name: account?.name ?? '',
+        businessName: account?.businessName ?? '',
+        description: description.trim(),
+        topic,
+      });
+      setState('sent');
+    } catch (e) {
+      setState('idle');
+      let message = e instanceof ApiError ? e.message : 'Please check your connection and try again.';
+      if (e instanceof ApiError && e.status === 429 && e.message.startsWith('Request failed')) {
+        message = 'Too many requests — please wait a few minutes and try again.';
+      }
+      Alert.alert("Couldn't Send Request", message);
+    }
   };
 
   return (
@@ -54,17 +74,17 @@ export default function RequestQuote() {
             <View style={styles.successCircle}>
               <Icon name="checkmark.circle.fill" size={56} color={iOSColors.green} />
             </View>
-            <Text style={[styles.successTitle, { color: theme.primaryText }]}>Request sent!</Text>
+            <Text style={theme.display(24)}>Request sent!</Text>
             <Text style={[styles.successSub, { color: theme.secondaryText }]}>Our team will reach out within 24 hours.</Text>
             <View style={styles.flex} />
-            <Pressable style={styles.sendBtn} onPress={() => router.back()}>
-              <Text style={styles.sendText}>Done</Text>
+            <Pressable style={[styles.sendBtn, { backgroundColor: theme.accent, borderRadius: theme.isEditorial ? 2 : 999 }]} onPress={() => router.back()}>
+              <Text style={[styles.sendText, { color: theme.onAccent }]}>Done</Text>
             </Pressable>
           </View>
         ) : (
           <KeyboardAwareForm contentContainerStyle={styles.body}>
             {/* Sending as (read-only) */}
-            <View style={[styles.card, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
+            <View style={[styles.card, theme.card]}>
               <Text style={[styles.cardLabel, { color: theme.secondaryText }]}>Sending as</Text>
               <InfoRow icon="person.fill" label="Name" value={account?.name ?? '—'} />
               <View style={[styles.divider, { backgroundColor: theme.divider }]} />
@@ -78,9 +98,9 @@ export default function RequestQuote() {
             </View>
 
             {/* Description */}
-            <View style={[styles.card, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
+            <View style={[styles.card, theme.card]}>
               <View style={styles.editorHead}>
-                <Icon name="text.alignleft" size={16} color={iOSColors.blue} />
+                <Icon name="text.alignleft" size={16} color={theme.accent} />
                 <Text style={[styles.editorTitle, { color: theme.primaryText }]}>What you&apos;d like your website or app to include</Text>
               </View>
               <TextInput
@@ -93,9 +113,9 @@ export default function RequestQuote() {
               />
             </View>
 
-            <Pressable style={[styles.sendBtn, { backgroundColor: canSubmit ? iOSColors.blue : withMuted(iOSColors.gray) }]} disabled={!canSubmit} onPress={submit}>
-              {state === 'sending' ? <ActivityIndicator color="#FFFFFF" /> : <Icon name="paperplane.fill" size={16} color="#FFFFFF" />}
-              <Text style={styles.sendText}>{state === 'sending' ? 'Sending…' : 'Send Request'}</Text>
+            <Pressable style={[styles.sendBtn, { backgroundColor: theme.accent, borderRadius: theme.isEditorial ? 2 : 999, opacity: canSubmit || state === 'sending' ? 1 : 0.4 }]} disabled={!canSubmit} onPress={submit}>
+              {state === 'sending' ? <ActivityIndicator color={theme.onAccent} /> : <Icon name="paperplane.fill" size={16} color={theme.onAccent} />}
+              <Text style={[styles.sendText, { color: theme.onAccent }]}>{state === 'sending' ? 'Sending…' : 'Send Request'}</Text>
             </Pressable>
             <Text style={[styles.note, { color: theme.secondaryText }]}>Our team will reach out within 24 hours</Text>
           </KeyboardAwareForm>
@@ -109,7 +129,7 @@ function InfoRow({ icon, label, value, muted }: { icon: 'person.fill' | 'buildin
   const theme = useAppTheme();
   return (
     <View style={styles.infoRow}>
-      <Icon name={icon} size={18} color={iOSColors.blue} />
+      <Icon name={icon} size={18} color={theme.accent} />
       <View style={styles.infoText}>
         <Text style={[styles.infoLabel, { color: theme.secondaryText }]}>{label}</Text>
         <Text style={[styles.infoValue, { color: muted ? theme.secondaryText : theme.primaryText, fontSize: muted ? 14 : 16 }]}>{value}</Text>
@@ -126,7 +146,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   flex: { flex: 1 },
   body: { padding: 20, gap: 20, paddingBottom: 40 },
-  card: { padding: 16, borderRadius: 14, gap: 14 },
+  card: { padding: 16, gap: 14 },
   cardLabel: { fontSize: 14, fontWeight: '500' },
   infoRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   infoText: { flex: 1, gap: 2 },
@@ -136,11 +156,10 @@ const styles = StyleSheet.create({
   editorHead: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   editorTitle: { flex: 1, fontSize: 14, fontWeight: '500' },
   editor: { minHeight: 180, borderRadius: 10, padding: 12, fontSize: 14, textAlignVertical: 'top' },
-  sendBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: iOSColors.blue, paddingVertical: 16, borderRadius: 14, alignSelf: 'stretch' },
-  sendText: { color: '#FFFFFF', fontSize: 17, fontWeight: '600' },
+  sendBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, paddingVertical: 16, alignSelf: 'stretch' },
+  sendText: { fontSize: 17, fontWeight: '600' },
   note: { fontSize: 13, textAlign: 'center' },
   success: { flex: 1, alignItems: 'center', gap: 16, padding: 20 },
   successCircle: { width: 96, height: 96, borderRadius: 48, backgroundColor: withOpacity(iOSColors.green, 0.12), alignItems: 'center', justifyContent: 'center', marginTop: 60 },
-  successTitle: { fontSize: 22, fontWeight: '700' },
   successSub: { fontSize: 15, textAlign: 'center', paddingHorizontal: 40 },
 });

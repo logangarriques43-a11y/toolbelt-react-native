@@ -31,6 +31,7 @@ export const ICON_MAP: Record<string, [IconFamily, string]> = {
   'arrow.up.forward.circle.fill': ['mci', 'arrow-top-right-thick'], // ~approx
   'arrow.up.left.and.arrow.down.right': ['mci', 'arrow-expand'],
   'arrow.up.message.fill': ['mci', 'message-arrow-right'], // ~approx (sent)
+  'arrow.up': ['mci', 'arrow-up'],
   'arrow.up.right': ['mci', 'arrow-top-right'],
   'arrow.up.right.square': ['mci', 'open-in-new'],
   'arrow.up.right.square.fill': ['mci', 'open-in-new'],
@@ -53,6 +54,7 @@ export const ICON_MAP: Record<string, [IconFamily, string]> = {
   'bubble.left.and.text.bubble.right.fill': ['mci', 'forum'],
   'bubble.left.fill': ['mci', 'chat'],
   'building.2.fill': ['mci', 'office-building'],
+  'building.columns': ['mci', 'bank-outline'],
   'building.columns.fill': ['mci', 'bank'],
   'calendar': ['mci', 'calendar'],
   'calendar.badge.checkmark': ['mci', 'calendar-check'],
@@ -93,6 +95,7 @@ export const ICON_MAP: Record<string, [IconFamily, string]> = {
   'doc.on.doc': ['mci', 'content-copy'],
   'doc.plaintext.fill': ['mci', 'file-document'],
   'doc.richtext.fill': ['mci', 'file-document-outline'], // ~approx
+  'doc.text': ['mci', 'file-document-outline'],
   'doc.text.below.ecg': ['mci', 'file-chart'], // ~approx
   'doc.text.fill': ['mci', 'file-document'],
   'doc.text.magnifyingglass': ['mci', 'file-search'],
@@ -179,6 +182,7 @@ export const ICON_MAP: Record<string, [IconFamily, string]> = {
   'person.slash': ['mci', 'account-off'],
   'phone.badge.plus': ['mci', 'phone-plus'],
   'phone.fill': ['mci', 'phone'],
+  'photo.fill': ['ion', 'image'],
   'plus': ['mci', 'plus'],
   'plus.circle.fill': ['mci', 'plus-circle'],
   'qrcode': ['mci', 'qrcode'],

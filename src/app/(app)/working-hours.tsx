@@ -16,7 +16,6 @@ import { ScreenHeader } from '@/components/screen-header';
 import { TimeStepperSheet } from '@/components/sheets/time-stepper-sheet';
 import { useWorkingHours } from '@/context/working-hours-store';
 import { to24 } from '@/lib/appointment-time';
-import { Brand, lightShadow } from '@/theme/tokens';
 import { WEEKDAY_NAMES, intervalTimeString, type WorkingHoursInterval } from '@/models/working-hours';
 import { useAppTheme } from '@/theme/theme-context';
 
@@ -73,13 +72,13 @@ export default function WorkingHoursScreen() {
             const schedule = weeklySchedule[weekday] ?? { isWorkingDay: false, intervals: [] };
             const interval = schedule.intervals[0] ?? DEFAULT_INTERVAL;
             return (
-              <View key={weekday} style={[styles.card, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
+              <View key={weekday} style={[styles.card, theme.card]}>
                 <View style={styles.dayRow}>
                   <Text style={[styles.dayName, { color: theme.primaryText }]}>{name}</Text>
                   <Switch
                     value={schedule.isWorkingDay}
                     onValueChange={(v) => setWorking(weekday, v)}
-                    trackColor={{ true: Brand.accent, false: theme.divider }}
+                    trackColor={{ true: theme.accent, false: theme.inputBackground }}
                   />
                 </View>
 
@@ -117,7 +116,6 @@ export default function WorkingHoursScreen() {
       <TimeStepperSheet
         visible={editing !== null}
         title={editing?.field === 'start' ? 'Start Time' : 'End Time'}
-        accent={Brand.accent}
         hour={editTime.hour}
         minute={editTime.minute}
         isPM={editTime.isPM}
@@ -131,11 +129,11 @@ export default function WorkingHoursScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   body: { padding: 16, gap: 12, paddingBottom: 40 },
-  card: { borderRadius: 14, paddingHorizontal: 16 },
+  card: { paddingHorizontal: 16 },
   dayRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14 },
   dayName: { fontSize: 16, fontWeight: '600' },
   intervalRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14, borderTopWidth: StyleSheet.hairlineWidth },
-  timeBtn: { flex: 1, paddingVertical: 12, borderRadius: 10, alignItems: 'center' },
+  timeBtn: { flex: 1, paddingVertical: 12, borderRadius: 999, alignItems: 'center' },
   timeText: { fontSize: 16, fontWeight: '500' },
   dash: { fontSize: 16 },
   closed: { fontSize: 14, paddingBottom: 14 },

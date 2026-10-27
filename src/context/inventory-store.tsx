@@ -11,8 +11,9 @@
  * cache for the session and reset on a cold reload, matching the Swift app.
  */
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Alert } from 'react-native';
 
 import {
@@ -32,6 +33,7 @@ import {
 } from '@/models/inventory';
 
 export const INVENTORY_QUERY_KEY = ['inventory', 'items'] as const;
+const ACTIVITY_KEY = 'inventory.activityHistory';
 
 export interface NewInventoryItem {
   name: string;
@@ -81,6 +83,19 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
   const qc = useQueryClient();
   const query = useQuery({ queryKey: INVENTORY_QUERY_KEY, queryFn: listInventory });
   const [activities, setActivities] = useState<InventoryActivity[]>([]);
+
+  // Activity history has no backend route; keep it on the device.
+  useEffect(() => {
+    AsyncStorage.getItem(ACTIVITY_KEY)
+      .then((v) => {
+        const saved = v ? JSON.parse(v) : null;
+        if (Array.isArray(saved)) setActivities((prev) => [...prev, ...saved].slice(0, 100));
+      })
+      .catch(() => {});
+  }, []);
+  useEffect(() => {
+    if (activities.length) AsyncStorage.setItem(ACTIVITY_KEY, JSON.stringify(activities)).catch(() => {});
+  }, [activities]);
 
   const read = () => qc.getQueryData<InventoryItem[]>(INVENTORY_QUERY_KEY) ?? [];
   const write = (next: InventoryItem[]) => qc.setQueryData(INVENTORY_QUERY_KEY, next);

@@ -20,6 +20,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { DashboardGradient } from '@/components/dashboard-gradient';
 import { Icon } from '@/components/icon';
 import { OptionSheet } from '@/components/sheets/option-sheet';
+import { ThemedButton } from '@/components/themed';
 import { withOpacity } from '@/lib/color';
 import {
   groupCount, resolutionLabel,
@@ -27,10 +28,8 @@ import {
 } from '@/models/import-data';
 import type { Service } from '@/models/service';
 import type { StaffMember } from '@/models/staff';
-import { iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
-const ACCENT = '#4285F5';
 const NONE = '__none__';
 
 type Picker = { kind: 'resolution'; groupId: string } | { kind: 'staff'; groupId: string } | { kind: 'staffAll' } | null;
@@ -65,6 +64,8 @@ export function DetectedServicesReviewSheet({
   onKeepOriginals: () => void;
 }) {
   const theme = useAppTheme();
+  const chip = { backgroundColor: theme.accentSoft, borderRadius: theme.isEditorial ? 2 : 999 };
+  const chipText = { color: theme.accent };
   const [step, setStep] = useState(0);
   const [picker, setPicker] = useState<Picker>(null);
 
@@ -123,8 +124,8 @@ export function DetectedServicesReviewSheet({
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.titleRow}>
-              <Icon name={step === 0 ? 'wand.and.stars' : 'person.2.badge.gearshape.fill'} size={18} color={iOSColors.purple} />
-              <Text style={[styles.title, { color: theme.primaryText }]}>
+              <Icon name={step === 0 ? 'wand.and.stars' : 'person.2.badge.gearshape.fill'} size={18} color={theme.accent} />
+              <Text style={[styles.title, theme.display(22, '500')]}>
                 {step === 0 ? 'We Detected These Services' : 'Connect to Staff Members?'}
               </Text>
             </View>
@@ -138,7 +139,7 @@ export function DetectedServicesReviewSheet({
           <ScrollView contentContainerStyle={styles.body}>
             {step === 0
               ? groups.map((g) => (
-                  <View key={g.id} style={[styles.card, { backgroundColor: theme.cardBackground }]}>
+                  <View key={g.id} style={[styles.card, theme.card]}>
                     <View style={styles.cardHead}>
                       <View style={styles.flex}>
                         <Text style={[styles.groupLabel, { color: theme.primaryText }]}>{g.label}</Text>
@@ -146,9 +147,9 @@ export function DetectedServicesReviewSheet({
                           {groupCount(g)} appointment{groupCount(g) === 1 ? '' : 's'}
                         </Text>
                       </View>
-                      <Pressable onPress={() => setPicker({ kind: 'resolution', groupId: g.id })} style={styles.chip}>
-                        <Text style={styles.chipText} numberOfLines={1}>{resolutionLabel(g, services)}</Text>
-                        <Icon name="chevron.up.chevron.down" size={10} color={ACCENT} />
+                      <Pressable onPress={() => setPicker({ kind: 'resolution', groupId: g.id })} style={[styles.chip, chip]}>
+                        <Text style={[styles.chipText, chipText]} numberOfLines={1}>{resolutionLabel(g, services)}</Text>
+                        <Icon name="chevron.up.chevron.down" size={10} color={theme.accent} />
                       </Pressable>
                     </View>
                     <View style={styles.sampleRow}>
@@ -164,17 +165,17 @@ export function DetectedServicesReviewSheet({
               ) : (
                 <>
                   {eligible.length > 1 ? (
-                    <View style={[styles.card, styles.assignAll, { backgroundColor: theme.cardBackground, borderColor: withOpacity(ACCENT, 0.25) }]}>
+                    <View style={[styles.card, styles.assignAll, theme.card, { borderColor: theme.accent }]}>
                       <Text style={[styles.assignAllLabel, { color: theme.primaryText }]}>Assign all to</Text>
-                      <Pressable onPress={() => setPicker({ kind: 'staffAll' })} style={styles.chip}>
-                        <Icon name="person.2.fill" size={11} color={ACCENT} />
-                        <Text style={styles.chipText}>Choose…</Text>
-                        <Icon name="chevron.up.chevron.down" size={10} color={ACCENT} />
+                      <Pressable onPress={() => setPicker({ kind: 'staffAll' })} style={[styles.chip, chip]}>
+                        <Icon name="person.2.fill" size={11} color={theme.accent} />
+                        <Text style={[styles.chipText, chipText]}>Choose…</Text>
+                        <Icon name="chevron.up.chevron.down" size={10} color={theme.accent} />
                       </Pressable>
                     </View>
                   ) : null}
                   {eligible.map((g) => (
-                    <View key={g.id} style={[styles.card, styles.cardHead, { backgroundColor: theme.cardBackground }]}>
+                    <View key={g.id} style={[styles.card, styles.cardHead, theme.card]}>
                       <View style={styles.flex}>
                         <Text style={[styles.groupLabel, { color: theme.primaryText }]}>{g.label}</Text>
                         <Text style={[styles.groupCount, { color: theme.secondaryText }]}>
@@ -183,10 +184,10 @@ export function DetectedServicesReviewSheet({
                       </View>
                       <Pressable
                         onPress={() => setPicker({ kind: 'staff', groupId: g.id })}
-                        style={[styles.chip, { backgroundColor: withOpacity(g.assignedStaffId ? iOSColors.green : theme.secondaryText, 0.1) }]}>
-                        <Icon name="person.fill" size={11} color={g.assignedStaffId ? iOSColors.green : theme.secondaryText} />
-                        <Text style={[styles.chipText, { color: g.assignedStaffId ? iOSColors.green : theme.secondaryText }]} numberOfLines={1}>{staffLabelFor(g)}</Text>
-                        <Icon name="chevron.up.chevron.down" size={10} color={g.assignedStaffId ? iOSColors.green : theme.secondaryText} />
+                        style={[styles.chip, chip, { backgroundColor: g.assignedStaffId ? theme.accentSoft : theme.inputBackground }]}>
+                        <Icon name="person.fill" size={11} color={g.assignedStaffId ? theme.accent : theme.secondaryText} />
+                        <Text style={[styles.chipText, { color: g.assignedStaffId ? theme.accent : theme.secondaryText }]} numberOfLines={1}>{staffLabelFor(g)}</Text>
+                        <Icon name="chevron.up.chevron.down" size={10} color={g.assignedStaffId ? theme.accent : theme.secondaryText} />
                       </Pressable>
                     </View>
                   ))}
@@ -195,10 +196,8 @@ export function DetectedServicesReviewSheet({
           </ScrollView>
 
           {/* Footer */}
-          <View style={[styles.footer, { backgroundColor: withOpacity(theme.cardBackground, 0.9) }]}>
-            <Pressable style={styles.primaryBtn} onPress={step === 0 ? advance : onDone}>
-              <Text style={styles.primaryBtnText}>{step === 0 ? 'These Look Right' : 'Done'}</Text>
-            </Pressable>
+          <View style={[styles.footer, { backgroundColor: withOpacity(theme.cardBackground, 0.9), borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.divider }]}>
+            <ThemedButton title={step === 0 ? 'These Look Right' : 'Done'} onPress={step === 0 ? advance : onDone} />
             <Pressable style={styles.secondaryBtn} onPress={step === 0 ? onKeepOriginals : () => setStep(0)}>
               <Text style={[styles.secondaryBtnText, { color: theme.secondaryText }]}>
                 {step === 0 ? 'Skip — keep original titles' : 'Back'}
@@ -242,23 +241,21 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   header: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 12, gap: 6, alignItems: 'center' },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  title: { fontSize: 19, fontWeight: '700' },
+  title: { flexShrink: 1 },
   subtitle: { fontSize: 13, textAlign: 'center' },
   body: { paddingHorizontal: 20, paddingVertical: 8, gap: 14 },
-  card: { padding: 14, borderRadius: 12, gap: 8 },
+  card: { padding: 14, gap: 8 },
   cardHead: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   groupLabel: { fontSize: 16, fontWeight: '600' },
   groupCount: { fontSize: 12, marginTop: 2 },
-  chip: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: withOpacity(ACCENT, 0.1), maxWidth: '55%' },
-  chipText: { color: ACCENT, fontSize: 13, fontWeight: '500', flexShrink: 1 },
+  chip: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 6, maxWidth: '55%' },
+  chipText: { fontSize: 13, fontWeight: '500', flexShrink: 1 },
   sampleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   sampleText: { fontSize: 12, flexShrink: 1 },
   assignAll: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1 },
   assignAllLabel: { fontSize: 14, fontWeight: '600' },
   emptyStaff: { fontSize: 14, padding: 14 },
   footer: { paddingHorizontal: 20, paddingVertical: 14, gap: 10 },
-  primaryBtn: { backgroundColor: ACCENT, alignItems: 'center', paddingVertical: 15, borderRadius: 14 },
-  primaryBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
   secondaryBtn: { alignItems: 'center', paddingVertical: 4 },
   secondaryBtnText: { fontSize: 14, fontWeight: '500' },
 });

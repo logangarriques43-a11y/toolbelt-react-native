@@ -11,7 +11,6 @@ import { Icon } from '@/components/icon';
 import {
   invoiceDisplayName, invoiceSubtotal, invoiceTaxAmount, invoiceTotalDue, lineItemTotal, type Invoice,
 } from '@/models/invoice';
-import { iOSColors, lightShadow } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
 const usd = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
@@ -41,14 +40,14 @@ export function InvoicePreview({
           </View>
 
           <ScrollView contentContainerStyle={styles.body}>
-            <View style={[styles.sheet, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
+            <View style={[styles.sheet, theme.card]}>
               <View style={styles.top}>
                 <View>
-                  <Text style={[styles.business, { color: theme.primaryText }]}>{businessName}</Text>
+                  <Text style={theme.display(20, '500')}>{businessName}</Text>
                   <Text style={[styles.invNo, { color: theme.secondaryText }]}>{invoiceDisplayName(invoice)}</Text>
                 </View>
-                <View style={[styles.badge, { backgroundColor: iOSColors.green }]}>
-                  <Text style={styles.badgeText}>INVOICE</Text>
+                <View style={[styles.badge, { backgroundColor: theme.accent, borderRadius: theme.isEditorial ? 2 : 6 }]}>
+                  <Text style={[styles.badgeText, { color: theme.onAccent }]}>INVOICE</Text>
                 </View>
               </View>
 
@@ -72,9 +71,9 @@ export function InvoicePreview({
 
               <TotalRow theme={theme} label="Subtotal" value={usd.format(subtotal)} />
               {invoice.taxRate ? <TotalRow theme={theme} label={`Tax (${invoice.taxRate}%)`} value={usd.format(tax)} /> : null}
-              <View style={[styles.totalDue, { backgroundColor: 'rgba(52,199,89,0.08)' }]}>
+              <View style={[styles.totalDue, { backgroundColor: theme.inputBackground }]}>
                 <Text style={[styles.totalDueLabel, { color: theme.primaryText }]}>Total Due</Text>
-                <Text style={[styles.totalDueValue, { color: iOSColors.green }]}>{usd.format(total)}</Text>
+                <Text style={[theme.display(20, '500'), { color: theme.accent }]}>{usd.format(total)}</Text>
               </View>
 
               {invoice.message ? <Text style={[styles.message, { color: theme.secondaryText }]}>{invoice.message}</Text> : null}
@@ -109,12 +108,11 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16 },
   headerTitle: { fontSize: 18, fontWeight: '700' },
   body: { padding: 16, paddingBottom: 40 },
-  sheet: { borderRadius: 16, padding: 20, gap: 14 },
+  sheet: { padding: 20, gap: 14 },
   top: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
-  business: { fontSize: 20, fontWeight: '700' },
   invNo: { fontSize: 14, marginTop: 2 },
-  badge: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 6 },
-  badgeText: { color: '#FFFFFF', fontSize: 11, fontWeight: '700', letterSpacing: 1 },
+  badge: { paddingHorizontal: 10, paddingVertical: 5 },
+  badgeText: { fontSize: 11, fontWeight: '700', letterSpacing: 1 },
   metaRow: { flexDirection: 'row', justifyContent: 'space-between' },
   metaLabel: { fontSize: 13 },
   metaValue: { fontSize: 13, fontWeight: '500' },
@@ -129,6 +127,5 @@ const styles = StyleSheet.create({
   totalValue: { fontSize: 14, fontWeight: '500' },
   totalDue: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 14, borderRadius: 10, marginTop: 4 },
   totalDueLabel: { fontSize: 16, fontWeight: '700' },
-  totalDueValue: { fontSize: 20, fontWeight: '700' },
   message: { fontSize: 14, marginTop: 4 },
 });

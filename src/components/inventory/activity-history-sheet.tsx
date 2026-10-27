@@ -8,9 +8,9 @@ import { useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Icon } from '@/components/icon';
+import { ThemedIconTile } from '@/components/themed';
 import { useInventory } from '@/context/inventory-store';
-import { withOpacity } from '@/lib/color';
-import { activityColor, activityIcon, type ActivityKind, type InventoryActivity } from '@/models/inventory';
+import { activityIcon, type ActivityKind, type InventoryActivity } from '@/models/inventory';
 import { iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
@@ -61,8 +61,6 @@ export function ActivityHistorySheet({ visible, onClose }: { visible: boolean; o
   const groups = GROUPS.map((g) => ({ group: g, items: filtered.filter((a) => groupOf(a.date) === g) })).filter((g) => g.items.length > 0);
 
   const count = (kind: ActivityKind) => activities.filter((a) => a.type === kind).length;
-  const filterColor = (f: Filter): string =>
-    f === 'Incoming' ? iOSColors.green : f === 'Outgoing' ? iOSColors.blue : f === 'Alerts' ? iOSColors.orange : f === 'Appointments' ? iOSColors.purple : iOSColors.gray;
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -71,32 +69,31 @@ export function ActivityHistorySheet({ visible, onClose }: { visible: boolean; o
         <View style={styles.grabber} />
         <View style={styles.header}>
           <Pressable onPress={onClose} hitSlop={8}>
-            <Text style={styles.action}>Close</Text>
+            <Text style={[styles.action, { color: theme.accent }]}>Close</Text>
           </Pressable>
           <Text style={[styles.title, { color: theme.primaryText }]}>Activity History</Text>
           <Text style={[styles.action, styles.hidden]}>Close</Text>
         </View>
 
         {/* Summary */}
-        <View style={[styles.summary, { backgroundColor: withOpacity(iOSColors.gray, 0.05) }]}>
+        <View style={[styles.summary, { backgroundColor: theme.inputBackground, borderRadius: theme.cornerRadius }]}>
           <SummaryPill value={count('incoming')} label="Incoming" color={iOSColors.green} />
           <View style={[styles.summaryDiv, { backgroundColor: theme.divider }]} />
-          <SummaryPill value={count('outgoing')} label="Outgoing" color={iOSColors.blue} />
+          <SummaryPill value={count('outgoing')} label="Outgoing" color={theme.primaryText} />
           <View style={[styles.summaryDiv, { backgroundColor: theme.divider }]} />
           <SummaryPill value={count('alert')} label="Alerts" color={iOSColors.orange} />
           <View style={[styles.summaryDiv, { backgroundColor: theme.divider }]} />
-          <SummaryPill value={activities.length} label="Total" color={iOSColors.gray} />
+          <SummaryPill value={activities.length} label="Total" color={theme.primaryText} />
         </View>
 
         {/* Filters */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
           {FILTERS.map((f) => {
             const active = filter === f;
-            const c = filterColor(f);
             return (
-              <Pressable key={f} onPress={() => setFilter(f)} style={[styles.filter, { backgroundColor: active ? c : withOpacity(iOSColors.gray, 0.08) }]}>
-                <View style={[styles.filterDot, { backgroundColor: active ? '#FFFFFF' : c }]} />
-                <Text style={[styles.filterText, { color: active ? '#FFFFFF' : theme.primaryText }]}>{f}</Text>
+              <Pressable key={f} onPress={() => setFilter(f)} style={[styles.filter, { backgroundColor: active ? theme.accent : theme.inputBackground, borderRadius: theme.isEditorial ? 2 : 999 }]}>
+                <View style={[styles.filterDot, { backgroundColor: active ? theme.onAccent : theme.accent }]} />
+                <Text style={[styles.filterText, { color: active ? theme.onAccent : theme.primaryText }]}>{f}</Text>
               </Pressable>
             );
           })}
@@ -105,9 +102,9 @@ export function ActivityHistorySheet({ visible, onClose }: { visible: boolean; o
         <ScrollView contentContainerStyle={styles.body}>
           {filtered.length === 0 ? (
             <View style={styles.empty}>
-              <Icon name="clock.arrow.circlepath" size={40} color={withOpacity(iOSColors.gray, 0.5)} />
+              <Icon name="clock.arrow.circlepath" size={40} color={theme.tertiaryText} />
               <Text style={[styles.emptyTitle, { color: theme.secondaryText }]}>No activity found</Text>
-              <Text style={[styles.emptySub, { color: withOpacity(iOSColors.gray, 0.7) }]}>There are no entries matching this filter.</Text>
+              <Text style={[styles.emptySub, { color: theme.tertiaryText }]}>There are no entries matching this filter.</Text>
             </View>
           ) : (
             groups.map((g) => (
@@ -140,14 +137,11 @@ function SummaryPill({ value, label, color }: { value: number; label: string; co
 
 function Row({ activity }: { activity: InventoryActivity }) {
   const theme = useAppTheme();
-  const color = activityColor(activity.type);
   const sign = activity.type === 'outgoing' || activity.type === 'appointmentUsage' ? '-' : '+';
   const qtyColor = activity.type === 'incoming' ? iOSColors.green : activity.type === 'alert' ? iOSColors.orange : iOSColors.red;
   return (
-    <View style={[styles.row, { backgroundColor: theme.cardBackground }]}>
-      <View style={[styles.rowIcon, { backgroundColor: withOpacity(color, 0.2) }]}>
-        <Icon name={activityIcon(activity.type)} size={20} color={color} />
-      </View>
+    <View style={[styles.row, theme.card]}>
+      <ThemedIconTile name={activityIcon(activity.type)} size={44} />
       <View style={styles.flex}>
         <Text style={[styles.rowAction, { color: theme.primaryText }]}>{activity.action}</Text>
         <Text style={[styles.rowItem, { color: theme.secondaryText }]}>{activity.itemName}</Text>
@@ -167,15 +161,15 @@ const styles = StyleSheet.create({
   grabber: { alignSelf: 'center', width: 40, height: 6, borderRadius: 3, backgroundColor: 'rgba(150,150,150,0.5)', marginTop: 12, marginBottom: 8 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
   title: { fontSize: 18, fontWeight: '700' },
-  action: { fontSize: 16, color: iOSColors.blue },
+  action: { fontSize: 16 },
   hidden: { opacity: 0 },
-  summary: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, marginHorizontal: 16, borderRadius: 12 },
+  summary: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, marginHorizontal: 16 },
   summaryDiv: { width: 1, height: 30 },
   pill: { flex: 1, alignItems: 'center', gap: 4 },
   pillValue: { fontSize: 18, fontWeight: '700' },
   pillLabel: { fontSize: 11 },
   filters: { gap: 8, paddingHorizontal: 16, paddingVertical: 12 },
-  filter: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20 },
+  filter: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 8 },
   filterDot: { width: 8, height: 8, borderRadius: 4 },
   filterText: { fontSize: 13, fontWeight: '500' },
   body: { padding: 16, gap: 20 },
@@ -183,8 +177,7 @@ const styles = StyleSheet.create({
   groupHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   groupTitle: { fontSize: 15, fontWeight: '600' },
   groupCount: { fontSize: 13 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 12, borderRadius: 12 },
-  rowIcon: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center' },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 12 },
   rowAction: { fontSize: 15, fontWeight: '600' },
   rowItem: { fontSize: 13, marginTop: 2 },
   rowRight: { alignItems: 'flex-end' },

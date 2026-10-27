@@ -12,7 +12,7 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
-  BLUE, DateButton, DurationRow, FieldRow, PURPLE, Section, ServiceBreakdown, TimeCard,
+  DateButton, DurationRow, FieldRow, Section, ServiceBreakdown, TimeCard,
 } from '@/components/appointment-bits';
 import { DashboardGradient } from '@/components/dashboard-gradient';
 import { Icon } from '@/components/icon';
@@ -28,13 +28,13 @@ import { useStaff } from '@/context/staff-store';
 import { useTimeOff } from '@/context/time-off-store';
 import { useWorkingHours } from '@/context/working-hours-store';
 import { firstBlockingTimeOff } from '@/models/time-off';
-import { STAFF_ORANGE, type StaffMember } from '@/models/staff';
+import type { StaffMember } from '@/models/staff';
 import {
   combineDateTime, durationMinutes, formatDurationLabel, formattedDateFull, recalcEndTime,
 } from '@/lib/appointment-time';
 import { REMINDERS, reminderLabel } from '@/lib/reminders';
 import { priceDisplay, type Service } from '@/models/service';
-import { iOSColors, lightShadow } from '@/theme/tokens';
+import { iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
 const shortTime = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit' });
@@ -245,21 +245,21 @@ export default function EditAppointment() {
   return (
     <DashboardGradient>
       <SafeAreaView style={styles.safe} edges={['top']}>
-        <View style={[styles.header, { backgroundColor: theme.cardBackground }]}>
-          <Pressable onPress={() => router.back()} hitSlop={8} style={[styles.closeBtn, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
+        <View style={[styles.header, { backgroundColor: theme.background, borderBottomColor: theme.divider }]}>
+          <Pressable onPress={() => router.back()} hitSlop={8} style={[styles.closeBtn, { backgroundColor: theme.cardBackground, borderColor: theme.divider, borderRadius: theme.isEditorial ? 2 : 18 }]}>
             <Icon name="xmark" size={18} color={theme.secondaryText} />
           </Pressable>
-          <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.headerTitle, { color: theme.primaryText }]}>Edit appointment</Text>
-          <Pressable onPress={save} style={styles.savePill}>
-            <Text numberOfLines={1} style={styles.saveText}>Save</Text>
+          <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.headerTitle, theme.display(20)]}>Edit appointment</Text>
+          <Pressable onPress={save} style={[styles.savePill, { backgroundColor: theme.accent, borderRadius: theme.isEditorial ? 2 : 999 }]}>
+            <Text numberOfLines={1} style={[styles.saveText, { color: theme.onAccent }]}>Save</Text>
           </Pressable>
         </View>
 
         <ScrollView contentContainerStyle={styles.body}>
           {/* Client (read-only) */}
           <Section label="Client">
-            <View style={[styles.readonlyCard, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
-              <Icon name="person.fill" size={20} color={iOSColors.blue} />
+            <View style={[styles.readonlyCard, theme.card]}>
+              <Icon name="person.fill" size={20} color={theme.accent} />
               <View style={styles.readonlyText}>
                 <Text style={[styles.clientName, { color: theme.primaryText }]}>{appt.clientName}</Text>
                 <Text style={[styles.clientSub, { color: theme.secondaryText }]}>Client cannot be changed</Text>
@@ -270,16 +270,16 @@ export default function EditAppointment() {
           {/* Staff */}
           <Section label="Staff Member">
             <FieldRow onPress={() => setStaffSheet(true)}>
-              <Icon name="person.badge.key.fill" size={20} color={STAFF_ORANGE} />
+              <Icon name="person.badge.key.fill" size={20} color={theme.accent} />
               {selectedStaff ? (
                 <View style={styles.serviceText}>
                   <Text style={[styles.serviceName, { color: theme.primaryText }]}>{selectedStaff.name}</Text>
-                  <Text style={[styles.serviceSub, { color: STAFF_ORANGE }]}>{selectedStaff.role}</Text>
+                  <Text style={[styles.serviceSub, { color: theme.accent }]}>{selectedStaff.role}</Text>
                 </View>
               ) : (
-                <Text style={[styles.placeholder, { color: STAFF_ORANGE }]}>Select staff member</Text>
+                <Text style={[styles.placeholder, { color: theme.accent }]}>Select staff member</Text>
               )}
-              <View style={styles.flexEnd}><Icon name="chevron.right" size={14} color={theme.secondaryText} /></View>
+              <View style={styles.flexEnd}><Icon name="chevron.right" size={14} color={theme.chevronTint} /></View>
             </FieldRow>
           </Section>
 
@@ -287,9 +287,9 @@ export default function EditAppointment() {
           <Section label="Date and time">
             <DateButton label={formattedDateFull(date)} onPress={() => setDateSheet(true)} />
             <View style={styles.timeRow}>
-              <TimeCard label="Start" hour={sH} minute={sM} isPM={sPM} accent={BLUE} onPress={() => setStartSheet(true)} />
+              <TimeCard label="Start" hour={sH} minute={sM} isPM={sPM} onPress={() => setStartSheet(true)} />
               <Icon name="arrow.right" size={16} color={theme.secondaryText} />
-              <TimeCard label="End" hour={eH} minute={eM} isPM={ePM} accent={PURPLE} onPress={() => setEndSheet(true)} />
+              <TimeCard label="End" hour={eH} minute={eM} isPM={ePM} onPress={() => setEndSheet(true)} />
             </View>
             <DurationRow label={formatDurationLabel(actualDuration)} />
           </Section>
@@ -297,7 +297,7 @@ export default function EditAppointment() {
           {/* Services */}
           <Section label="Services">
             <FieldRow onPress={() => { awaitingService.current = true; router.push('/appointments/select-service'); }}>
-              <Icon name="tag.fill" size={20} color={BLUE} />
+              <Icon name="tag.fill" size={20} color={theme.accent} />
               {service ? (
                 <>
                   <View style={styles.serviceText}>
@@ -309,9 +309,9 @@ export default function EditAppointment() {
                   <View style={[styles.serviceDot, { backgroundColor: service.colorHex }]} />
                 </>
               ) : (
-                <Text style={[styles.placeholder, { color: BLUE }]}>Select service</Text>
+                <Text style={[styles.placeholder, { color: theme.accent }]}>Select service</Text>
               )}
-              <Icon name="chevron.right" size={14} color={theme.secondaryText} />
+              <Icon name="chevron.right" size={14} color={theme.chevronTint} />
             </FieldRow>
             {service ? (
               <ServiceBreakdown service={service} actualDuration={actualDuration} startHour={sH} startMinute={sM} startIsPM={sPM} />
@@ -320,13 +320,13 @@ export default function EditAppointment() {
 
           {/* SMS reminder */}
           <Section label="SMS Reminder">
-            <View style={[styles.card, styles.reminderRow, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
-              <Icon name="bell.fill" size={18} color={BLUE} />
+            <View style={[styles.card, styles.reminderRow, theme.card]}>
+              <Icon name="bell.fill" size={18} color={theme.accent} />
               <View style={styles.reminderText}>
                 <Text style={[styles.reminderTitle, { color: theme.primaryText }]}>Auto-remind client</Text>
                 <Pressable onPress={() => setReminderSheet(true)} style={styles.reminderPick}>
-                  <Text style={[styles.reminderValue, { color: BLUE }]}>{reminderLabel(reminder)}</Text>
-                  <Icon name="chevron.up.chevron.down" size={10} color={BLUE} />
+                  <Text style={[styles.reminderValue, { color: theme.accent }]}>{reminderLabel(reminder)}</Text>
+                  <Icon name="chevron.up.chevron.down" size={10} color={theme.accent} />
                 </Pressable>
               </View>
               <Icon name={reminder > 0 ? 'checkmark.circle.fill' : 'minus.circle'} size={20} color={reminder > 0 ? iOSColors.green : theme.secondaryText} />
@@ -336,8 +336,8 @@ export default function EditAppointment() {
       </SafeAreaView>
 
       <DatePickerSheet visible={dateSheet} date={date} onChange={setDate} onClose={() => setDateSheet(false)} />
-      <TimeStepperSheet visible={startSheet} title="Start Time" accent={BLUE} hour={sH} minute={sM} isPM={sPM} onChange={(h, m, pm) => { setSH(h); setSM(m); setSPM(pm); }} onClose={() => setStartSheet(false)} />
-      <TimeStepperSheet visible={endSheet} title="End Time" accent={PURPLE} hour={eH} minute={eM} isPM={ePM} onChange={(h, m, pm) => { endAdjusted.current = true; setEH(h); setEM(m); setEPM(pm); }} onClose={() => setEndSheet(false)} />
+      <TimeStepperSheet visible={startSheet} title="Start Time" hour={sH} minute={sM} isPM={sPM} onChange={(h, m, pm) => { setSH(h); setSM(m); setSPM(pm); }} onClose={() => setStartSheet(false)} />
+      <TimeStepperSheet visible={endSheet} title="End Time" hour={eH} minute={eM} isPM={ePM} onChange={(h, m, pm) => { endAdjusted.current = true; setEH(h); setEM(m); setEPM(pm); }} onClose={() => setEndSheet(false)} />
       <OptionSheet visible={reminderSheet} title="Reminder" options={REMINDERS} selected={reminder} onSelect={setReminder} onClose={() => setReminderSheet(false)} />
       <StaffPickerSheet
         visible={staffSheet} staff={staff} selectedId={selectedStaff?.id}
@@ -355,20 +355,20 @@ export default function EditAppointment() {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   missing: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16 },
-  closeBtn: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { flex: 1, textAlign: 'center', marginHorizontal: 6, fontSize: 17, fontWeight: '700' },
-  savePill: { backgroundColor: iOSColors.blue, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20 },
-  saveText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: StyleSheet.hairlineWidth },
+  closeBtn: { width: 36, height: 36, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  headerTitle: { flex: 1, textAlign: 'center', marginHorizontal: 6 },
+  savePill: { paddingHorizontal: 16, paddingVertical: 10 },
+  saveText: { fontSize: 16, fontWeight: '600' },
   body: { paddingTop: 24, paddingBottom: 60, gap: 24 },
-  readonlyCard: { flexDirection: 'row', alignItems: 'center', gap: 16, borderRadius: 12, padding: 16 },
+  readonlyCard: { flexDirection: 'row', alignItems: 'center', gap: 16, padding: 16 },
   readonlyText: { flex: 1, gap: 4 },
   clientName: { fontSize: 16, fontWeight: '500' },
   clientSub: { fontSize: 12 },
   placeholder: { flex: 1, fontSize: 16, fontWeight: '500' },
   flexEnd: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   timeRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  card: { borderRadius: 12, padding: 16 },
+  card: { padding: 16 },
   serviceText: { flex: 1, gap: 4 },
   serviceName: { fontSize: 16, fontWeight: '500' },
   serviceSub: { fontSize: 14 },

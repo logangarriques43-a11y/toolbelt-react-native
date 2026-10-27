@@ -11,7 +11,6 @@ import { runOnJS } from 'react-native-reanimated';
 import { withOpacity } from '@/lib/color';
 import { isToday } from '@/lib/schedule-layout';
 import type { Appointment } from '@/models/appointment';
-import { iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
 const DOW = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
@@ -87,15 +86,15 @@ export function MonthGrid({
                     onPress={() => onDayTap(d)}
                     style={[
                       styles.cell,
-                      { borderColor: theme.divider, backgroundColor: inMonth ? 'transparent' : withOpacity(iOSColors.gray, 0.05) },
+                      { borderColor: theme.divider, backgroundColor: inMonth ? 'transparent' : withOpacity(theme.inputBackground, 0.5) },
                     ]}>
-                    <View style={[styles.dayNumWrap, today ? { backgroundColor: iOSColors.blue } : null]}>
+                    <View style={[styles.dayNumWrap, today ? { backgroundColor: theme.accent, borderRadius: theme.isEditorial ? 2 : 12 } : null]}>
                       <Text
                         numberOfLines={1}
                         allowFontScaling={false}
                         style={[
                           styles.dayNum,
-                          { color: today ? '#FFFFFF' : inMonth ? theme.primaryText : withOpacity(iOSColors.gray, 0.5), fontWeight: today ? '700' : '500' },
+                          { color: today ? theme.onAccent : inMonth ? theme.primaryText : theme.tertiaryText, fontWeight: today ? '700' : '500' },
                         ]}>
                         {d.getDate()}
                       </Text>
