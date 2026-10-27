@@ -4,14 +4,17 @@
  * pulled read-only from the account so the owner only types what they want; the
  * form shows exactly what would be sent and where a reply lands.
  *
- * Swift POSTs to /support/quote-request (emails support). The RN app makes no
- * backend calls, so submit simulates the send — the UI (sending → sent success
- * panel) matches the native flow. Backend wiring is Stream B (deferred).
+ * Send POSTs /support/quote-request {name, businessName, description, topic},
+ * which emails the ToolBelt team with the owner's sign-in email as reply-to.
+ * `topic` comes from the `?topic=` param ("website_app" from Custom Website,
+ * "api_key" for API access) and defaults to "website_app". The route is
+ * rate-limited (3 per 10 min); 400 / 429 / 503 come back with user-ready
+ * messages, shown as-is in an alert. Success swaps to the "Request sent!" panel.
  */
 
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { KeyboardAwareForm } from '@/components/keyboard-aware-form';
@@ -20,6 +23,7 @@ import { DashboardGradient } from '@/components/dashboard-gradient';
 import { Icon } from '@/components/icon';
 import { ScreenHeader } from '@/components/screen-header';
 import { useSession } from '@/context/session';
+import { api, ApiError } from '@/lib/api-client';
 import { withOpacity } from '@/lib/color';
 import { iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
@@ -31,17 +35,33 @@ export default function RequestQuote() {
   const theme = useAppTheme();
   const router = useRouter();
   const { account } = useSession();
+  const params = useLocalSearchParams<{ topic?: string }>();
+  const topic = params.topic === 'api_key' ? 'api_key' : 'website_app';
 
   const [description, setDescription] = useState('');
   const [state, setState] = useState<'idle' | 'sending' | 'sent'>('idle');
 
   const canSubmit = state !== 'sending' && description.trim().length > 0;
 
-  const submit = () => {
+  const submit = async () => {
     if (!canSubmit) return;
     setState('sending');
-    // Simulate the network round-trip (no backend in the RN build).
-    setTimeout(() => setState('sent'), 900);
+    try {
+      await api.post<{ ok: boolean; messageId?: string }>('/support/quote-request', {
+        name: account?.name ?? '',
+        businessName: account?.businessName ?? '',
+        description: description.trim(),
+        topic,
+      });
+      setState('sent');
+    } catch (e) {
+      setState('idle');
+      let message = e instanceof ApiError ? e.message : 'Please check your connection and try again.';
+      if (e instanceof ApiError && e.status === 429 && e.message.startsWith('Request failed')) {
+        message = 'Too many requests — please wait a few minutes and try again.';
+      }
+      Alert.alert("Couldn't Send Request", message);
+    }
   };
 
   return (

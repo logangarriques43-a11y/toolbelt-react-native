@@ -4,12 +4,14 @@
  * monthly breakdown. Derived locally from recorded income transactions + checkout
  * sales (which carry their actual collected tax) + deductible expenses: a sale's
  * own taxAmount is used when present, manual income falls back to the rate
- * estimate. Stripe Tax calculation, the payment-method breakdown, and AI Tax
- * Analysis (backend) are deferred.
+ * estimate. The AI Tax Analysis card opens accounting/tax-analysis (Claude via
+ * POST /tax/ai-analysis). Stripe Tax calculation and the payment-method
+ * breakdown are deferred.
  */
 
+import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Alert, Pressable, ScrollView, Share, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, Share, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DashboardGradient } from '@/components/dashboard-gradient';
@@ -49,6 +51,7 @@ function periodRange(period: TaxPeriod, now = new Date()): [number, number] {
 
 export default function TaxDashboard() {
   const theme = useAppTheme();
+  const router = useRouter();
   const { transactions } = useAccounting();
   const { expenses } = useExpenses();
   const { sales } = useSales();
@@ -183,8 +186,8 @@ export default function TaxDashboard() {
             </View>
           ) : null}
 
-          {/* AI analysis (deferred) */}
-          <Pressable onPress={() => Alert.alert('Coming soon', 'AI Tax Analysis arrives in a later phase.')} style={[styles.card, styles.aiCard, theme.card]}>
+          {/* AI analysis */}
+          <Pressable onPress={() => router.push('/accounting/tax-analysis')} style={[styles.card, styles.aiCard, theme.card]}>
             <ThemedIconTile name="brain" size={48} />
             <View style={styles.aiText}>
               <Text style={[styles.aiTitle, { color: theme.primaryText }]}>AI Tax Analysis</Text>

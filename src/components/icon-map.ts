@@ -182,6 +182,7 @@ export const ICON_MAP: Record<string, [IconFamily, string]> = {
   'person.slash': ['mci', 'account-off'],
   'phone.badge.plus': ['mci', 'phone-plus'],
   'phone.fill': ['mci', 'phone'],
+  'photo.fill': ['ion', 'image'],
   'plus': ['mci', 'plus'],
   'plus.circle.fill': ['mci', 'plus-circle'],
   'qrcode': ['mci', 'qrcode'],

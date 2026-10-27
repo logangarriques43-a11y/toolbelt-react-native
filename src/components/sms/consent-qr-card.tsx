@@ -1,27 +1,48 @@
 /**
- * ConsentQRCard — port of ConsentQRCard.swift.
+ * ConsentQRCard — port of ConsentQRCard.swift / OnlineBookingView's
+ * smsConsentCard.
  *
  * The in-person SMS-consent QR: clients scan it to opt into texts, the A2P
  * consent carriers require before the AI assistant can message them. The QR
- * encodes the booking-page consent URL.
+ * encodes the booking page's consent URL (https://api.toolbelt.tools/consent/<slug>),
+ * drawn by the in-house encoder in components/booking/qr-code.
  *
- * Placeholder state only (Sync-5b): RN has no booking-page slug yet — Online
- * Booking (which owns `consentURL`) lands in Sync-6 — so `consentURL` is empty
- * and the card shows the Swift "Set up your booking page first" placeholder
- * with the Share / Copy actions disabled. When Online Booking provides the URL,
- * the live QR (via a qrcode renderer) drops into the placeholder tile.
+ * Pass `consentURL` when the caller already has the booking config (Online
+ * Booking). Omit it and the card reads GET /booking-page itself. An empty URL
+ * (no booking page yet) shows the "Set up your booking page first" placeholder
+ * with the actions disabled. Share sends the link through the system share
+ * sheet (RN can't share the rendered QR image without an extra native module);
+ * Copy puts it on the clipboard.
  */
 
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useQuery } from '@tanstack/react-query';
+import * as Clipboard from 'expo-clipboard';
+import { useRouter } from 'expo-router';
+import { Alert, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 
+import { consentURL as consentURLFor, getBookingPage } from '@/api/booking-page';
+import { QRCode } from '@/components/booking/qr-code';
 import { Icon } from '@/components/icon';
 import { useAppTheme } from '@/theme/theme-context';
 
-export function ConsentQRCard({ consentURL }: { consentURL: string }) {
+export function ConsentQRCard({ consentURL }: { consentURL?: string }) {
   const theme = useAppTheme();
-  const hasURL = consentURL.length > 0;
-  // No QR image yet (renderer arrives with the booking page) → Share disabled.
-  const canShare = false;
+  const router = useRouter();
+  const { data } = useQuery({
+    queryKey: ['booking-page'],
+    queryFn: getBookingPage,
+    enabled: consentURL === undefined,
+  });
+  const url = consentURL ?? consentURLFor(data?.slug ?? '');
+  const hasURL = url.length > 0;
+
+  const share = () => {
+    Share.share({ message: url, url }).catch(() => {});
+  };
+  const copy = async () => {
+    await Clipboard.setStringAsync(url);
+    Alert.alert('Link copied!');
+  };
 
   return (
     <View style={[styles.card, theme.card]}>
@@ -35,21 +56,30 @@ export function ConsentQRCard({ consentURL }: { consentURL: string }) {
         require before your AI assistant can message them.
       </Text>
 
-      <View style={[styles.tile, { backgroundColor: theme.inputBackground, borderRadius: theme.isEditorial ? 2 : 14 }]}>
-        <Text style={[styles.tileText, { color: theme.secondaryText }]}>
-          {hasURL ? 'QR preview arrives with Online Booking' : 'Set up your booking page first'}
-        </Text>
-      </View>
+      {hasURL ? (
+        // Fixed white tile so the code always scans, even in the dark looks.
+        <View style={[styles.qrTile, { borderRadius: theme.isEditorial ? 2 : 14, borderColor: theme.divider }]}>
+          <QRCode value={url} size={208} />
+        </View>
+      ) : (
+        <Pressable
+          onPress={consentURL === undefined ? () => router.push('/online-booking') : undefined}
+          style={[styles.tile, { backgroundColor: theme.inputBackground, borderRadius: theme.isEditorial ? 2 : 14 }]}>
+          <Text style={[styles.tileText, { color: theme.secondaryText }]}>Set up your booking page first</Text>
+        </Pressable>
+      )}
 
       <View style={styles.actions}>
         <Pressable
-          disabled={!canShare}
-          style={[styles.primaryBtn, { backgroundColor: theme.accent, borderRadius: theme.isEditorial ? 2 : 999, opacity: canShare ? 1 : 0.5 }]}>
+          disabled={!hasURL}
+          onPress={share}
+          style={[styles.primaryBtn, { backgroundColor: theme.accent, borderRadius: theme.isEditorial ? 2 : 999, opacity: hasURL ? 1 : 0.5 }]}>
           <Icon name="square.and.arrow.up" size={15} color={theme.onAccent} />
-          <Text style={[styles.primaryText, { color: theme.onAccent }]}>Share / Print</Text>
+          <Text style={[styles.primaryText, { color: theme.onAccent }]}>Share Link</Text>
         </Pressable>
         <Pressable
           disabled={!hasURL}
+          onPress={copy}
           style={[
             styles.secondaryBtn,
             { backgroundColor: 'transparent', borderColor: theme.divider, borderRadius: theme.isEditorial ? 2 : 999, opacity: hasURL ? 1 : 0.5 },
@@ -67,6 +97,7 @@ const styles = StyleSheet.create({
   head: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   title: { fontSize: 16, fontWeight: '700' },
   body: { fontSize: 13, lineHeight: 18 },
+  qrTile: { alignSelf: 'center', backgroundColor: '#FFFFFF', padding: 12, borderWidth: 1 },
   tile: { height: 232, alignItems: 'center', justifyContent: 'center' },
   tileText: { fontSize: 13 },
   actions: { flexDirection: 'row', gap: 12 },

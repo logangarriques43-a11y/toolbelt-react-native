@@ -1,10 +1,16 @@
 /**
  * Custom Website — port of CustomWebsiteView.swift.
  * Marketing/info screen with a hero, "what's included" list, and a CTA.
+ *
+ * "Request a Quote" opens the Request a Quote form (topic website_app), which
+ * now really emails the team via POST /support/quote-request — before, that
+ * send was simulated, so requests from this screen never reached anyone. The
+ * secondary link points at the self-serve booking website (Online Booking),
+ * the free builder owners can publish today while a custom site is quoted.
  */
 
 import { useRouter } from 'expo-router';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DashboardGradient } from '@/components/dashboard-gradient';
@@ -49,8 +55,24 @@ export default function CustomWebsite() {
             ))}
           </View>
 
-          <ThemedButton title="Request a Quote" kind="inverse" onPress={() => router.push('/request-quote')} style={styles.cta} />
+          <ThemedButton
+            title="Request a Quote"
+            kind="inverse"
+            onPress={() => router.push({ pathname: '/request-quote', params: { topic: 'website_app' } })}
+            style={styles.cta}
+          />
           <Text style={[styles.note, { color: theme.secondaryText }]}>Our team will reach out within 24 hours</Text>
+
+          <Pressable onPress={() => router.push('/online-booking')} style={[styles.card, styles.selfServe, theme.card]}>
+            <ThemedIconTile name="globe" size={40} />
+            <View style={styles.selfServeText}>
+              <Text style={[styles.selfServeTitle, { color: theme.primaryText }]}>Need a page today?</Text>
+              <Text style={[styles.selfServeSub, { color: theme.secondaryText }]}>
+                Create your free booking website in seconds with Online Booking.
+              </Text>
+            </View>
+            <Icon name="chevron.right" size={14} color={theme.chevronTint} />
+          </Pressable>
         </ScrollView>
       </SafeAreaView>
     </DashboardGradient>
@@ -68,4 +90,8 @@ const styles = StyleSheet.create({
   rowText: { fontSize: 16 },
   cta: { alignSelf: 'stretch' },
   note: { fontSize: 14 },
+  selfServe: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16 },
+  selfServeText: { flex: 1, gap: 2 },
+  selfServeTitle: { fontSize: 15, fontWeight: '600' },
+  selfServeSub: { fontSize: 13, lineHeight: 18 },
 });

@@ -1,12 +1,12 @@
 /**
  * Special Features — port of SpecialFeaturesView.swift.
- * A showcase of feature cards that deep-link into the app. Targets not yet built
- * (AI SMS, Online Booking, Payments, Inventory) are "coming soon" stubs.
+ * A showcase of feature cards that deep-link into the app: AI SMS → SMS setup,
+ * Smart Calendar, Online Booking, Payments, Inventory and Custom Website.
  */
 
 import { useRouter } from 'expo-router';
 import type { SFSymbol } from 'expo-symbols';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DashboardGradient } from '@/components/dashboard-gradient';
@@ -17,7 +17,6 @@ import { useAppTheme } from '@/theme/theme-context';
 
 export default function SpecialFeatures() {
   const router = useRouter();
-  const soon = (what: string) => Alert.alert('Coming soon', `${what} arrives in a later phase.`);
 
   return (
     <DashboardGradient>
@@ -26,20 +25,20 @@ export default function SpecialFeatures() {
         <ScrollView contentContainerStyle={styles.body}>
           <Card icon="bubble.left.and.text.bubble.right.fill" title="AI SMS Scheduling" tag="Popular"
             description="Let AI handle appointment bookings, reminders, and customer conversations via text message — 24/7."
-            onPress={() => soon('AI SMS Scheduling')} />
+            onPress={() => router.push('/sms-setup')} />
           <Card icon="calendar.badge.clock" title="Smart Calendar"
             description="Manage your appointments with automatic conflict detection, staff scheduling, and client reminders."
             onPress={() => router.push('/appointments')} />
           <Card icon="globe" title="Online Booking Page"
             description="Give your customers a professional booking page where they can self-schedule appointments anytime."
-            onPress={() => soon('Online Booking')} />
+            onPress={() => router.push('/online-booking')} />
           <Card icon="creditcard.fill" title="Integrated Payments"
             description="Accept payments, send invoices, and track your finances — all connected to your appointments."
-            onPress={() => soon('Payments')} />
+            onPress={() => router.push('/payments')} />
           <Card icon="shippingbox.fill" title="Inventory Tracking"
             description="Track products, monitor stock levels, scan labels, and get automatic reorder alerts."
-            onPress={() => soon('Inventory')} />
-          <Card icon="paintbrush.fill" title="Custom Website Design" tag="Coming Soon"
+            onPress={() => router.push('/inventory')} />
+          <Card icon="paintbrush.fill" title="Custom Website Design"
             description="Get a professionally designed website for your business, built and managed by our team."
             onPress={() => router.push('/custom-website')} />
         </ScrollView>

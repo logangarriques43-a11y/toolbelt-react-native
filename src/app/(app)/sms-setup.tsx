@@ -144,7 +144,7 @@ export default function SMSSetup() {
                 </Text>
               )}
               {/* In-person opt-in QR (placeholder until Online Booking supplies the consent URL). */}
-              <ConsentQRCard consentURL="" />
+              <ConsentQRCard />
               <ThemedButton title="View Conversations" onPress={() => router.replace('/sms-conversations')} style={styles.btn} />
               {step === 'alreadySetUp' && (
                 <Pressable onPress={() => { sms.release(); setStep('intro'); }}>
