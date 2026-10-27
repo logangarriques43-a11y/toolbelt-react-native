@@ -10,8 +10,11 @@
  * - lunchBreaks: same shape both sides (weekday 1=Sun…7=Sat) — pass through.
  * - assignedServiceIds: backend service ids used directly (RN stores them as-is).
  *
- * Staff-login fields (loginEmail/firebaseUid/mustChangePassword) are not modeled
- * in RN yet (staff login deferred) — ignored on read, omitted on write.
+ * Staff-login fields (loginEmail/firebaseUid/hasSignedIn/mustChangePassword/
+ * businessOwnerUid) are read into the model but never sent by the generic
+ * update — app access only changes through `updateStaffAccess` (partial PUT),
+ * so saving a name or colour can't accidentally rotate or revoke a login.
+ * `fetchStaffMe` / `markStaffPasswordChanged` serve the staff sign-in session.
  */
 
 import { api } from '@/lib/api-client';
@@ -40,6 +43,11 @@ interface StaffDTO {
   lunchBreaks?: StaffLunchBreak[] | null;
   workingHours?: Record<string, WorkingDayDTO> | null;
   lastModifiedAt?: string | null;
+  loginEmail?: string | null;
+  firebaseUid?: string | null;
+  hasSignedIn?: boolean | null;
+  mustChangePassword?: boolean | null;
+  businessOwnerUid?: string | null;
 }
 
 function hm(h: number, m: number): string {
@@ -98,10 +106,15 @@ function fromDTO(d: StaffDTO): StaffMember {
     lunchBreaks: d.lunchBreaks ?? [],
     workingHours: workingHoursFromDTO(d.workingHours),
     permissions: permissionsFromDTO(d.permissions),
+    loginEmail: d.loginEmail ?? undefined,
+    firebaseUid: d.firebaseUid ?? undefined,
+    hasSignedIn: d.hasSignedIn ?? undefined,
+    mustChangePassword: d.mustChangePassword ?? undefined,
+    businessOwnerUid: d.businessOwnerUid ?? undefined,
   };
 }
 
-function toDTO(m: Omit<StaffMember, 'id'>): StaffDTO {
+function toDTO(m: Omit<StaffMember, 'id'>): Omit<StaffDTO, 'loginEmail' | 'firebaseUid' | 'hasSignedIn' | 'mustChangePassword' | 'businessOwnerUid'> {
   const hasPerms = m.permissions && Object.keys(m.permissions).length > 0;
   return {
     name: m.name,
@@ -135,4 +148,41 @@ export async function updateStaff(member: StaffMember): Promise<StaffMember> {
 
 export async function deleteStaff(id: string): Promise<void> {
   await api.del(`/staff/${id}`);
+}
+
+/** What the owner can change about a member's app login (partial PUT /staff/:id). */
+export interface StaffAccessUpdate {
+  /** Lowercased login email; `null` revokes the login (deletes the auth user). */
+  loginEmail: string | null;
+  /** New temporary password — creates or rotates the login (min 8). */
+  tempPassword?: string;
+  /** Permission map; sent in the versioned wrapper. `{}` with a revoke. */
+  permissions?: Record<string, boolean>;
+}
+
+/**
+ * Create, edit, reset or revoke a staff member's app login. Errors carry the
+ * server message/code (409 email-already-in-use, 400 invalid-login-email,
+ * 400 weak-temp-password).
+ */
+export async function updateStaffAccess(id: string, update: StaffAccessUpdate): Promise<StaffMember> {
+  const body: Record<string, unknown> = { loginEmail: update.loginEmail };
+  if (update.tempPassword) body.tempPassword = update.tempPassword;
+  if (update.permissions) {
+    body.permissions =
+      update.loginEmail === null ? {} : { version: PERMISSION_SCHEMA_VERSION, map: update.permissions };
+  }
+  const dto = await api.put<StaffDTO>(`/staff/${id}`, body);
+  return fromDTO(dto);
+}
+
+/** The signed-in user's own staff record (GET /staff/me). 404 = not a staff login. */
+export async function fetchStaffMe(): Promise<StaffMember> {
+  const dto = await api.get<StaffDTO>('/staff/me');
+  return fromDTO(dto);
+}
+
+/** Staff only: tell the backend the temporary password was replaced (204). */
+export async function markStaffPasswordChanged(): Promise<void> {
+  await api.post('/staff/me/password-changed');
 }

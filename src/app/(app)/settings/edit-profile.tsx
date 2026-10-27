@@ -1,6 +1,8 @@
 /**
  * Edit Profile — port of EditProfileView.swift.
- * Edits the account (name, email, phone) via the session.
+ * Edits the account (name, email, phone) via the session, which saves them on
+ * the device for this login and updates the Firebase display name. The contact
+ * email here doesn't change the sign-in email.
  */
 
 import { useRouter } from 'expo-router';
@@ -25,15 +27,22 @@ export default function EditProfile() {
   const [email, setEmail] = useState(account?.email ?? '');
   const [phone, setPhone] = useState(account?.phoneNumber ?? '');
   const [emailError, setEmailError] = useState<string | undefined>();
+  const [saving, setSaving] = useState(false);
 
-  const save = () => {
+  const save = async () => {
+    if (saving) return;
     if (email && !email.includes('@')) {
       setEmailError('Please enter a valid email address.');
       return;
     }
     setEmailError(undefined);
-    updateAccount({ name: name.trim(), email: email.trim() || undefined, phoneNumber: phone.trim() || undefined });
-    router.back();
+    setSaving(true);
+    try {
+      await updateAccount({ name: name.trim(), email: email.trim() || undefined, phoneNumber: phone.trim() || undefined });
+      router.back();
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -49,7 +58,7 @@ export default function EditProfile() {
             <SettingsFormField label="Email Address" placeholder="e.g. jane@example.com" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" error={emailError} />
             <SettingsFormField label="Phone Number" placeholder="e.g. (555) 123-4567" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
           </View>
-          <ThemedButton title="Save Changes" onPress={save} style={styles.save} />
+          <ThemedButton title="Save Changes" onPress={save} loading={saving} style={styles.save} />
         </ScrollView>
       </SafeAreaView>
     </DashboardGradient>

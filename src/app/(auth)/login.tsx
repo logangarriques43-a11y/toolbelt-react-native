@@ -1,20 +1,28 @@
 /**
  * Login screen — port of LoginView.swift.
  *
- * UI is faithful; the submit path is stubbed onto the SessionProvider (real
- * Firebase email/password + passkey auth is deferred to the auth-backend phase).
- * The passkey / Apple / Google buttons render but are inert for now, matching
- * the Swift source where Apple/Google were also unimplemented.
+ * Email + password through the session (Firebase signInWithEmailAndPassword).
+ * The session checks the token's role claim, so a staff login typed here is
+ * handed to the staff session automatically.
+ *
+ * - Two-step sign-in: `auth/multi-factor-auth-required` opens the authenticator
+ *   code sheet, which resolves the Firebase MFA challenge.
+ * - "Use a backup code" recovers an account whose authenticator is lost
+ *   (POST /auth/recovery/backup-code → custom token).
+ * - "Sign in with Passkey": WebAuthn via react-native-passkey; the email field,
+ *   when filled, narrows the request to that account's passkeys.
  */
 
 import { useRouter } from 'expo-router';
 import type { SFSymbol } from 'expo-symbols';
+import { getMultiFactorResolver, type MultiFactorError, type MultiFactorResolver } from 'firebase/auth';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { signInWithEmailAndPassword } from 'firebase/auth';
-
+import { isPasskeyCancel, passkeyErrorMessage, passkeySignIn, passkeysSupported } from '@/api/webauthn';
+import { BackupCodeSheet } from '@/components/auth/backup-code-sheet';
+import { TotpCodeSheet } from '@/components/auth/totp-code-sheet';
 import { AuthField } from '@/components/auth-field';
 import { BackHeader } from '@/components/back-header';
 import { DashboardGradient } from '@/components/dashboard-gradient';
@@ -22,7 +30,8 @@ import { ErrorBanner } from '@/components/error-banner';
 import { GradientButton } from '@/components/gradient-button';
 import { Icon } from '@/components/icon';
 import { TitleBadge } from '@/components/title-badge';
-import { firebaseAuthErrorMessage } from '@/lib/auth-errors';
+import { useSession } from '@/context/session';
+import { firebaseAuthErrorMessage, firebaseErrorCode } from '@/lib/auth-errors';
 import { auth } from '@/lib/firebase';
 import { useAppTheme } from '@/theme/theme-context';
 
@@ -31,31 +40,53 @@ const EMAIL_RE = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
 export default function Login() {
   const theme = useAppTheme();
   const router = useRouter();
+  const session = useSession();
 
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [passkeyLoading, setPasskeyLoading] = useState(false);
+  const [resolver, setResolver] = useState<MultiFactorResolver | null>(null);
+  const [showBackup, setShowBackup] = useState(false);
 
   const login = async () => {
     if (loading) return;
     setError('');
     const id = identifier.trim();
     if (!id) return setError('Please enter your email');
-    // Email/password only for now (phone auth is a later phase).
-    if (!id.includes('@')) return setError('Please sign in with your email address for now');
     if (!EMAIL_RE.test(id)) return setError('Please enter a valid email address');
     if (!password) return setError('Please enter your password');
 
     setLoading(true);
     try {
-      // Real Firebase sign-in against the same project the Swift app uses;
-      // onAuthStateChanged (SessionProvider) then advances the gate.
-      await signInWithEmailAndPassword(auth, id, password);
+      await session.signInWithEmail(id, password);
     } catch (e) {
-      setError(firebaseAuthErrorMessage(e));
+      if (firebaseErrorCode(e) === 'auth/multi-factor-auth-required') {
+        setResolver(getMultiFactorResolver(auth, e as MultiFactorError));
+      } else {
+        setError(firebaseAuthErrorMessage(e));
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const signInWithPasskey = async () => {
+    if (passkeyLoading) return;
+    setError('');
+    if (!passkeysSupported()) return setError('This device doesn’t support passkeys.');
+    setPasskeyLoading(true);
+    try {
+      const token = await passkeySignIn(EMAIL_RE.test(identifier.trim()) ? identifier : undefined);
+      await session.signInWithToken(token);
+    } catch (e) {
+      if (!isPasskeyCancel(e)) {
+        const code = firebaseErrorCode(e);
+        setError(code.startsWith('auth/') ? firebaseAuthErrorMessage(e) : passkeyErrorMessage(e));
+      }
+    } finally {
+      setPasskeyLoading(false);
     }
   };
 
@@ -63,7 +94,7 @@ export default function Login() {
     <DashboardGradient>
       <SafeAreaView style={styles.safe} edges={['top']}>
         <BackHeader label="Back" />
-        <ScrollView contentContainerStyle={styles.content}>
+        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <View style={styles.titleBlock}>
             <TitleBadge icon="person.fill" />
             <Text style={theme.display(28, '500')}>Welcome Back</Text>
@@ -74,14 +105,15 @@ export default function Login() {
 
           <View style={[styles.formCard, theme.card]}>
             <AuthField
-              title="Email or Phone"
-              icon="person.fill"
+              title="Email"
+              icon="envelope.fill"
               value={identifier}
               onChangeText={setIdentifier}
               required
-              placeholder="Enter email or phone number"
+              placeholder="Enter your email"
               keyboardType="email-address"
               autoCapitalize="none"
+              autoComplete="email"
             />
             <AuthField
               title="Password"
@@ -91,6 +123,8 @@ export default function Login() {
               required
               secure
               placeholder="Enter your password"
+              autoComplete="current-password"
+              onSubmitEditing={login}
             />
             <Pressable style={styles.forgotRow} onPress={() => router.push('/forgot-password')}>
               <Text style={[styles.forgot, { color: theme.accent }]}>Forgot Password?</Text>
@@ -114,9 +148,19 @@ export default function Login() {
           </View>
 
           <View style={styles.altButtons}>
-            <OutlineButton icon="person.badge.key.fill" title="Sign in with Passkey" accent />
-            <OutlineButton icon="apple.logo" title="Continue with Apple" />
-            <OutlineButton icon="g.circle.fill" title="Continue with Google" />
+            <OutlineButton
+              icon="person.badge.key.fill"
+              title="Sign in with Passkey"
+              accent
+              loading={passkeyLoading}
+              onPress={signInWithPasskey}
+            />
+            <OutlineButton icon="key.fill" title="Use a Backup Code" onPress={() => setShowBackup(true)} />
+            <OutlineButton
+              icon="person.2.fill"
+              title="Staff Sign In"
+              onPress={() => router.push('/staff-login')}
+            />
           </View>
 
           <View style={styles.bottomRow}>
@@ -129,6 +173,27 @@ export default function Login() {
           </View>
         </ScrollView>
       </SafeAreaView>
+
+      <TotpCodeSheet
+        visible={!!resolver}
+        onClose={() => setResolver(null)}
+        onSubmit={async (code) => {
+          if (!resolver) return;
+          await session.resolveTwoFactor(resolver, code);
+          setResolver(null);
+        }}
+        footer={
+          <Pressable
+            style={styles.backupLink}
+            onPress={() => {
+              setResolver(null);
+              setShowBackup(true);
+            }}>
+            <Text style={[styles.forgot, { color: theme.accent }]}>Lost your authenticator? Use a backup code</Text>
+          </Pressable>
+        }
+      />
+      <BackupCodeSheet visible={showBackup} initialEmail={identifier.trim()} onClose={() => setShowBackup(false)} />
     </DashboardGradient>
   );
 }
@@ -137,24 +202,35 @@ function OutlineButton({
   icon,
   title,
   accent = false,
+  loading = false,
+  onPress,
 }: {
   icon: SFSymbol;
   title: string;
   accent?: boolean;
+  loading?: boolean;
+  onPress: () => void;
 }) {
   const theme = useAppTheme();
   return (
     <Pressable
-      style={[
+      onPress={onPress}
+      disabled={loading}
+      style={({ pressed }) => [
         styles.outline,
         {
           backgroundColor: 'transparent',
           borderColor: theme.divider,
           borderWidth: 1,
           borderRadius: theme.isEditorial ? 2 : 999,
+          opacity: pressed ? 0.75 : 1,
         },
       ]}>
-      <Icon name={icon} size={18} color={accent ? theme.accent : theme.primaryText} />
+      {loading ? (
+        <ActivityIndicator color={theme.accent} />
+      ) : (
+        <Icon name={icon} size={18} color={accent ? theme.accent : theme.primaryText} />
+      )}
       <Text style={[styles.outlineText, { color: theme.primaryText }]}>{title}</Text>
     </Pressable>
   );
@@ -188,4 +264,5 @@ const styles = StyleSheet.create({
   bottomRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
   bottomText: { fontSize: 15 },
   bottomLink: { fontSize: 15, fontWeight: '600' },
+  backupLink: { alignSelf: 'center', padding: 8 },
 });

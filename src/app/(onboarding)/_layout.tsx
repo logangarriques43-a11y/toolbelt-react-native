@@ -1,6 +1,7 @@
 import { Stack } from 'expo-router';
 
-/** Onboarding stack (2FA + Stripe payout). Stubbed in Phase 0; native in Phase 7. */
+/** Pre-app steps the session gate can require (today: Set New Password for a
+ *  staff temporary password or a backup-code recovery). No back gesture. */
 export default function OnboardingLayout() {
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return <Stack screenOptions={{ headerShown: false, gestureEnabled: false }} />;
 }

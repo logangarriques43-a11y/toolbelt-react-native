@@ -1,6 +1,8 @@
 /**
  * Business Name & Info — port of BusinessNameInfoView.swift.
- * Edits the account (business name, owner name, email, phone) via the session.
+ * Edits the account (business name, owner name, email, phone) via the session,
+ * which saves them on the device for this login, updates the Firebase display
+ * name, and pushes the business name to the server (SMS sender name).
  */
 
 import { useRouter } from 'expo-router';
@@ -23,20 +25,27 @@ export default function BusinessInfo() {
   const [email, setEmail] = useState(account?.email ?? '');
   const [phone, setPhone] = useState(account?.phoneNumber ?? '');
   const [emailError, setEmailError] = useState<string | undefined>();
+  const [saving, setSaving] = useState(false);
 
-  const save = () => {
+  const save = async () => {
+    if (saving) return;
     if (email && !email.includes('@')) {
       setEmailError('Please enter a valid email address.');
       return;
     }
     setEmailError(undefined);
-    updateAccount({
-      name: ownerName.trim(),
-      businessName: businessName.trim() || undefined,
-      email: email.trim() || undefined,
-      phoneNumber: phone.trim() || undefined,
-    });
-    router.back();
+    setSaving(true);
+    try {
+      await updateAccount({
+        name: ownerName.trim(),
+        businessName: businessName.trim() || undefined,
+        email: email.trim() || undefined,
+        phoneNumber: phone.trim() || undefined,
+      });
+      router.back();
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -51,7 +60,7 @@ export default function BusinessInfo() {
             <SettingsFormField label="Email Address" placeholder="e.g. jane@example.com" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" error={emailError} />
             <SettingsFormField label="Phone Number" placeholder="e.g. (555) 123-4567" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
           </View>
-          <ThemedButton title="Save Changes" onPress={save} style={styles.save} />
+          <ThemedButton title="Save Changes" onPress={save} loading={saving} style={styles.save} />
         </ScrollView>
       </SafeAreaView>
     </DashboardGradient>

@@ -2,13 +2,12 @@
  * Permissions store — RN counterpart to PermissionsManager.swift.
  *
  * Fail-closed: until a session is explicitly configured (owner or staff), every
- * check is denied. The RN app has no staff-login flow yet (Firebase auth =
- * Stream B), so the authenticated area configures as owner on mount; the
- * per-staff permission map is still editable + stored so it's ready when staff
- * login lands.
+ * check is denied. The authenticated layout configures it from the session:
+ * owners pass everything, staff are gated by the map from GET /staff/me. The
+ * setters are stable so the layout can re-configure whenever the map changes.
  */
 
-import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
 
 import { gatedOff } from '@/lib/feature-flags';
 import type { Permission, PermissionRole } from '@/models/permission';
@@ -32,6 +31,19 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<PermissionRole>('unconfigured');
   const [permissionMap, setPermissionMap] = useState<Record<string, boolean>>({});
 
+  const configureAsOwner = useCallback(() => {
+    setRole('owner');
+    setPermissionMap({});
+  }, []);
+  const configureAsStaff = useCallback((permissions: Record<string, boolean>) => {
+    setRole('staff');
+    setPermissionMap(permissions);
+  }, []);
+  const reset = useCallback(() => {
+    setRole('unconfigured');
+    setPermissionMap({});
+  }, []);
+
   const value = useMemo<PermissionsStore>(() => {
     const can = (permission: Permission): boolean => {
       // Build-time feature gating wins over role: a module not shipping this
@@ -45,14 +57,14 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
     };
     return {
       role,
-      configureAsOwner: () => { setRole('owner'); setPermissionMap({}); },
-      configureAsStaff: (permissions) => { setRole('staff'); setPermissionMap(permissions); },
-      reset: () => { setRole('unconfigured'); setPermissionMap({}); },
+      configureAsOwner,
+      configureAsStaff,
+      reset,
       can,
       canAny: (permissions) => permissions.some(can),
       canAll: (permissions) => permissions.every(can),
     };
-  }, [role, permissionMap]);
+  }, [role, permissionMap, configureAsOwner, configureAsStaff, reset]);
 
   return <PermissionsContext.Provider value={value}>{children}</PermissionsContext.Provider>;
 }

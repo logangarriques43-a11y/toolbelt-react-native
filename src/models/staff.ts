@@ -4,8 +4,9 @@
  *
  * Sync-1a additions (match current Swift source): per-staff calendar color,
  * recurring weekly lunch breaks, and per-staff weekly working hours, plus the
- * booking-eligibility helpers the calendar/booking flows read. Staff-login +
- * permission-map fields are carried but their UI lands in Sync-1b.
+ * booking-eligibility helpers the calendar/booking flows read. Staff-login
+ * fields (loginEmail, mustChangePassword, …) back the owner's "Invite to App"
+ * card and the staff sign-in session.
  *
  * WEEKDAY CONVENTION: staff hours/lunch use 1=Sun … 7=Sat (Swift `.weekday`),
  * NOT the 0=Sun … 6=Sat used by the business-wide working-hours model. Keep the
@@ -46,8 +47,41 @@ export interface StaffMember {
   lunchBreaks: StaffLunchBreak[];
   /** Per-staff weekly hours. Empty = follow the business hours (default). */
   workingHours: StaffWorkingDay[];
-  /** Per-staff permission map (Permission key → allowed). Owner ignores it. Sync-1b. */
+  /** Per-staff permission map (Permission key → allowed). Owner ignores it. */
   permissions?: Record<string, boolean>;
+
+  // --- Staff app login (set by the owner's "Invite to App"; read-only here) ---
+  /** The email this member signs in with. Absent = no app access. */
+  loginEmail?: string;
+  /** Firebase uid of the staff login, once created. */
+  firebaseUid?: string;
+  /** True once the member has signed in and set their own password. */
+  hasSignedIn?: boolean;
+  /** True until the member replaces the temporary password at first sign-in. */
+  mustChangePassword?: boolean;
+  /** The owner's uid (the business this staff login belongs to). */
+  businessOwnerUid?: string;
+}
+
+/** Whether the owner has given this member an app login. */
+export function staffHasAppAccess(m: StaffMember): boolean {
+  return !!m.loginEmail;
+}
+
+/** Characters for generated temporary passwords (no look-alikes: 0/O, 1/l/I). */
+const TEMP_PASSWORD_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+
+/** A 10-character temporary password for a new staff login (same alphabet as iOS). */
+export function generateTempPassword(length = 10): string {
+  // Prefer the platform CSPRNG when the runtime exposes one; Math.random is the
+  // fallback (the password is single-use and must be changed at first sign-in).
+  const cryptoObj = (globalThis as { crypto?: { getRandomValues?: (a: Uint32Array) => Uint32Array } }).crypto;
+  const values = new Uint32Array(length);
+  if (cryptoObj?.getRandomValues) cryptoObj.getRandomValues(values);
+  else for (let i = 0; i < length; i++) values[i] = Math.floor(Math.random() * 0xffffffff);
+  let out = '';
+  for (let i = 0; i < length; i++) out += TEMP_PASSWORD_ALPHABET[values[i] % TEMP_PASSWORD_ALPHABET.length];
+  return out;
 }
 
 /** The orange accent used throughout the Staff UI — Color(0.95, 0.6, 0.2). */

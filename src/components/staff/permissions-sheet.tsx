@@ -1,7 +1,8 @@
 /**
  * StaffPermissionsSheet — port of StaffPermissionsToggleList (StaffSheetComponents.swift).
  * Every Permission as a toggle row, plus Enable-all / Disable-all. Saves the
- * per-staff permission map onto the member via updateStaff.
+ * per-staff permission map onto the member via updateStaff. The toggle list is
+ * exported (`PermissionToggles`) for the Invite to App sheet.
  */
 
 import { useEffect, useState } from 'react';
@@ -32,12 +33,6 @@ export function StaffPermissionsSheet({
   useEffect(() => {
     if (visible) setStates(member.permissions ?? {});
   }, [visible, member.permissions]);
-
-  const setAll = (value: boolean) => {
-    const next: Record<string, boolean> = {};
-    for (const p of PERMISSIONS) next[p] = value;
-    setStates(next);
-  };
 
   const save = async () => {
     try {
@@ -71,38 +66,59 @@ export function StaffPermissionsSheet({
               Toggle anything on. Off = hidden from this staff member. You can change these any time.
             </Text>
 
-            <View style={styles.bulkRow}>
-              <Pressable onPress={() => setAll(true)} style={[styles.bulkBtn, { backgroundColor: theme.accent, borderRadius: theme.isEditorial ? 2 : 999 }]}>
-                <Text style={[styles.bulkOn, { color: theme.onAccent }]}>Enable all</Text>
-              </Pressable>
-              <Pressable onPress={() => setAll(false)} style={[styles.bulkBtn, { backgroundColor: theme.accentSoft, borderRadius: theme.isEditorial ? 2 : 999 }]}>
-                <Text style={[styles.bulkOff, { color: theme.accent }]}>Disable all</Text>
-              </Pressable>
-            </View>
-
-            <View style={[styles.card, theme.card]}>
-              {PERMISSIONS.map((p, i) => (
-                <View key={p}>
-                  {i > 0 ? <View style={[styles.divider, { backgroundColor: theme.divider }]} /> : null}
-                  <View style={styles.row}>
-                    <Icon name={permissionIcon(p)} size={14} color={theme.accent} />
-                    <View style={styles.rowText}>
-                      <Text style={[styles.rowTitle, { color: theme.primaryText }]}>{permissionTitle(p)}</Text>
-                      <Text style={[styles.rowSub, { color: theme.secondaryText }]}>{permissionSubtitle(p)}</Text>
-                    </View>
-                    <Switch
-                      value={states[p] ?? false}
-                      onValueChange={(v) => setStates((prev) => ({ ...prev, [p]: v }))}
-                      trackColor={{ true: theme.accent, false: theme.inputBackground }}
-                    />
-                  </View>
-                </View>
-              ))}
-            </View>
+            <PermissionToggles states={states} onChange={setStates} />
           </ScrollView>
         </SafeAreaView>
       </DashboardGradient>
     </Modal>
+  );
+}
+
+/** Enable-all / Disable-all plus one switch per Permission (missing = off). */
+export function PermissionToggles({
+  states,
+  onChange,
+}: {
+  states: Record<string, boolean>;
+  onChange: (next: Record<string, boolean>) => void;
+}) {
+  const theme = useAppTheme();
+  const setAll = (value: boolean) => {
+    const next: Record<string, boolean> = {};
+    for (const p of PERMISSIONS) next[p] = value;
+    onChange(next);
+  };
+  return (
+    <>
+      <View style={styles.bulkRow}>
+        <Pressable onPress={() => setAll(true)} style={[styles.bulkBtn, { backgroundColor: theme.accent, borderRadius: theme.isEditorial ? 2 : 999 }]}>
+          <Text style={[styles.bulkOn, { color: theme.onAccent }]}>Enable all</Text>
+        </Pressable>
+        <Pressable onPress={() => setAll(false)} style={[styles.bulkBtn, { backgroundColor: theme.accentSoft, borderRadius: theme.isEditorial ? 2 : 999 }]}>
+          <Text style={[styles.bulkOff, { color: theme.accent }]}>Disable all</Text>
+        </Pressable>
+      </View>
+
+      <View style={[styles.card, theme.card]}>
+        {PERMISSIONS.map((p, i) => (
+          <View key={p}>
+            {i > 0 ? <View style={[styles.divider, { backgroundColor: theme.divider }]} /> : null}
+            <View style={styles.row}>
+              <Icon name={permissionIcon(p)} size={14} color={theme.accent} />
+              <View style={styles.rowText}>
+                <Text style={[styles.rowTitle, { color: theme.primaryText }]}>{permissionTitle(p)}</Text>
+                <Text style={[styles.rowSub, { color: theme.secondaryText }]}>{permissionSubtitle(p)}</Text>
+              </View>
+              <Switch
+                value={states[p] ?? false}
+                onValueChange={(v) => onChange({ ...states, [p]: v })}
+                trackColor={{ true: theme.accent, false: theme.inputBackground }}
+              />
+            </View>
+          </View>
+        ))}
+      </View>
+    </>
   );
 }
 

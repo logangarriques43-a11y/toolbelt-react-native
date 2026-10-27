@@ -1,8 +1,7 @@
 /**
  * Landing screen — port of the redesigned HomeView.swift.
- * Filled app icon, serif headline, a card with the Business owner path, then
- * an inverse Sign in button. (iOS also offers a Staff member row; the RN app
- * has no staff sign-in yet, so it is left out here.)
+ * Filled app icon, serif headline, a card with the Business owner and Staff
+ * member paths (hairline between them), then an inverse Sign in button.
  */
 
 import { useRouter } from 'expo-router';
@@ -44,6 +43,13 @@ export default function Landing() {
               title="Business owner"
               description="Set up your business, take bookings and get paid."
               onPress={() => router.push('/register')}
+            />
+            <View style={[styles.hairline, { backgroundColor: theme.divider }]} />
+            <HomeRow
+              icon="person.2.fill"
+              title="Staff member"
+              description="Sign in with the email and temporary password your owner gave you."
+              onPress={() => router.push('/staff-login')}
             />
           </View>
 
@@ -97,4 +103,5 @@ const styles = StyleSheet.create({
   signIn: { gap: 14 },
   footer: { fontSize: 14, textAlign: 'center' },
   pressed: { opacity: 0.75 },
+  hairline: { height: StyleSheet.hairlineWidth, marginLeft: 72 },
 });

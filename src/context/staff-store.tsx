@@ -6,12 +6,21 @@
  * is a real /staff row (isOwner=true) — `ensureOwnerExists` creates it once from
  * the account if the backend has no owner yet (mirrors StaffManager). For an
  * account that already used the Swift app, the owner comes back from /staff.
+ * Staff sessions never run ensureOwnerExists (they get a sanitized roster and
+ * POST /staff is owner-only). `updateAccess` drives the owner's Invite to App.
  */
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createContext, useContext, useEffect, useMemo, useRef, type ReactNode } from 'react';
 
-import { createStaff, deleteStaff as apiDeleteStaff, listStaff, updateStaff as apiUpdateStaff } from '@/api/staff';
+import {
+  createStaff,
+  deleteStaff as apiDeleteStaff,
+  listStaff,
+  updateStaff as apiUpdateStaff,
+  updateStaffAccess,
+  type StaffAccessUpdate,
+} from '@/api/staff';
 import { useSession } from '@/context/session';
 import type { StaffMember } from '@/models/staff';
 
@@ -24,6 +33,8 @@ export interface StaffStore {
   addStaff: (m: Omit<StaffMember, 'id'>) => Promise<StaffMember>;
   updateStaff: (m: StaffMember) => Promise<void>;
   deleteStaff: (id: string) => Promise<void>;
+  /** Create / edit / reset / revoke a member's app login (owner only). */
+  updateAccess: (id: string, update: StaffAccessUpdate) => Promise<StaffMember>;
   findStaff: (id: string) => StaffMember | undefined;
   searchStaff: (query: string) => StaffMember[];
 }
@@ -32,7 +43,7 @@ const StaffContext = createContext<StaffStore | null>(null);
 
 export function StaffProvider({ children }: { children: ReactNode }) {
   const qc = useQueryClient();
-  const { account } = useSession();
+  const { account, role } = useSession();
   const { data, isLoading, isSuccess, error } = useQuery({ queryKey: STAFF_QUERY_KEY, queryFn: listStaff });
   const staff = useMemo(() => data ?? [], [data]);
 
@@ -40,12 +51,16 @@ export function StaffProvider({ children }: { children: ReactNode }) {
   const createMut = useMutation({ mutationFn: createStaff, onSuccess: invalidate });
   const updateMut = useMutation({ mutationFn: apiUpdateStaff, onSuccess: invalidate });
   const deleteMut = useMutation({ mutationFn: apiDeleteStaff, onSuccess: invalidate });
+  const accessMut = useMutation({
+    mutationFn: ({ id, update }: { id: string; update: StaffAccessUpdate }) => updateStaffAccess(id, update),
+    onSuccess: invalidate,
+  });
 
   // ensureOwnerExists — once the roster has loaded, if the backend has no owner
   // row, create one from the account (new business). Guarded so it fires once.
   const ensuredOwner = useRef(false);
   useEffect(() => {
-    if (!isSuccess || ensuredOwner.current || !account) return;
+    if (!isSuccess || ensuredOwner.current || !account || role !== 'owner') return;
     if (staff.some((m) => m.isOwner)) return;
     ensuredOwner.current = true;
     createMut.mutate({
@@ -60,7 +75,7 @@ export function StaffProvider({ children }: { children: ReactNode }) {
       lunchBreaks: [],
       workingHours: [],
     });
-  }, [isSuccess, staff, account, createMut]);
+  }, [isSuccess, staff, account, role, createMut]);
 
   const value = useMemo<StaffStore>(
     () => ({
@@ -74,6 +89,7 @@ export function StaffProvider({ children }: { children: ReactNode }) {
       deleteStaff: async (id) => {
         await deleteMut.mutateAsync(id);
       },
+      updateAccess: (id, update) => accessMut.mutateAsync({ id, update }),
       findStaff: (id) => staff.find((it) => it.id === id),
       searchStaff: (query) => {
         const q = query.trim().toLowerCase();
@@ -81,7 +97,7 @@ export function StaffProvider({ children }: { children: ReactNode }) {
         return staff.filter((m) => m.name.toLowerCase().includes(q) || m.role.toLowerCase().includes(q));
       },
     }),
-    [staff, isLoading, error, createMut, updateMut, deleteMut],
+    [staff, isLoading, error, createMut, updateMut, deleteMut, accessMut],
   );
 
   return <StaffContext.Provider value={value}>{children}</StaffContext.Provider>;
