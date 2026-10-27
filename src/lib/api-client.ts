@@ -5,7 +5,8 @@
  * - Attaches the Firebase ID token as `Authorization: Bearer <token>`.
  * - Unwraps the response defensively: some domains return `{ status, data }`,
  *   others (e.g. /clients) return bare JSON — `json.data ?? json` handles both.
- * - Maps errors to a typed ApiError (401 unauthorized, 403 2fa_required, other).
+ * - Maps errors to a typed ApiError (401 unauthorized, 403 2fa_required, other),
+ *   keeping the server's machine-readable `code` (e.g. BUSINESS_NAME_MISSING).
  */
 
 import { API_BASE_URL } from '@/config/api';
@@ -74,7 +75,7 @@ async function request<T>(method: string, path: string, opts: RequestOptions = {
       (json as { message?: string; error?: string })?.message ||
       (json as { error?: string })?.error ||
       `Request failed (${res.status})`;
-    throw new ApiError(res.status, msg, undefined, json);
+    throw new ApiError(res.status, msg, (json as { code?: string })?.code, json);
   }
 
   // Envelope-agnostic: unwrap `.data` when present, else return the bare body.

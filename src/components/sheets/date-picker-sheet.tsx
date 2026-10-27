@@ -7,7 +7,6 @@
 import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
 export function DatePickerSheet({
@@ -35,16 +34,16 @@ export function DatePickerSheet({
           <Pressable onPress={onClose} hitSlop={8}>
             <Text style={[styles.cancel, { color: theme.secondaryText }]}>Cancel</Text>
           </Pressable>
-          <Text style={[styles.title, { color: theme.primaryText }]}>Select Date</Text>
+          <Text style={theme.display(20)}>Select Date</Text>
           <Pressable onPress={onClose} hitSlop={8}>
-            <Text style={styles.done}>Done</Text>
+            <Text style={[styles.done, { color: theme.accent }]}>Done</Text>
           </Pressable>
         </View>
         <DateTimePicker
           value={new Date(date)}
           mode="date"
           display="inline"
-          accentColor={iOSColors.blue}
+          accentColor={theme.accent}
           onChange={handle}
         />
       </View>
@@ -54,9 +53,8 @@ export function DatePickerSheet({
 
 const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.25)' },
-  sheet: { borderTopLeftRadius: 16, borderTopRightRadius: 16, paddingBottom: 24 },
+  sheet: { borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingBottom: 24 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16 },
   cancel: { fontSize: 16, fontWeight: '500' },
-  title: { fontSize: 18, fontWeight: '700' },
-  done: { fontSize: 16, fontWeight: '600', color: iOSColors.blue },
+  done: { fontSize: 16, fontWeight: '600' },
 });

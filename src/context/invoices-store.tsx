@@ -39,7 +39,7 @@ export interface InvoicesStore {
   /** Create and AWAIT the backend id (needed before any /:id sub-action). */
   createInvoiceAsync: (inv: Omit<Invoice, 'id' | 'createdAt'>) => Promise<Invoice>;
   /** Email the invoice via the backend's Postmark send; marks it sent locally. */
-  sendInvoice: (id: string) => Promise<SendInvoiceResult>;
+  sendInvoice: (id: string, businessName?: string) => Promise<SendInvoiceResult>;
   updateInvoice: (inv: Invoice) => void;
   deleteInvoice: (id: string) => void;
   setStatus: (id: string, status: InvoiceStatus) => void;
@@ -119,8 +119,8 @@ export function InvoicesProvider({ children }: { children: ReactNode }) {
   // row to 'sent' so the list reflects it (the backend stamps sentAt; RN's UI
   // is status-driven). Throws ApiError on precondition failures (no email,
   // sender settings incomplete, Postmark not configured) for the caller to show.
-  const sendInvoice = async (id: string): Promise<SendInvoiceResult> => {
-    const result = await sendInvoiceApi(id);
+  const sendInvoice = async (id: string, businessName?: string): Promise<SendInvoiceResult> => {
+    const result = await sendInvoiceApi(id, businessName);
     write(read().map((i) => (i.id === id ? { ...i, status: 'sent' } : i)));
     return result;
   };

@@ -15,9 +15,7 @@ import { OptionSheet } from '@/components/sheets/option-sheet';
 import { VendorListRow } from '@/components/vending/vendor-list-row';
 import { useInventory } from '@/context/inventory-store';
 import { useVendors } from '@/context/vendor-store';
-import { withOpacity } from '@/lib/color';
 import type { Vendor } from '@/models/vendor';
-import { iOSColors, lightShadow } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
 type Sort = 'relevance' | 'rating' | 'newest' | 'leadTime';
@@ -52,7 +50,7 @@ export default function VendorDiscovery() {
     <SafeAreaView style={[styles.safe, { backgroundColor: theme.background }]} edges={['top']}>
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} style={styles.back} hitSlop={8}>
-          <Icon name="house.fill" size={20} color={iOSColors.blue} />
+          <Icon name="house.fill" size={20} color={theme.accent} />
         </Pressable>
         <Text style={[styles.headerTitle, { color: theme.primaryText }]}>Find Vendors</Text>
         <View style={styles.back} />
@@ -61,7 +59,7 @@ export default function VendorDiscovery() {
       <ScrollView contentContainerStyle={styles.body}>
         {/* Search */}
         <View style={styles.searchRow}>
-          <View style={[styles.search, { backgroundColor: theme.cardBackground }]}>
+          <View style={[styles.search, { backgroundColor: theme.cardBackground, borderWidth: 1, borderColor: theme.divider }]}>
             <Icon name="magnifyingglass" size={16} color={theme.secondaryText} />
             <TextInput value={search} onChangeText={setSearch} placeholder="Search vendors, suppliers, products..." placeholderTextColor={theme.secondaryText} style={[styles.searchInput, { color: theme.primaryText }]} />
             {search.length > 0 && (
@@ -70,8 +68,8 @@ export default function VendorDiscovery() {
               </Pressable>
             )}
           </View>
-          <Pressable onPress={() => setSmartMatch((v) => !v)} style={[styles.smart, { backgroundColor: smartMatch ? withOpacity(iOSColors.orange, 0.15) : theme.cardBackground }]}>
-            <Icon name="sparkles" size={20} color={smartMatch ? iOSColors.orange : theme.secondaryText} />
+          <Pressable onPress={() => setSmartMatch((v) => !v)} style={[styles.smart, { backgroundColor: smartMatch ? theme.accentSoft : theme.cardBackground, borderWidth: 1, borderColor: smartMatch ? theme.accent : theme.divider }]}>
+            <Icon name="sparkles" size={20} color={smartMatch ? theme.accent : theme.secondaryText} />
           </Pressable>
         </View>
 
@@ -83,7 +81,7 @@ export default function VendorDiscovery() {
           ))}
         </ScrollView>
         <View style={styles.sortRow}>
-          <Pressable onPress={() => setShowSort(true)} style={[styles.sortBtn, { backgroundColor: theme.cardBackground }]}>
+          <Pressable onPress={() => setShowSort(true)} style={[styles.sortBtn, { backgroundColor: theme.inputBackground }]}>
             <Icon name="arrow.up.arrow.down" size={12} color={theme.secondaryText} />
             <Text style={[styles.sortText, { color: theme.secondaryText }]}>{SORT_LABEL[sort]}</Text>
           </Pressable>
@@ -93,7 +91,7 @@ export default function VendorDiscovery() {
         {smartMatch && matched.length > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionHead}>
-              <Icon name="sparkles" size={16} color={iOSColors.orange} />
+              <Icon name="sparkles" size={16} color={theme.accent} />
               <Text style={[styles.sectionTitle, { color: theme.primaryText }]}>Smart Match</Text>
               <View style={styles.flex} />
               <Text style={[styles.sectionNote, { color: theme.secondaryText }]}>Based on your inventory</Text>
@@ -108,7 +106,7 @@ export default function VendorDiscovery() {
         {/* Results */}
         {result.length === 0 ? (
           <View style={styles.empty}>
-            <Icon name="storefront" size={50} color={withOpacity(iOSColors.gray, 0.5)} />
+            <Icon name="storefront" size={50} color={theme.tertiaryText} />
             <Text style={[styles.emptyTitle, { color: theme.primaryText }]}>No vendors found</Text>
             <Text style={[styles.emptySub, { color: theme.secondaryText }]}>Try adjusting your search or filters</Text>
           </View>
@@ -124,11 +122,11 @@ export default function VendorDiscovery() {
         {/* Nearby (stub) */}
         <View style={[styles.divider, { backgroundColor: theme.divider }]} />
         <View style={styles.sectionHead}>
-          <Icon name="location.fill" size={16} color={iOSColors.green} />
+          <Icon name="location.fill" size={16} color={theme.accent} />
           <Text style={[styles.sectionTitle, { color: theme.primaryText }]}>Nearby Businesses</Text>
         </View>
-        <View style={[styles.nearbyStub, { backgroundColor: withOpacity(iOSColors.orange, 0.08) }]}>
-          <Icon name="location.slash" size={16} color={iOSColors.orange} />
+        <View style={[styles.nearbyStub, { backgroundColor: theme.inputBackground }]}>
+          <Icon name="location.slash" size={16} color={theme.secondaryText} />
           <Text style={[styles.nearbyText, { color: theme.secondaryText }]}>Location-based vendor search (Google Places) needs the native build. Registered vendors are shown above.</Text>
         </View>
       </ScrollView>
@@ -148,8 +146,8 @@ export default function VendorDiscovery() {
 function FilterPill({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
   const theme = useAppTheme();
   return (
-    <Pressable onPress={onPress} style={[styles.pill, { backgroundColor: active ? iOSColors.blue : theme.cardBackground, borderColor: active ? 'transparent' : withOpacity(iOSColors.gray, 0.2) }]}>
-      <Text style={[styles.pillText, { color: active ? '#FFFFFF' : theme.primaryText }]}>{label}</Text>
+    <Pressable onPress={onPress} style={[styles.pill, { borderRadius: theme.isEditorial ? 2 : 999, backgroundColor: active ? theme.accent : theme.cardBackground, borderColor: active ? theme.accent : theme.divider }]}>
+      <Text style={[styles.pillText, { color: active ? theme.onAccent : theme.primaryText }]}>{label}</Text>
     </Pressable>
   );
 }
@@ -167,7 +165,7 @@ const styles = StyleSheet.create({
   searchInput: { flex: 1, fontSize: 15 },
   smart: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   pills: { gap: 8, paddingHorizontal: 20, paddingTop: 4 },
-  pill: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1 },
+  pill: { paddingHorizontal: 14, paddingVertical: 7, borderWidth: 1 },
   pillText: { fontSize: 13, fontWeight: '500' },
   sortRow: { flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 20 },
   sortBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },

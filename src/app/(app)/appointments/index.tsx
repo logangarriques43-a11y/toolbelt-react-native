@@ -24,10 +24,8 @@ import { SingleDayGrid } from '@/components/schedule/single-day-grid';
 import { ViewSwitcherSheet, type ScheduleViewType } from '@/components/schedule/view-switcher-sheet';
 import { useAppointments } from '@/context/appointments-store';
 import { useStaff } from '@/context/staff-store';
-import { withOpacity } from '@/lib/color';
 import { TIME_COL_WIDTH, addDays, isToday } from '@/lib/schedule-layout';
 import type { Appointment } from '@/models/appointment';
-import { iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
 const dayNumFmt = new Intl.DateTimeFormat('en-US', { day: 'numeric' });
@@ -83,13 +81,13 @@ export default function Schedule() {
 
         {viewType === 'day' ? (
           <>
-            <View style={[styles.dayHeader, { backgroundColor: today ? withOpacity(iOSColors.blue, 0.1) : 'transparent' }]}>
+            <View style={[styles.dayHeader, { backgroundColor: today ? theme.accentSoft : 'transparent' }]}>
               <View style={styles.clockCol}>
                 <Icon name="clock" size={16} color={theme.secondaryText} />
               </View>
               <View style={[styles.dayInfo, { borderLeftColor: theme.divider }]}>
-                <Text style={[styles.dayNum, { color: today ? iOSColors.blue : theme.primaryText }]}>{dayNumFmt.format(displayedDate)}</Text>
-                <Text style={[styles.dayName, { color: today ? iOSColors.blue : theme.secondaryText }]}>{dayNameFmt.format(displayedDate)}</Text>
+                <Text style={[theme.display(22, '500'), { color: today ? theme.accent : theme.primaryText }]}>{dayNumFmt.format(displayedDate)}</Text>
+                <Text style={[styles.dayName, { color: today ? theme.accent : theme.secondaryText }]}>{dayNameFmt.format(displayedDate)}</Text>
                 <Text style={[styles.dot, { color: theme.secondaryText }]}>•</Text>
                 <Text style={[styles.month, { color: theme.secondaryText }]}>{monthFmt.format(displayedDate)}</Text>
               </View>
@@ -136,8 +134,8 @@ export default function Schedule() {
 
         {/* Today button (all calendar views) */}
         {!today && viewType !== 'schedule' ? (
-          <Pressable onPress={() => setDisplayedDate(new Date())} style={[styles.todayBtn, { bottom: insets.bottom + 30 }]}>
-            <Text style={styles.todayText}>Today</Text>
+          <Pressable onPress={() => setDisplayedDate(new Date())} style={[styles.todayBtn, { bottom: insets.bottom + 30, backgroundColor: theme.accent, borderRadius: theme.isEditorial ? 2 : 999 }]}>
+            <Text style={[styles.todayText, { color: theme.onAccent }]}>Today</Text>
           </Pressable>
         ) : null}
 
@@ -169,15 +167,13 @@ const styles = StyleSheet.create({
   dayHeader: { flexDirection: 'row', height: 60 },
   clockCol: { width: TIME_COL_WIDTH, alignItems: 'center', justifyContent: 'center' },
   dayInfo: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6, paddingLeft: 12, borderLeftWidth: 1 },
-  dayNum: { fontSize: 20, fontWeight: '700' },
   dayName: { fontSize: 16, fontWeight: '500' },
   dot: { fontSize: 14 },
   month: { fontSize: 14 },
   gridArea: { flex: 1 },
   todayBtn: {
     position: 'absolute', left: 20, bottom: 30,
-    backgroundColor: iOSColors.blue, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 999,
-    shadowColor: '#000000', shadowOpacity: 0.2, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 4,
+    paddingHorizontal: 16, paddingVertical: 10,
   },
-  todayText: { color: '#FFFFFF', fontSize: 14, fontWeight: '600' },
+  todayText: { fontSize: 14, fontWeight: '600' },
 });

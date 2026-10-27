@@ -28,7 +28,6 @@ import { effectiveHours, isEffectiveWorkingTime, staffTint } from '@/lib/staff-s
 import type { Appointment } from '@/models/appointment';
 import { blockingTimeOff } from '@/models/time-off';
 import type { StaffMember } from '@/models/staff';
-import { iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
 const LABELS = timeSlotLabels();
@@ -58,7 +57,7 @@ export function MultiDayGrid({
   const { can } = usePermissions();
   const { width } = useWindowDimensions();
   const scrollRef = useRef<ScrollView>(null);
-  const nonWorking = withOpacity(iOSColors.gray, 0.08);
+  const nonWorking = withOpacity(theme.inputBackground, 0.6);
   const canManageTimeOff = can('manageTimeOff');
   // Effective (staff-resolved) hours per column, computed once.
   const effs = dates.map((d) => effectiveHours(d, getSchedule(d), selectedStaff));
@@ -100,9 +99,9 @@ export function MultiDayGrid({
           return (
             <View
               key={i}
-              style={[styles.headerDay, { borderLeftColor: theme.divider, backgroundColor: today ? withOpacity(iOSColors.blue, 0.1) : 'transparent' }]}>
-              <Text numberOfLines={1} allowFontScaling={false} style={[styles.headerNum, { color: today ? iOSColors.blue : theme.primaryText }]}>{dayNumFmt.format(d)}</Text>
-              <Text numberOfLines={1} allowFontScaling={false} style={[styles.headerName, { color: today ? iOSColors.blue : theme.secondaryText }]}>{dayNameFmt.format(d).toUpperCase()}</Text>
+              style={[styles.headerDay, { borderLeftColor: theme.divider, backgroundColor: today ? theme.accentSoft : 'transparent' }]}>
+              <Text numberOfLines={1} allowFontScaling={false} style={[styles.headerNum, { color: today ? theme.accent : theme.primaryText }]}>{dayNumFmt.format(d)}</Text>
+              <Text numberOfLines={1} allowFontScaling={false} style={[styles.headerName, { color: today ? theme.accent : theme.secondaryText }]}>{dayNameFmt.format(d).toUpperCase()}</Text>
             </View>
           );
         })}
@@ -116,7 +115,7 @@ export function MultiDayGrid({
               const hour = Math.floor(i / 2);
               const minute = (i % 2) * 30;
               return (
-                <View key={i} style={[styles.slot, { borderTopColor: withOpacity(iOSColors.gray, 0.25) }]}>
+                <View key={i} style={[styles.slot, { borderTopColor: theme.divider }]}>
                   <Text numberOfLines={1} allowFontScaling={false} style={[styles.slotLabel, { color: theme.secondaryText }]}>{label}</Text>
                   {dates.map((dd, c) => (
                     <View
@@ -133,10 +132,10 @@ export function MultiDayGrid({
             {todayIndex >= 0 ? (
               <View style={[styles.indicator, { top: indicatorY }]} pointerEvents="none">
                 <View style={styles.indicatorTimeWrap}>
-                  <Text numberOfLines={1} allowFontScaling={false} style={styles.indicatorTime}>{indicatorTime}</Text>
+                  <Text numberOfLines={1} allowFontScaling={false} style={[styles.indicatorTime, { color: theme.onAccent, backgroundColor: theme.accent }]}>{indicatorTime}</Text>
                 </View>
-                <View style={styles.indicatorLine} />
-                <View style={[styles.indicatorDot, { position: 'absolute', top: 3, left: TIME_COL_WIDTH + todayIndex * dayWidth - 5 }]} />
+                <View style={[styles.indicatorLine, { backgroundColor: theme.accent }]} />
+                <View style={[styles.indicatorDot, { backgroundColor: theme.accent, position: 'absolute', top: 3, left: TIME_COL_WIDTH + todayIndex * dayWidth - 5 }]} />
               </View>
             ) : null}
 
@@ -203,7 +202,7 @@ const styles = StyleSheet.create({
   dayColumn: { flex: 1, borderLeftWidth: 1 },
   indicator: { position: 'absolute', left: 0, right: 0, height: 16, flexDirection: 'row', alignItems: 'center', zIndex: 100 },
   indicatorTimeWrap: { width: TIME_COL_WIDTH, alignItems: 'center' },
-  indicatorTime: { fontSize: 10, fontWeight: '700', color: '#FFFFFF', backgroundColor: iOSColors.red, paddingHorizontal: 5, paddingVertical: 2, borderRadius: 999, overflow: 'hidden' },
-  indicatorDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: iOSColors.red },
-  indicatorLine: { flex: 1, height: 2, backgroundColor: iOSColors.red },
+  indicatorTime: { fontSize: 10, fontWeight: '700', paddingHorizontal: 5, paddingVertical: 2, borderRadius: 999, overflow: 'hidden' },
+  indicatorDot: { width: 10, height: 10, borderRadius: 5 },
+  indicatorLine: { flex: 1, height: 2 },
 });

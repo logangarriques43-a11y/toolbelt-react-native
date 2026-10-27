@@ -25,7 +25,7 @@ import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { firebaseAuthErrorMessage } from '@/lib/auth-errors';
 import { auth } from '@/lib/firebase';
 import { withOpacity } from '@/lib/color';
-import { Brand, iOSColors } from '@/theme/tokens';
+import { iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
 const EMAIL_RE = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,64}$/;
@@ -81,13 +81,13 @@ export default function Register() {
         <ScrollView contentContainerStyle={styles.content}>
           <View style={styles.titleBlock}>
             <TitleBadge icon="building.2.fill" />
-            <Text style={[styles.h1, { color: theme.primaryText }]}>Create Your Account</Text>
+            <Text style={theme.display(28, '500')}>Create Your Account</Text>
             <Text style={[styles.subtitle, { color: theme.secondaryText }]}>
               Start managing your business today
             </Text>
           </View>
 
-          <View style={[styles.formCard, { backgroundColor: theme.cardBackground }]}>
+          <View style={[styles.formCard, theme.card]}>
             <AuthField
               title="Full Name"
               icon="person.fill"
@@ -187,7 +187,7 @@ export default function Register() {
               Already have an account?{' '}
             </Text>
             <Pressable onPress={() => router.push('/login')}>
-              <Text style={[styles.bottomLink, { color: Brand.accent }]}>Sign In</Text>
+              <Text style={[styles.bottomLink, { color: theme.accent }]}>Sign In</Text>
             </Pressable>
           </View>
         </ScrollView>
@@ -203,7 +203,7 @@ function Requirement({ text, met }: { text: string; met: boolean }) {
       <Icon
         name={met ? 'checkmark.circle.fill' : 'circle'}
         size={12}
-        color={met ? iOSColors.green : withOpacity(iOSColors.gray, 0.5)}
+        color={met ? iOSColors.green : theme.tertiaryText}
       />
       <Text style={[styles.requirementText, { color: met ? iOSColors.green : theme.secondaryText }]}>
         {text}
@@ -216,18 +216,11 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   content: { gap: 32, paddingBottom: 40 },
   titleBlock: { gap: 12, alignItems: 'center', paddingTop: 10 },
-  h1: { fontSize: 28, fontWeight: '700' },
   subtitle: { fontSize: 16, textAlign: 'center', paddingHorizontal: 20 },
   formCard: {
     marginHorizontal: 20,
     padding: 24,
-    borderRadius: 20,
     gap: 20,
-    shadowColor: '#000000',
-    shadowOpacity: 0.06,
-    shadowRadius: 15,
-    shadowOffset: { width: 0, height: 5 },
-    elevation: 4,
   },
   requirements: { gap: 6, paddingTop: 4 },
   requirementRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },

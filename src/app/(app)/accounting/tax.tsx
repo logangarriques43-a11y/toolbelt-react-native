@@ -16,15 +16,13 @@ import { DashboardGradient } from '@/components/dashboard-gradient';
 import { Icon } from '@/components/icon';
 import { KeyboardAwareForm } from '@/components/keyboard-aware-form';
 import { ScreenHeader } from '@/components/screen-header';
+import { ThemedButton, ThemedIconTile } from '@/components/themed';
 import { useAccounting } from '@/context/accounting-store';
 import { useExpenses } from '@/context/expenses-store';
 import { useSales } from '@/context/sales-store';
-import { withOpacity } from '@/lib/color';
-import { iOSColors, lightShadow } from '@/theme/tokens';
+import { iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
-const PURPLE = '#9966E6';
-const TEAL = '#3399CC';
 const usd = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -60,6 +58,8 @@ export default function TaxDashboard() {
   const [period, setPeriod] = useState<TaxPeriod>('This Month');
 
   const rateValue = Number(rate) || 0;
+  const PURPLE = theme.accent;
+  const TEAL = theme.primaryText;
 
   const { grossSales, estimatedTax, deductible, monthly } = useMemo(() => {
     const [start, end] = periodRange(period);
@@ -114,7 +114,7 @@ export default function TaxDashboard() {
         <ScreenHeader title="Tax Dashboard" />
         <KeyboardAwareForm contentContainerStyle={styles.body}>
           {/* Tax mode */}
-          <View style={[styles.card, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
+          <View style={[styles.card, theme.card]}>
             <View style={styles.modeRow}>
               <Icon name="building.columns.fill" size={24} color={PURPLE} />
               <View style={styles.modeText}>
@@ -126,7 +126,7 @@ export default function TaxDashboard() {
               <Switch value={autoCalculate} onValueChange={setAutoCalculate} trackColor={{ true: PURPLE, false: theme.divider }} />
             </View>
             {!autoCalculate ? (
-              <View style={[styles.rateRow, { backgroundColor: withOpacity(PURPLE, 0.06) }]}>
+              <View style={[styles.rateRow, { backgroundColor: theme.inputBackground }]}>
                 <Text style={[styles.rateLabel, { color: theme.primaryText }]}>Sales Tax Rate (%)</Text>
                 <TextInput
                   value={rate}
@@ -139,19 +139,19 @@ export default function TaxDashboard() {
           </View>
 
           {/* Period */}
-          <View style={[styles.card, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
+          <View style={[styles.card, theme.card]}>
             <Text style={[styles.cardLabel, { color: theme.secondaryText }]}>Reporting Period</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.periods}>
               {TAX_PERIODS.map((p) => (
-                <Pressable key={p} onPress={() => setPeriod(p)} style={[styles.period, { backgroundColor: period === p ? PURPLE : withOpacity(PURPLE, 0.1) }]}>
-                  <Text style={[styles.periodText, { color: period === p ? '#FFFFFF' : PURPLE }]}>{p}</Text>
+                <Pressable key={p} onPress={() => setPeriod(p)} style={[styles.period, { borderRadius: theme.isEditorial ? 2 : 999, backgroundColor: period === p ? theme.accent : theme.accentSoft }]}>
+                  <Text style={[styles.periodText, { color: period === p ? theme.onAccent : theme.accent }]}>{p}</Text>
                 </Pressable>
               ))}
             </ScrollView>
           </View>
 
           {/* Summary */}
-          <View style={[styles.card, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
+          <View style={[styles.card, theme.card]}>
             <Text style={[styles.cardLabel, { color: theme.secondaryText }]}>Tax Summary</Text>
             <View style={styles.metricGrid}>
               <MetricCard label="Gross Sales" value={grossSales} color={PURPLE} />
@@ -159,18 +159,18 @@ export default function TaxDashboard() {
             </View>
             <View style={styles.metricGrid}>
               <MetricCard label="Net Revenue" value={grossSales - estimatedTax} color={TEAL} />
-              <MetricCard label="Deductible" value={deductible} color={iOSColors.orange} />
+              <MetricCard label="Deductible" value={deductible} color={theme.primaryText} />
             </View>
           </View>
 
           {/* Monthly breakdown */}
           {monthly.length > 0 ? (
-            <View style={[styles.card, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
+            <View style={[styles.card, theme.card]}>
               <Text style={[styles.cardLabel, { color: theme.secondaryText }]}>Monthly Breakdown</Text>
               {monthly.map(([key, m]) => {
                 const monthIdx = Number(key.split('-')[1]) - 1;
                 return (
-                  <View key={key} style={[styles.monthRow, { backgroundColor: withOpacity(PURPLE, 0.04) }]}>
+                  <View key={key} style={[styles.monthRow, { backgroundColor: theme.inputBackground }]}>
                     <Text style={[styles.monthName, { color: theme.primaryText }]}>{MONTHS[monthIdx]}</Text>
                     <View style={styles.monthCols}>
                       <MonthCol label="Gross" value={m.gross} color={PURPLE} />
@@ -184,10 +184,8 @@ export default function TaxDashboard() {
           ) : null}
 
           {/* AI analysis (deferred) */}
-          <Pressable onPress={() => Alert.alert('Coming soon', 'AI Tax Analysis arrives in a later phase.')} style={[styles.card, styles.aiCard, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
-            <View style={[styles.aiIcon, { backgroundColor: PURPLE }]}>
-              <Icon name="brain" size={24} color="#FFFFFF" />
-            </View>
+          <Pressable onPress={() => Alert.alert('Coming soon', 'AI Tax Analysis arrives in a later phase.')} style={[styles.card, styles.aiCard, theme.card]}>
+            <ThemedIconTile name="brain" size={48} />
             <View style={styles.aiText}>
               <Text style={[styles.aiTitle, { color: theme.primaryText }]}>AI Tax Analysis</Text>
               <Text style={[styles.aiSub, { color: theme.secondaryText }]}>Get AI-powered insights on deductions and filing</Text>
@@ -195,10 +193,7 @@ export default function TaxDashboard() {
             <Icon name="chevron.right" size={14} color={theme.secondaryText} />
           </Pressable>
 
-          <Pressable onPress={exportReport} style={[styles.export, { backgroundColor: PURPLE }]}>
-            <Icon name="square.and.arrow.up" size={14} color="#FFFFFF" />
-            <Text style={styles.exportText}>Export Tax Report</Text>
-          </Pressable>
+          <ThemedButton title="Export Tax Report" kind="accent" icon="square.and.arrow.up" onPress={exportReport} />
         </KeyboardAwareForm>
       </SafeAreaView>
     </DashboardGradient>
@@ -208,7 +203,7 @@ export default function TaxDashboard() {
 function MetricCard({ label, value, color }: { label: string; value: number; color: string }) {
   const theme = useAppTheme();
   return (
-    <View style={[styles.metric, { backgroundColor: withOpacity(color, 0.08) }]}>
+    <View style={[styles.metric, { backgroundColor: theme.inputBackground }]}>
       <Text style={[styles.metricLabel, { color: theme.secondaryText }]}>{label}</Text>
       <Text style={[styles.metricValue, { color }]} numberOfLines={1}>{usd.format(value)}</Text>
     </View>
@@ -228,7 +223,7 @@ function MonthCol({ label, value, color }: { label: string; value: number; color
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   body: { padding: 20, gap: 20, paddingBottom: 40 },
-  card: { padding: 16, borderRadius: 14, gap: 12 },
+  card: { padding: 16, gap: 12 },
   cardLabel: { fontSize: 14, fontWeight: '600' },
   modeRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   modeText: { flex: 1, gap: 4 },
@@ -238,7 +233,7 @@ const styles = StyleSheet.create({
   rateLabel: { fontSize: 14 },
   rateInput: { fontSize: 14, fontWeight: '600', textAlign: 'right', minWidth: 80, paddingVertical: 4, textAlignVertical: 'center' },
   periods: { gap: 8 },
-  period: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 16 },
+  period: { paddingHorizontal: 14, paddingVertical: 8 },
   periodText: { fontSize: 13, fontWeight: '500' },
   metricGrid: { flexDirection: 'row', gap: 12 },
   metric: { flex: 1, alignItems: 'center', gap: 6, paddingVertical: 14, borderRadius: 10 },
@@ -251,10 +246,7 @@ const styles = StyleSheet.create({
   monthColLabel: { fontSize: 10, fontWeight: '500' },
   monthColValue: { fontSize: 12, fontWeight: '600' },
   aiCard: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  aiIcon: { width: 48, height: 48, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   aiText: { flex: 1, gap: 4 },
   aiTitle: { fontSize: 16, fontWeight: '600' },
   aiSub: { fontSize: 12 },
-  export: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 12, borderRadius: 10 },
-  exportText: { color: '#FFFFFF', fontSize: 14, fontWeight: '600' },
 });

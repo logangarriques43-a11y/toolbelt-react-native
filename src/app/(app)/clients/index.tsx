@@ -3,7 +3,6 @@
  * Search, swipe-to-delete, tap-to-edit, FAB to add.
  */
 
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -16,7 +15,6 @@ import { ScreenHeader } from '@/components/screen-header';
 import { SwipeToDelete } from '@/components/swipe-to-delete';
 import { useClients } from '@/context/clients-store';
 import { clientInitials, type Client } from '@/models/client';
-import { Radius, cardShadow, iOSColors, lightShadow } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
 export default function ClientsScreen() {
@@ -35,7 +33,7 @@ export default function ClientsScreen() {
           right={<Icon name="questionmark.circle" size={20} color={theme.secondaryText} />}
         />
 
-        <View style={[styles.searchBar, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
+        <View style={[styles.searchBar, theme.card]}>
           <Icon name="magnifyingglass" size={16} color={theme.secondaryText} />
           <TextInput
             value={search}
@@ -54,7 +52,7 @@ export default function ClientsScreen() {
         {filtered.length === 0 ? (
           <View style={styles.empty}>
             <Icon name="person.3.fill" size={80} color={theme.tertiaryText} />
-            <Text style={[styles.emptyTitle, { color: theme.primaryText }]}>
+            <Text style={[styles.emptyTitle, theme.display(24)]}>
               {search ? 'No Results Found' : 'No Clients Yet'}
             </Text>
             <Text style={[styles.emptySub, { color: theme.secondaryText }]}>
@@ -82,14 +80,10 @@ function ClientCard({ client, onPress }: { client: Client; onPress: () => void }
   return (
     <Pressable
       onPress={onPress}
-      style={[styles.card, { backgroundColor: theme.cardBackground }, cardShadow(theme)]}>
-      <LinearGradient
-        colors={[iOSColors.blue, iOSColors.purple]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.avatar}>
-        <Text style={styles.avatarText}>{clientInitials(client.name)}</Text>
-      </LinearGradient>
+      style={[styles.card, theme.card]}>
+      <View style={[styles.avatar, { backgroundColor: theme.accentSoft }]}>
+        <Text style={[styles.avatarText, { color: theme.accent }]}>{clientInitials(client.name)}</Text>
+      </View>
 
       <View style={styles.cardBody}>
         <Text style={[styles.name, { color: theme.primaryText }]}>{client.name}</Text>
@@ -99,7 +93,7 @@ function ClientCard({ client, onPress }: { client: Client; onPress: () => void }
         </View>
       </View>
 
-      <Icon name="chevron.right" size={14} color={theme.secondaryText} />
+      <Icon name="chevron.right" size={14} color={theme.chevronTint} />
     </Pressable>
   );
 }
@@ -112,11 +106,10 @@ const styles = StyleSheet.create({
     gap: 10,
     padding: 16,
     marginHorizontal: 16,
-    borderRadius: 12,
   },
   searchInput: { flex: 1, fontSize: 16, paddingVertical: 4, textAlignVertical: 'center' },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16, padding: 24 },
-  emptyTitle: { fontSize: 24, fontWeight: '700' },
+  emptyTitle: { textAlign: 'center' },
   emptySub: { fontSize: 16, textAlign: 'center' },
   list: { paddingHorizontal: 16, paddingTop: 20, paddingBottom: 100, gap: 12 },
   card: {
@@ -124,10 +117,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 16,
     padding: 16,
-    borderRadius: Radius.card,
   },
   avatar: { width: 50, height: 50, borderRadius: 25, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { color: '#FFFFFF', fontSize: 20, fontWeight: '600' },
+  avatarText: { fontSize: 20, fontWeight: '600' },
   cardBody: { flex: 1, gap: 6 },
   name: { fontSize: 18, fontWeight: '600' },
   phoneRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },

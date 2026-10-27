@@ -12,7 +12,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { BackHeader } from '@/components/back-header';
 import { CustomTextField } from '@/components/custom-text-field';
 import { DashboardGradient } from '@/components/dashboard-gradient';
-import { Icon } from '@/components/icon';
+import { GradientButton } from '@/components/gradient-button';
+import { TitleBadge } from '@/components/title-badge';
 import { iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
@@ -40,8 +41,8 @@ export default function ForgotPassword() {
         <BackHeader />
         <View style={styles.body}>
           <View style={styles.titleBlock}>
-            <Icon name="key.fill" size={80} color={theme.secondaryText} />
-            <Text style={[styles.h1, { color: theme.primaryText }]}>Forgot Password</Text>
+            <TitleBadge icon="key.fill" />
+            <Text style={theme.display(32, '500')}>Forgot Password</Text>
             <Text style={[styles.subtitle, { color: theme.secondaryText }]}>
               Enter your details to recover your account
             </Text>
@@ -73,9 +74,9 @@ export default function ForgotPassword() {
               </Text>
             ) : null}
 
-            <Text onPress={resetPassword} style={styles.button}>
-              Reset Password
-            </Text>
+            <View style={styles.button}>
+              <GradientButton title="Reset Password" onPress={resetPassword} />
+            </View>
           </View>
         </View>
       </SafeAreaView>
@@ -87,19 +88,8 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   body: { flex: 1, justifyContent: 'center', gap: 24, paddingBottom: 40 },
   titleBlock: { gap: 16, alignItems: 'center' },
-  h1: { fontSize: 32, fontWeight: '700' },
   subtitle: { fontSize: 16, textAlign: 'center', paddingHorizontal: 20 },
   form: { gap: 20, paddingHorizontal: 20 },
   message: { fontSize: 14, textAlign: 'center' },
-  button: {
-    marginTop: 10,
-    backgroundColor: iOSColors.gray,
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '600',
-    textAlign: 'center',
-    paddingVertical: 16,
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
+  button: { marginTop: 10 },
 });

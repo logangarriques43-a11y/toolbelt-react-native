@@ -27,7 +27,7 @@ import { useStaff } from '@/context/staff-store';
 import { useTimeOff } from '@/context/time-off-store';
 import { useWorkingHours } from '@/context/working-hours-store';
 import { firstBlockingTimeOff } from '@/models/time-off';
-import { STAFF_ORANGE, type StaffMember } from '@/models/staff';
+import type { StaffMember } from '@/models/staff';
 import { withOpacity } from '@/lib/color';
 import {
   combineDateTime,
@@ -41,11 +41,9 @@ import {
 import { defaultReminderMinutes } from '@/lib/appointment-defaults';
 import { REMINDERS, reminderLabel } from '@/lib/reminders';
 import { priceDisplay } from '@/models/service';
-import { iOSColors, lightShadow } from '@/theme/tokens';
+import { iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
-const BLUE = iOSColors.blue;
-const PURPLE = '#B052DE';
 const shortTime = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit' });
 
 export default function CreateAppointment() {
@@ -217,13 +215,13 @@ export default function CreateAppointment() {
     <DashboardGradient>
       <SafeAreaView style={styles.safe} edges={['top']}>
         {/* Header */}
-        <View style={[styles.header, { backgroundColor: withOpacity(theme.cardBackground, 0.9) }]}>
-          <Pressable onPress={() => router.back()} hitSlop={8} style={[styles.closeBtn, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
+        <View style={[styles.header, { backgroundColor: theme.background, borderBottomColor: theme.divider }]}>
+          <Pressable onPress={() => router.back()} hitSlop={8} style={[styles.closeBtn, { backgroundColor: theme.cardBackground, borderColor: theme.divider, borderRadius: theme.isEditorial ? 2 : 18 }]}>
             <Icon name="xmark" size={18} color={theme.secondaryText} />
           </Pressable>
-          <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.headerTitle, { color: theme.primaryText }]}>New appointment</Text>
-          <Pressable onPress={save} style={styles.savePill}>
-            <Text numberOfLines={1} style={styles.saveText}>Save</Text>
+          <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.headerTitle, theme.display(20)]}>New appointment</Text>
+          <Pressable onPress={save} style={[styles.savePill, { backgroundColor: theme.accent, borderRadius: theme.isEditorial ? 2 : 999 }]}>
+            <Text numberOfLines={1} style={[styles.saveText, { color: theme.onAccent }]}>Save</Text>
           </Pressable>
         </View>
 
@@ -231,17 +229,17 @@ export default function CreateAppointment() {
           {/* Client */}
           <Section label="Client">
             <Row onPress={() => router.push('/appointments/select-client')}>
-              <Icon name="person.fill" size={20} color={BLUE} />
+              <Icon name="person.fill" size={20} color={theme.accent} />
               {selectedClient ? (
                 <View style={styles.rowText}>
                   <Text style={[styles.rowTitle, { color: theme.primaryText }]}>{selectedClient.name}</Text>
                   <Text style={[styles.rowSub, { color: theme.secondaryText }]}>{selectedClient.phoneNumber}</Text>
                 </View>
               ) : (
-                <Text style={[styles.placeholder, { color: BLUE }]}>Add client</Text>
+                <Text style={[styles.placeholder, { color: theme.accent }]}>Add client</Text>
               )}
               <View style={styles.flexEnd}>
-                <Icon name="chevron.right" size={14} color={theme.secondaryText} />
+                <Icon name="chevron.right" size={14} color={theme.chevronTint} />
               </View>
             </Row>
           </Section>
@@ -249,35 +247,37 @@ export default function CreateAppointment() {
           {/* Staff */}
           <Section label="Staff Member">
             <Row onPress={() => setStaffSheet(true)}>
-              <Icon name="person.badge.key.fill" size={20} color={STAFF_ORANGE} />
+              <Icon name="person.badge.key.fill" size={20} color={theme.accent} />
               {selectedStaff ? (
                 <View style={styles.rowText}>
                   <Text style={[styles.rowTitle, { color: theme.primaryText }]}>{selectedStaff.name}</Text>
-                  <Text style={[styles.rowSub, { color: STAFF_ORANGE }]}>{selectedStaff.role}</Text>
+                  <Text style={[styles.rowSub, { color: theme.accent }]}>{selectedStaff.role}</Text>
                 </View>
               ) : (
-                <Text style={[styles.placeholder, { color: STAFF_ORANGE }]}>Assign staff member</Text>
+                <Text style={[styles.placeholder, { color: theme.accent }]}>Assign staff member</Text>
               )}
               <View style={styles.flexEnd}>
-                <Icon name="chevron.right" size={14} color={theme.secondaryText} />
+                <Icon name="chevron.right" size={14} color={theme.chevronTint} />
               </View>
             </Row>
           </Section>
 
           {/* Date & time */}
           <Section label="Date and time">
-            <Pressable onPress={() => setDateSheet(true)} style={styles.dateBtn}>
-              <Icon name="calendar" size={18} color="#FFFFFF" />
-              <Text style={styles.dateText}>{formattedDateFull(form.appointmentDate)}</Text>
+            <Pressable
+              onPress={() => setDateSheet(true)}
+              style={[styles.dateBtn, { backgroundColor: theme.accent, borderRadius: theme.isEditorial ? 2 : theme.cornerRadius }]}>
+              <Icon name="calendar" size={18} color={theme.onAccent} />
+              <Text style={[styles.dateText, { color: theme.onAccent }]}>{formattedDateFull(form.appointmentDate)}</Text>
               <View style={styles.flexEnd}>
-                <Icon name="chevron.down" size={14} color="rgba(255,255,255,0.8)" />
+                <Icon name="chevron.down" size={14} color={withOpacity(theme.onAccent, 0.8)} />
               </View>
             </Pressable>
 
             <View style={styles.timeRow}>
-              <TimeCard label="Start" hour={form.startHour} minute={form.startMinute} isPM={form.startIsPM} accent={BLUE} onPress={() => setStartSheet(true)} />
+              <TimeCard label="Start" hour={form.startHour} minute={form.startMinute} isPM={form.startIsPM} onPress={() => setStartSheet(true)} />
               <Icon name="arrow.right" size={16} color={theme.secondaryText} />
-              <TimeCard label="End" hour={form.endHour} minute={form.endMinute} isPM={form.endIsPM} accent={PURPLE} onPress={() => setEndSheet(true)} />
+              <TimeCard label="End" hour={form.endHour} minute={form.endMinute} isPM={form.endIsPM} onPress={() => setEndSheet(true)} />
             </View>
 
             <View style={styles.durationRow}>
@@ -291,7 +291,7 @@ export default function CreateAppointment() {
           {/* Services */}
           <Section label="Services">
             <Row onPress={() => router.push('/appointments/select-service')}>
-              <Icon name="tag.fill" size={20} color={BLUE} />
+              <Icon name="tag.fill" size={20} color={theme.accent} />
               {selectedService ? (
                 <>
                   <View style={styles.rowText}>
@@ -303,26 +303,26 @@ export default function CreateAppointment() {
                   <View style={[styles.serviceDot, { backgroundColor: selectedService.colorHex }]} />
                 </>
               ) : (
-                <Text style={[styles.placeholder, { color: BLUE }]}>Add services</Text>
+                <Text style={[styles.placeholder, { color: theme.accent }]}>Add services</Text>
               )}
-              <Icon name="chevron.right" size={14} color={theme.secondaryText} />
+              <Icon name="chevron.right" size={14} color={theme.chevronTint} />
             </Row>
 
             {selectedService && (selectedService.processingTime > 0 || selectedService.blockTime > 0) ? (
-              <View style={[styles.breakdown, { borderColor: withOpacity(BLUE, 0.2), backgroundColor: withOpacity(BLUE, 0.05) }]}>
+              <View style={[styles.breakdown, { borderColor: theme.divider, backgroundColor: theme.accentSoft, borderRadius: theme.cornerRadius }]}>
                 <BreakdownRow color={selectedService.colorHex} label="Appointment" trailing={`${actualDuration} min`} ends={endTimeString(form.startHour, form.startMinute, form.startIsPM, actualDuration)} />
                 {selectedService.processingTime > 0 ? (
                   <BreakdownRow color={withOpacity(selectedService.colorHex, 0.6)} label="Processing" tag="(bookable)" tagColor={iOSColors.green} trailing={`+${selectedService.processingTime} min`} ends={endTimeString(form.startHour, form.startMinute, form.startIsPM, actualDuration + selectedService.processingTime)} />
                 ) : null}
                 {selectedService.blockTime > 0 ? (
-                  <BreakdownRow color={withOpacity(iOSColors.gray, 0.5)} label="Blocked" tag="(unavailable)" tagColor={iOSColors.red} trailing={`+${selectedService.blockTime} min`} ends={endTimeString(form.startHour, form.startMinute, form.startIsPM, actualDuration + selectedService.processingTime + selectedService.blockTime)} />
+                  <BreakdownRow color={theme.tertiaryText} label="Blocked" tag="(unavailable)" tagColor={iOSColors.red} trailing={`+${selectedService.blockTime} min`} ends={endTimeString(form.startHour, form.startMinute, form.startIsPM, actualDuration + selectedService.processingTime + selectedService.blockTime)} />
                 ) : null}
                 <View style={[styles.breakdownDivider, { backgroundColor: theme.divider }]} />
                 <View style={styles.breakdownTotal}>
-                  <Icon name="clock.fill" size={12} color={BLUE} />
+                  <Icon name="clock.fill" size={12} color={theme.accent} />
                   <Text style={[styles.totalLabel, { color: theme.primaryText }]}>Total slot reserved</Text>
                   <View style={styles.flexEnd}>
-                    <Text style={[styles.totalValue, { color: BLUE }]}>
+                    <Text style={[styles.totalValue, { color: theme.accent }]}>
                       {actualDuration + selectedService.processingTime + selectedService.blockTime} min
                     </Text>
                   </View>
@@ -333,14 +333,14 @@ export default function CreateAppointment() {
 
           {/* SMS reminder */}
           <Section label="SMS Reminder">
-            <View style={[styles.card, styles.reminderRow, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
-              <Icon name="bell.fill" size={18} color={hasConsent ? BLUE : iOSColors.gray} />
+            <View style={[styles.card, styles.reminderRow, theme.card]}>
+              <Icon name="bell.fill" size={18} color={hasConsent ? theme.accent : theme.tertiaryText} />
               <View style={styles.rowText}>
                 <Text style={[styles.rowTitle, { color: hasConsent ? theme.primaryText : theme.secondaryText }]}>Auto-remind client</Text>
                 {hasConsent ? (
                   <Pressable onPress={() => setReminderSheet(true)} style={styles.reminderPick}>
-                    <Text style={[styles.reminderValue, { color: BLUE }]}>{reminderLabel(reminder)}</Text>
-                    <Icon name="chevron.up.chevron.down" size={10} color={BLUE} />
+                    <Text style={[styles.reminderValue, { color: theme.accent }]}>{reminderLabel(reminder)}</Text>
+                    <Icon name="chevron.up.chevron.down" size={10} color={theme.accent} />
                   </Pressable>
                 ) : (
                   <Text style={[styles.reminderWarn, { color: iOSColors.orange }]}>
@@ -365,10 +365,10 @@ export default function CreateAppointment() {
           </Section>
           <Section label="Photos">
             <Row onPress={() => Alert.alert('Coming soon', 'Appointment photos arrive with a later phase.')}>
-              <Icon name="camera.fill" size={18} color={BLUE} />
-              <Text style={[styles.placeholder, { color: BLUE }]}>Add photos</Text>
+              <Icon name="camera.fill" size={18} color={theme.accent} />
+              <Text style={[styles.placeholder, { color: theme.accent }]}>Add photos</Text>
               <View style={styles.flexEnd}>
-                <Icon name="chevron.right" size={14} color={theme.secondaryText} />
+                <Icon name="chevron.right" size={14} color={theme.chevronTint} />
               </View>
             </Row>
           </Section>
@@ -380,12 +380,12 @@ export default function CreateAppointment() {
 
       <DatePickerSheet visible={dateSheet} date={form.appointmentDate} onChange={form.setAppointmentDate} onClose={() => setDateSheet(false)} />
       <TimeStepperSheet
-        visible={startSheet} title="Start Time" accent={BLUE}
+        visible={startSheet} title="Start Time"
         hour={form.startHour} minute={form.startMinute} isPM={form.startIsPM}
         onChange={(h, m, pm) => form.setStart(h, m, pm)} onClose={() => setStartSheet(false)}
       />
       <TimeStepperSheet
-        visible={endSheet} title="End Time" accent={PURPLE}
+        visible={endSheet} title="End Time"
         hour={form.endHour} minute={form.endMinute} isPM={form.endIsPM}
         onChange={(h, m, pm) => { endAdjusted.current = true; form.setEnd(h, m, pm); }}
         onClose={() => setEndSheet(false)}
@@ -419,22 +419,22 @@ function Section({ label, children }: { label: string; children: ReactNode }) {
 function Row({ onPress, children }: { onPress: () => void; children: ReactNode }) {
   const theme = useAppTheme();
   return (
-    <Pressable onPress={onPress} style={[styles.card, styles.row, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
+    <Pressable onPress={onPress} style={[styles.card, styles.row, theme.card]}>
       {children}
     </Pressable>
   );
 }
 
-function TimeCard({ label, hour, minute, isPM, accent, onPress }: { label: string; hour: number; minute: number; isPM: boolean; accent: string; onPress: () => void }) {
+function TimeCard({ label, hour, minute, isPM, onPress }: { label: string; hour: number; minute: number; isPM: boolean; onPress: () => void }) {
   const theme = useAppTheme();
   return (
-    <Pressable onPress={onPress} style={[styles.timeCard, { backgroundColor: theme.cardBackground, borderColor: withOpacity(accent, 0.3) }, lightShadow(theme)]}>
+    <Pressable onPress={onPress} style={[styles.timeCard, theme.card]}>
       <Text style={[styles.timeLabel, { color: theme.secondaryText }]}>{label}</Text>
       <View style={styles.timeValueRow}>
-        <Text style={[styles.timeValue, { color: theme.primaryText }]}>{formatTimeDisplay(hour, minute)}</Text>
-        <Text style={[styles.timeAmpm, { color: accent }]}>{isPM ? 'PM' : 'AM'}</Text>
+        <Text style={theme.display(24, '500')}>{formatTimeDisplay(hour, minute)}</Text>
+        <Text style={[styles.timeAmpm, { color: theme.accent }]}>{isPM ? 'PM' : 'AM'}</Text>
       </View>
-      <Icon name="clock.fill" size={16} color={withOpacity(accent, 0.6)} />
+      <Icon name="clock.fill" size={16} color={theme.accent} />
     </Pressable>
   );
 }
@@ -457,7 +457,7 @@ function BreakdownRow({ color, label, tag, tagColor, trailing, ends }: { color: 
 function InputRow({ icon, placeholder, value, onChangeText }: { icon: SFSymbol; placeholder: string; value: string; onChangeText: (t: string) => void }) {
   const theme = useAppTheme();
   return (
-    <View style={[styles.card, styles.row, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
+    <View style={[styles.card, styles.row, theme.card]}>
       <Icon name={icon} size={18} color={theme.secondaryText} />
       <TextInput value={value} onChangeText={onChangeText} placeholder={placeholder} placeholderTextColor={theme.tertiaryText} style={[styles.input, { color: theme.primaryText }]} />
     </View>
@@ -466,15 +466,15 @@ function InputRow({ icon, placeholder, value, onChangeText }: { icon: SFSymbol; 
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16 },
-  closeBtn: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { flex: 1, textAlign: 'center', marginHorizontal: 6, fontSize: 17, fontWeight: '700' },
-  savePill: { backgroundColor: BLUE, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20 },
-  saveText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: StyleSheet.hairlineWidth },
+  closeBtn: { width: 36, height: 36, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  headerTitle: { flex: 1, textAlign: 'center', marginHorizontal: 6 },
+  savePill: { paddingHorizontal: 16, paddingVertical: 10 },
+  saveText: { fontSize: 16, fontWeight: '600' },
   body: { paddingTop: 24, paddingBottom: 60, gap: 24 },
   section: { gap: 12, paddingHorizontal: 16 },
   sectionLabel: { fontSize: 14, fontWeight: '500' },
-  card: { borderRadius: 12, padding: 16 },
+  card: { padding: 16 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   rowText: { flex: 1, gap: 4 },
   rowTitle: { fontSize: 16, fontWeight: '500' },
@@ -482,17 +482,16 @@ const styles = StyleSheet.create({
   placeholder: { fontSize: 16, fontWeight: '500', flex: 1 },
   flexEnd: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   serviceDot: { width: 12, height: 12, borderRadius: 6 },
-  dateBtn: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 14, borderRadius: 12, backgroundColor: BLUE },
-  dateText: { color: '#FFFFFF', fontSize: 16, fontWeight: '500', flex: 1 },
+  dateBtn: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 14 },
+  dateText: { fontSize: 16, fontWeight: '500', flex: 1 },
   timeRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  timeCard: { flex: 1, alignItems: 'center', gap: 8, paddingVertical: 16, borderRadius: 12, borderWidth: 1 },
+  timeCard: { flex: 1, alignItems: 'center', gap: 8, paddingVertical: 16 },
   timeLabel: { fontSize: 12, fontWeight: '500' },
   timeValueRow: { flexDirection: 'row', alignItems: 'baseline', gap: 4 },
-  timeValue: { fontSize: 24, fontWeight: '700' },
   timeAmpm: { fontSize: 14, fontWeight: '600' },
   durationRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   durationText: { fontSize: 14, fontWeight: '500' },
-  breakdown: { borderWidth: 1, borderRadius: 12, padding: 16, gap: 10 },
+  breakdown: { borderWidth: 1, padding: 16, gap: 10 },
   breakdownRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   breakdownDot: { width: 12, height: 12, borderRadius: 6 },
   breakdownLabel: { fontSize: 14 },

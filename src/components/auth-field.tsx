@@ -60,6 +60,7 @@ export function AuthField({
           {
             backgroundColor: theme.cardBackground,
             borderColor: borderColor ?? theme.divider,
+            borderRadius: theme.isEditorial ? 2 : 12,
           },
         ]}>
         <Icon name={icon} size={16} color={theme.secondaryText} />
@@ -97,7 +98,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     padding: 16,
-    borderRadius: 12,
     borderWidth: 1,
   },
   input: { flex: 1, fontSize: 16, paddingVertical: 4, textAlignVertical: 'center' },

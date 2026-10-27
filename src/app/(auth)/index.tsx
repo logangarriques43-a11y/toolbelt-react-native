@@ -1,119 +1,100 @@
 /**
- * Landing screen — port of HomeView.swift.
- * Two role cards: create a business account, or sign into an existing one.
- * (Client onboarding is out of scope for this port.)
+ * Landing screen — port of the redesigned HomeView.swift.
+ * Filled app icon, serif headline, a card with the Business owner path, then
+ * an inverse Sign in button. (iOS also offers a Staff member row; the RN app
+ * has no staff sign-in yet, so it is left out here.)
  */
 
 import { useRouter } from 'expo-router';
+import type { SFSymbol } from 'expo-symbols';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { DashboardGradient } from '@/components/dashboard-gradient';
 import { Icon } from '@/components/icon';
-import { withOpacity } from '@/lib/color';
-import { iOSColors } from '@/theme/tokens';
+import { ThemedButton, ThemedIconTile } from '@/components/themed';
+import { DISPLAY_FONT } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
-import type { SFSymbol } from 'expo-symbols';
 
 export default function Landing() {
   const theme = useAppTheme();
   const router = useRouter();
 
   return (
-    <DashboardGradient>
-      <SafeAreaView style={styles.safe}>
+    <View style={[styles.fill, { backgroundColor: theme.background }]}>
+      <SafeAreaView style={styles.fill}>
         <ScrollView contentContainerStyle={styles.content}>
           <View style={styles.titleBlock}>
-            <Text style={[styles.h1, { color: theme.primaryText }]}>
-              Welcome to Our Platform
+            <ThemedIconTile name="wrench.and.screwdriver.fill" size={52} filled />
+            <Text
+              style={[
+                styles.eyebrow,
+                { color: theme.secondaryText, letterSpacing: theme.isEditorial ? 1.6 : 0.4 },
+              ]}>
+              {theme.isEditorial ? 'WELCOME' : 'Welcome'}
             </Text>
+            <Text style={[styles.h1, { color: theme.primaryText }]}>Run your business from one place.</Text>
             <Text style={[styles.subtitle, { color: theme.secondaryText }]}>
-              Choose how you&apos;d like to get started
+              Choose how you&apos;d like to get started.
             </Text>
           </View>
 
-          <View style={styles.cards}>
-            <HomeCard
+          <View style={theme.card}>
+            <HomeRow
               icon="building.2.fill"
-              title="Business Owner"
-              description="Manage your business, track analytics, and grow your customer base with powerful tools designed for success."
-              accentColor={iOSColors.blue}
+              title="Business owner"
+              description="Set up your business, take bookings and get paid."
               onPress={() => router.push('/register')}
             />
-            <HomeCard
-              icon="person.fill"
-              title="Already Have an Account?"
-              description="Sign in to access your dashboard and continue where you left off."
-              accentColor={iOSColors.gray}
-              onPress={() => router.push('/login')}
-            />
           </View>
 
-          <Text style={[styles.footer, { color: theme.secondaryText }]}>
-            Not sure? You can always switch later in your account settings.
-          </Text>
+          <View style={styles.signIn}>
+            <ThemedButton title="Sign in" kind="inverse" onPress={() => router.push('/login')} />
+            <Text style={[styles.footer, { color: theme.secondaryText }]}>
+              Already have an account? Sign in to pick up where you left off.
+            </Text>
+          </View>
         </ScrollView>
       </SafeAreaView>
-    </DashboardGradient>
+    </View>
   );
 }
 
-interface HomeCardProps {
+function HomeRow({
+  icon,
+  title,
+  description,
+  onPress,
+}: {
   icon: SFSymbol;
   title: string;
   description: string;
-  accentColor: string;
   onPress: () => void;
-}
-
-function HomeCard({ icon, title, description, accentColor, onPress }: HomeCardProps) {
+}) {
   const theme = useAppTheme();
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.card,
-        { backgroundColor: theme.cardBackground, shadowColor: accentColor },
-        pressed ? styles.cardPressed : null,
-      ]}>
-      <View style={styles.cardTop}>
-        <View
-          style={[styles.iconCircle, { backgroundColor: withOpacity(accentColor, 0.15) }]}>
-          <Icon name={icon} size={24} color={accentColor} />
-        </View>
-        <Icon name="arrow.right" size={20} weight="semibold" color={accentColor} />
+    <Pressable onPress={onPress} style={({ pressed }) => [styles.row, pressed ? styles.pressed : null]}>
+      <ThemedIconTile name={icon} size={44} />
+      <View style={styles.rowText}>
+        <Text style={[styles.rowTitle, { color: theme.primaryText }]}>{title}</Text>
+        <Text style={[styles.rowDesc, { color: theme.secondaryText }]}>{description}</Text>
       </View>
-
-      <View style={styles.cardText}>
-        <Text style={[styles.cardTitle, { color: theme.primaryText }]}>{title}</Text>
-        <Text style={[styles.cardDesc, { color: theme.secondaryText }]}>{description}</Text>
-      </View>
+      <Icon name="chevron.right" size={14} color={theme.chevronTint} />
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1 },
-  content: { gap: 40, paddingBottom: 40 },
-  titleBlock: { gap: 16, paddingTop: 40, paddingHorizontal: 20, alignItems: 'center' },
-  h1: { fontSize: 40, fontWeight: '700', textAlign: 'center' },
-  subtitle: { fontSize: 20, textAlign: 'center' },
-  cards: { gap: 32, paddingHorizontal: 20 },
-  card: {
-    padding: 24,
-    borderRadius: 20,
-    gap: 16,
-    // SwiftUI: .shadow(color: accent.opacity(0.15), radius: 10, y: 5)
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 5 },
-    elevation: 5,
-  },
-  cardPressed: { opacity: 0.92 },
-  cardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  iconCircle: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
-  cardText: { gap: 8 },
-  cardTitle: { fontSize: 24, fontWeight: '700' },
-  cardDesc: { fontSize: 16, lineHeight: 22 },
-  footer: { fontSize: 16, textAlign: 'center', paddingHorizontal: 40 },
+  fill: { flex: 1 },
+  content: { gap: 32, paddingHorizontal: 24, paddingBottom: 40 },
+  titleBlock: { gap: 14, paddingTop: 48 },
+  eyebrow: { fontSize: 13, fontWeight: '600', marginTop: 8 },
+  h1: { fontFamily: DISPLAY_FONT, fontSize: 38, lineHeight: 44 },
+  subtitle: { fontSize: 17 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 14, paddingVertical: 16 },
+  rowText: { flex: 1, gap: 4 },
+  rowTitle: { fontFamily: DISPLAY_FONT, fontSize: 20 },
+  rowDesc: { fontSize: 14 },
+  signIn: { gap: 14 },
+  footer: { fontSize: 14, textAlign: 'center' },
+  pressed: { opacity: 0.75 },
 });

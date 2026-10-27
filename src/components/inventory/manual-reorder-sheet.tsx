@@ -13,6 +13,7 @@ import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 
 import { KeyboardAwareForm } from '@/components/keyboard-aware-form';
 
 import { Icon } from '@/components/icon';
+import { ThemedIconTile } from '@/components/themed';
 import { useInventory } from '@/context/inventory-store';
 import { withOpacity } from '@/lib/color';
 import { statusColor, statusLabel, stockStatus, type InventoryItem } from '@/models/inventory';
@@ -23,6 +24,7 @@ const PRIORITY = { outOfStock: 0, lowStock: 1, inStock: 2 } as const;
 
 export function ManualReorderSheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   const theme = useAppTheme();
+  const capsule = theme.isEditorial ? 2 : 999;
   const inventory = useInventory();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [quantityText, setQuantityText] = useState('');
@@ -71,7 +73,7 @@ export function ManualReorderSheet({ visible, onClose }: { visible: boolean; onC
         <View style={styles.grabber} />
         <View style={styles.header}>
           <Pressable onPress={close} hitSlop={8}>
-            <Text style={styles.action}>Cancel</Text>
+            <Text style={[styles.action, { color: theme.accent }]}>Cancel</Text>
           </Pressable>
           <Text style={[styles.title, { color: theme.primaryText }]} numberOfLines={1}>
             {selected ? `Re-order ${selected.name}` : 'Manual Re-order'}
@@ -82,23 +84,23 @@ export function ManualReorderSheet({ visible, onClose }: { visible: boolean; onC
         {didSave ? (
           <View style={styles.success}>
             <Icon name="checkmark.circle.fill" size={56} color={iOSColors.green} />
-            <Text style={[styles.successTitle, { color: theme.primaryText }]}>Stock updated</Text>
+            <Text style={theme.display(22)}>Stock updated</Text>
             {selected && <Text style={[styles.successSub, { color: theme.secondaryText }]}>{selected.name} now shows {selected.quantity} in stock.</Text>}
             <View style={styles.row}>
-              <Pressable onPress={() => { setDidSave(false); setSelectedId(null); setQuantityText(''); }} style={[styles.outlineBtn, { borderColor: iOSColors.blue }]}>
-                <Text style={[styles.outlineBtnText, { color: iOSColors.blue }]}>Re-order another</Text>
+              <Pressable onPress={() => { setDidSave(false); setSelectedId(null); setQuantityText(''); }} style={[styles.outlineBtn, { borderColor: theme.divider, borderRadius: capsule }]}>
+                <Text style={[styles.outlineBtnText, { color: theme.primaryText }]}>Re-order another</Text>
               </Pressable>
-              <Pressable onPress={close} style={[styles.primaryBtn, styles.flex, { backgroundColor: iOSColors.blue }]}>
-                <Text style={styles.primaryBtnText}>Done</Text>
+              <Pressable onPress={close} style={[styles.primaryBtn, styles.flex, { backgroundColor: theme.accent, borderRadius: capsule }]}>
+                <Text style={[styles.primaryBtnText, { color: theme.onAccent }]}>Done</Text>
               </Pressable>
             </View>
           </View>
         ) : selected ? (
           <KeyboardAwareForm contentContainerStyle={styles.body}>
             <View style={styles.center}>
-              <Icon name="arrow.triangle.2.circlepath.circle.fill" size={44} color={iOSColors.blue} />
+              <ThemedIconTile name="arrow.triangle.2.circlepath.circle.fill" size={60} filled />
             </View>
-            <View style={[styles.stockCard, { backgroundColor: theme.divider }]}>
+            <View style={[styles.stockCard, { backgroundColor: theme.inputBackground, borderRadius: theme.cornerRadius }]}>
               <Text style={[styles.stockLabel, { color: theme.secondaryText }]}>Current stock</Text>
               <View style={styles.stockRow}>
                 <Text style={[styles.stockValue, { color: theme.primaryText }]}>{selected.quantity}</Text>
@@ -115,7 +117,7 @@ export function ManualReorderSheet({ visible, onClose }: { visible: boolean; onC
               placeholder="e.g. 10"
               placeholderTextColor={theme.secondaryText}
               keyboardType="number-pad"
-              style={[styles.input, { backgroundColor: theme.divider, color: theme.primaryText }]}
+              style={[styles.input, { backgroundColor: theme.inputBackground, color: theme.primaryText }]}
             />
             {selected.reorderQuantity != null && (
               <Text style={[styles.hint, { color: theme.secondaryText }]}>Default re-order quantity is {selected.reorderQuantity}.</Text>
@@ -123,28 +125,28 @@ export function ManualReorderSheet({ visible, onClose }: { visible: boolean; onC
             <Text style={[styles.hint, { color: theme.secondaryText }]}>This adds the units to your stock and logs an incoming entry in Activity.</Text>
 
             {selected.reorderURL && (
-              <Pressable onPress={() => WebBrowser.openBrowserAsync(selected.reorderURL!)} style={[styles.vendorBtn, { backgroundColor: iOSColors.indigo }]}>
-                <Icon name="arrow.up.right.square.fill" size={16} color="#FFFFFF" />
-                <Text style={styles.vendorBtnText}>Re-order on Vendor Site</Text>
+              <Pressable onPress={() => WebBrowser.openBrowserAsync(selected.reorderURL!)} style={[styles.vendorBtn, { backgroundColor: theme.inverse, borderRadius: capsule }]}>
+                <Icon name="arrow.up.right.square.fill" size={16} color={theme.onInverse} />
+                <Text style={[styles.vendorBtnText, { color: theme.onInverse }]}>Re-order on Vendor Site</Text>
               </Pressable>
             )}
 
-            <Pressable onPress={save} disabled={!qtyValid} style={[styles.primaryBtn, { backgroundColor: qtyValid ? iOSColors.blue : withOpacity(iOSColors.blue, 0.4) }]}>
-              <Text style={styles.primaryBtnText}>Add to Stock</Text>
+            <Pressable onPress={save} disabled={!qtyValid} style={[styles.primaryBtn, { backgroundColor: theme.accent, borderRadius: capsule, opacity: qtyValid ? 1 : 0.4 }]}>
+              <Text style={[styles.primaryBtnText, { color: theme.onAccent }]}>Add to Stock</Text>
             </Pressable>
             <Pressable onPress={() => { setSelectedId(null); setQuantityText(''); }}>
-              <Text style={[styles.link, { color: iOSColors.blue }]}>Pick a different item</Text>
+              <Text style={[styles.link, { color: theme.accent }]}>Pick a different item</Text>
             </Pressable>
           </KeyboardAwareForm>
         ) : (
           <View style={styles.picker}>
-            <View style={[styles.searchBar, { backgroundColor: theme.divider }]}>
+            <View style={[styles.searchBar, { backgroundColor: theme.inputBackground }]}>
               <Icon name="magnifyingglass" size={16} color={theme.secondaryText} />
               <TextInput value={search} onChangeText={setSearch} placeholder="Search items" placeholderTextColor={theme.secondaryText} style={[styles.searchInput, { color: theme.primaryText }]} />
             </View>
             {sorted.length === 0 ? (
               <View style={styles.empty}>
-                <Icon name="shippingbox" size={44} color={withOpacity(iOSColors.gray, 0.5)} />
+                <Icon name="shippingbox" size={44} color={theme.tertiaryText} />
                 <Text style={[styles.emptyText, { color: theme.secondaryText }]}>
                   {inventory.items.length === 0 ? 'Add items to inventory first.' : 'No items match your search.'}
                 </Text>
@@ -154,7 +156,7 @@ export function ManualReorderSheet({ visible, onClose }: { visible: boolean; onC
                 {sorted.map((item) => {
                   const color = statusColor(stockStatus(item));
                   return (
-                    <Pressable key={item.id} onPress={() => pick(item)} style={[styles.itemRow, { backgroundColor: theme.cardBackground, borderColor: theme.divider }]}>
+                    <Pressable key={item.id} onPress={() => pick(item)} style={[styles.itemRow, { backgroundColor: theme.cardBackground, borderColor: theme.divider, borderRadius: theme.cornerRadius }]}>
                       <View style={[styles.itemIcon, { backgroundColor: withOpacity(color, 0.15) }]}>
                         <Icon name="shippingbox.fill" size={18} color={color} />
                       </View>
@@ -186,7 +188,7 @@ const styles = StyleSheet.create({
   grabber: { alignSelf: 'center', width: 40, height: 6, borderRadius: 3, backgroundColor: 'rgba(150,150,150,0.5)', marginTop: 12, marginBottom: 8 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
   title: { flex: 1, textAlign: 'center', fontSize: 18, fontWeight: '700' },
-  action: { fontSize: 16, color: iOSColors.blue, minWidth: 56 },
+  action: { fontSize: 16, minWidth: 56 },
   hidden: { opacity: 0 },
   picker: { flex: 1, gap: 12 },
   searchBar: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 14, borderRadius: 10, marginHorizontal: 16 },
@@ -201,22 +203,21 @@ const styles = StyleSheet.create({
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, paddingHorizontal: 32 },
   emptyText: { fontSize: 14, textAlign: 'center' },
   body: { padding: 16, gap: 16 },
-  stockCard: { padding: 16, borderRadius: 12, gap: 6 },
+  stockCard: { padding: 16, gap: 6 },
   stockLabel: { fontSize: 13 },
   stockRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   stockValue: { fontSize: 28, fontWeight: '700' },
   fieldLabel: { fontSize: 14, fontWeight: '500' },
   input: { padding: 14, borderRadius: 10, fontSize: 16 },
   hint: { fontSize: 12 },
-  vendorBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 16, borderRadius: 12 },
-  vendorBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
-  primaryBtn: { alignItems: 'center', justifyContent: 'center', paddingVertical: 16, borderRadius: 12 },
-  primaryBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
+  vendorBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 16 },
+  vendorBtnText: { fontSize: 16, fontWeight: '600' },
+  primaryBtn: { alignItems: 'center', justifyContent: 'center', paddingVertical: 16 },
+  primaryBtnText: { fontSize: 16, fontWeight: '600' },
   link: { fontSize: 14, fontWeight: '500', textAlign: 'center' },
   success: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16, padding: 24 },
-  successTitle: { fontSize: 20, fontWeight: '700' },
   successSub: { fontSize: 14, textAlign: 'center' },
   row: { flexDirection: 'row', gap: 12, alignSelf: 'stretch', marginTop: 8 },
-  outlineBtn: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 16, borderRadius: 12, borderWidth: 1 },
+  outlineBtn: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 16, borderWidth: 1 },
   outlineBtnText: { fontSize: 16, fontWeight: '500' },
 });

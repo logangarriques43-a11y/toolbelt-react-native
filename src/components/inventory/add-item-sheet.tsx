@@ -11,14 +11,15 @@ import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 
 
 import { Icon } from '@/components/icon';
 import { KeyboardAwareForm } from '@/components/keyboard-aware-form';
+import { ThemedIconTile } from '@/components/themed';
 import { ServiceLinkContent } from '@/components/inventory/service-link-sheet';
 import { useInventory } from '@/context/inventory-store';
-import { withOpacity } from '@/lib/color';
 import { iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
 export function AddItemSheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   const theme = useAppTheme();
+  const capsule = theme.isEditorial ? 2 : 999;
   const inventory = useInventory();
 
   const [step, setStep] = useState<'form' | 'services' | 'success'>('form');
@@ -61,11 +62,11 @@ export function AddItemSheet({ visible, onClose }: { visible: boolean; onClose: 
         <View style={styles.header}>
           {step === 'services' ? (
             <Pressable onPress={() => setStep('form')} hitSlop={8}>
-              <Text style={styles.action}>Back</Text>
+              <Text style={[styles.action, { color: theme.accent }]}>Back</Text>
             </Pressable>
           ) : (
             <Pressable onPress={close} hitSlop={8}>
-              <Text style={styles.action}>Cancel</Text>
+              <Text style={[styles.action, { color: theme.accent }]}>Cancel</Text>
             </Pressable>
           )}
           <Text style={[styles.title, { color: theme.primaryText }]}>
@@ -76,7 +77,7 @@ export function AddItemSheet({ visible, onClose }: { visible: boolean; onClose: 
 
         {step === 'form' ? (
           <KeyboardAwareForm contentContainerStyle={styles.body}>
-            <Icon name="plus.circle.fill" size={50} color={iOSColors.green} />
+            <ThemedIconTile name="plus.circle.fill" size={60} filled />
             <Text style={[styles.subtitle, { color: theme.secondaryText }]}>Enter item details below</Text>
 
             <Field label="Item Name">
@@ -104,8 +105,8 @@ export function AddItemSheet({ visible, onClose }: { visible: boolean; onClose: 
                     <Pressable
                       key={cat}
                       onPress={() => setCategory(cat)}
-                      style={[styles.pill, { backgroundColor: active ? iOSColors.blue : 'transparent', borderColor: iOSColors.blue }]}>
-                      <Text style={[styles.pillText, { color: active ? '#FFFFFF' : iOSColors.blue }]}>{cat}</Text>
+                      style={[styles.pill, { backgroundColor: active ? theme.accent : 'transparent', borderColor: active ? theme.accent : theme.divider, borderRadius: capsule }]}>
+                      <Text style={[styles.pillText, { color: active ? theme.onAccent : theme.primaryText }]}>{cat}</Text>
                     </Pressable>
                   );
                 })}
@@ -115,9 +116,9 @@ export function AddItemSheet({ visible, onClose }: { visible: boolean; onClose: 
             <Pressable
               onPress={() => name.trim() && setStep('services')}
               disabled={!name.trim()}
-              style={[styles.primaryBtn, { backgroundColor: name.trim() ? iOSColors.blue : withOpacity(iOSColors.blue, 0.4) }]}>
-              <Text style={styles.primaryBtnText}>Next</Text>
-              <Icon name="chevron.right" size={14} color="#FFFFFF" weight="semibold" />
+              style={[styles.primaryBtn, { backgroundColor: theme.accent, borderRadius: capsule, opacity: name.trim() ? 1 : 0.4 }]}>
+              <Text style={[styles.primaryBtnText, { color: theme.onAccent }]}>Next</Text>
+              <Icon name="chevron.right" size={14} color={theme.onAccent} weight="semibold" />
             </Pressable>
           </KeyboardAwareForm>
         ) : step === 'services' ? (
@@ -125,8 +126,8 @@ export function AddItemSheet({ visible, onClose }: { visible: boolean; onClose: 
         ) : (
           <View style={styles.success}>
             <Icon name="checkmark.circle.fill" size={60} color={iOSColors.green} />
-            <Text style={[styles.successTitle, { color: theme.primaryText }]}>Item Added!</Text>
-            <View style={[styles.summary, { borderColor: theme.divider }]}>
+            <Text style={theme.display(24)}>Item Added!</Text>
+            <View style={[styles.summary, { borderColor: theme.divider, borderRadius: theme.cornerRadius }]}>
               {name ? <SummaryRow label="Name" value={name} /> : null}
               {sku ? <SummaryRow label="SKU" value={sku} /> : null}
               {quantity ? <SummaryRow label="Quantity" value={quantity} /> : null}
@@ -134,11 +135,11 @@ export function AddItemSheet({ visible, onClose }: { visible: boolean; onClose: 
               <SummaryRow label="Category" value={category} />
             </View>
             <View style={styles.row}>
-              <Pressable onPress={reset} style={[styles.outlineBtn, { borderColor: iOSColors.blue }]}>
-                <Text style={[styles.outlineBtnText, { color: iOSColors.blue }]}>Add Another</Text>
+              <Pressable onPress={reset} style={[styles.outlineBtn, { borderColor: theme.divider, borderRadius: capsule }]}>
+                <Text style={[styles.outlineBtnText, { color: theme.primaryText }]}>Add Another</Text>
               </Pressable>
-              <Pressable onPress={close} style={[styles.primaryBtn, styles.flex, { backgroundColor: iOSColors.blue }]}>
-                <Text style={styles.primaryBtnText}>Done</Text>
+              <Pressable onPress={close} style={[styles.primaryBtn, styles.flex, { backgroundColor: theme.accent, borderRadius: capsule }]}>
+                <Text style={[styles.primaryBtnText, { color: theme.onAccent }]}>Done</Text>
               </Pressable>
             </View>
           </View>
@@ -164,7 +165,7 @@ function Input(props: ComponentProps<typeof TextInput>) {
     <TextInput
       {...props}
       placeholderTextColor={theme.secondaryText}
-      style={[styles.input, { backgroundColor: theme.divider, color: theme.primaryText }]}
+      style={[styles.input, { backgroundColor: theme.inputBackground, color: theme.primaryText }]}
     />
   );
 }
@@ -186,7 +187,7 @@ const styles = StyleSheet.create({
   grabber: { alignSelf: 'center', width: 40, height: 6, borderRadius: 3, backgroundColor: 'rgba(150,150,150,0.5)', marginTop: 12, marginBottom: 8 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingBottom: 8 },
   title: { fontSize: 18, fontWeight: '700' },
-  action: { fontSize: 16, color: iOSColors.blue },
+  action: { fontSize: 16 },
   hidden: { opacity: 0 },
   body: { padding: 16, gap: 16, alignItems: 'center' },
   subtitle: { fontSize: 14 },
@@ -195,16 +196,15 @@ const styles = StyleSheet.create({
   input: { padding: 14, borderRadius: 10, fontSize: 16 },
   row: { flexDirection: 'row', gap: 12, alignSelf: 'stretch' },
   pills: { gap: 8 },
-  pill: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, borderWidth: 1 },
+  pill: { paddingHorizontal: 16, paddingVertical: 8, borderWidth: 1 },
   pillText: { fontSize: 14, fontWeight: '500' },
-  primaryBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 16, borderRadius: 12, alignSelf: 'stretch' },
-  primaryBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
+  primaryBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 16, alignSelf: 'stretch' },
+  primaryBtnText: { fontSize: 16, fontWeight: '600' },
   success: { padding: 24, alignItems: 'center', gap: 16 },
-  successTitle: { fontSize: 22, fontWeight: '700' },
-  summary: { alignSelf: 'stretch', padding: 16, borderRadius: 12, borderWidth: 1, gap: 12 },
+  summary: { alignSelf: 'stretch', padding: 16, borderWidth: 1, gap: 12 },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between' },
   summaryLabel: { fontSize: 14, fontWeight: '500' },
   summaryValue: { fontSize: 14, fontWeight: '600' },
-  outlineBtn: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 16, borderRadius: 12, borderWidth: 1 },
+  outlineBtn: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 16, borderWidth: 1 },
   outlineBtnText: { fontSize: 16, fontWeight: '500' },
 });

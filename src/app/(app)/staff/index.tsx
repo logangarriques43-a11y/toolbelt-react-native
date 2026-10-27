@@ -3,7 +3,6 @@
  * Search, swipe-to-delete, tap-to-edit, orange FAB to add.
  */
 
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -14,13 +13,10 @@ import { Fab } from '@/components/fab';
 import { Icon } from '@/components/icon';
 import { ScreenHeader } from '@/components/screen-header';
 import { SwipeToDelete } from '@/components/swipe-to-delete';
+import { ThemedIconTile } from '@/components/themed';
 import { useStaff } from '@/context/staff-store';
-import { STAFF_ORANGE, staffInitials, type StaffMember } from '@/models/staff';
-import { Radius, cardShadow, iOSColors, lightShadow } from '@/theme/tokens';
+import { staffInitials, type StaffMember } from '@/models/staff';
 import { useAppTheme } from '@/theme/theme-context';
-
-const ORANGE_DARK = '#F27326';
-const ACTIVE_GREEN = '#4CBF80';
 
 export default function StaffScreen() {
   const theme = useAppTheme();
@@ -42,12 +38,12 @@ export default function StaffScreen() {
           title="Staff"
           right={
             <Pressable onPress={help} hitSlop={8}>
-              <Icon name="questionmark.circle" size={20} color={iOSColors.blue} />
+              <Icon name="questionmark.circle" size={20} color={theme.accent} />
             </Pressable>
           }
         />
 
-        <View style={[styles.searchBar, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
+        <View style={[styles.searchBar, theme.card, { borderRadius: theme.isEditorial ? 2 : 999 }]}>
           <Icon name="magnifyingglass" size={16} color={theme.secondaryText} />
           <TextInput
             value={search}
@@ -65,8 +61,8 @@ export default function StaffScreen() {
 
         {filtered.length === 0 ? (
           <View style={styles.empty}>
-            <Icon name="person.badge.key.fill" size={64} color={`${STAFF_ORANGE}4D`} />
-            <Text style={[styles.emptyTitle, { color: theme.primaryText }]}>
+            <ThemedIconTile name="person.badge.key.fill" size={72} filled />
+            <Text style={theme.display(22)}>
               {search ? 'No Results' : 'No Staff Members'}
             </Text>
             <Text style={[styles.emptySub, { color: theme.secondaryText }]}>
@@ -83,7 +79,7 @@ export default function StaffScreen() {
           </ScrollView>
         )}
 
-        <Fab onPress={() => router.push('/staff/new')} colors={[STAFF_ORANGE, ORANGE_DARK]} shadowColor={STAFF_ORANGE} />
+        <Fab onPress={() => router.push('/staff/new')} />
       </SafeAreaView>
     </DashboardGradient>
   );
@@ -92,34 +88,33 @@ export default function StaffScreen() {
 function StaffCard({ member, onPress }: { member: StaffMember; onPress: () => void }) {
   const theme = useAppTheme();
   return (
-    <Pressable onPress={onPress} style={[styles.card, { backgroundColor: theme.cardBackground }, cardShadow(theme)]}>
-      <LinearGradient colors={[STAFF_ORANGE, ORANGE_DARK]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.avatar}>
-        <Text style={styles.avatarText}>{staffInitials(member.name)}</Text>
-      </LinearGradient>
+    <Pressable onPress={onPress} style={[styles.card, theme.card]}>
+      <View style={[styles.avatar, { backgroundColor: theme.accent, borderRadius: theme.isEditorial ? 2 : 25 }]}>
+        <Text style={[styles.avatarText, { color: theme.onAccent }]}>{staffInitials(member.name)}</Text>
+      </View>
       <View style={styles.cardBody}>
         <Text style={[styles.name, { color: theme.primaryText }]}>{member.name}</Text>
-        <Text style={[styles.role, { color: STAFF_ORANGE }]}>{member.role}</Text>
+        <Text style={[styles.role, { color: theme.accent }]}>{member.role}</Text>
         <View style={styles.phoneRow}>
           <Icon name="phone.fill" size={11} color={theme.secondaryText} />
           <Text style={[styles.phone, { color: theme.secondaryText }]}>{member.phoneNumber || '—'}</Text>
         </View>
       </View>
-      <View style={[styles.statusDot, { backgroundColor: member.isActive ? ACTIVE_GREEN : `${iOSColors.gray}66` }]} />
+      <View style={[styles.statusDot, { backgroundColor: member.isActive ? theme.live : theme.tertiaryText }]} />
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  searchBar: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14, marginHorizontal: 16, borderRadius: 12 },
+  searchBar: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14, marginHorizontal: 16 },
   searchInput: { flex: 1, fontSize: 15, paddingVertical: 4, textAlignVertical: 'center' },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16, padding: 40 },
-  emptyTitle: { fontSize: 22, fontWeight: '700' },
   emptySub: { fontSize: 15, textAlign: 'center' },
   list: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 100, gap: 12 },
-  card: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16, borderRadius: Radius.card },
-  avatar: { width: 50, height: 50, borderRadius: 25, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { color: '#FFFFFF', fontSize: 20, fontWeight: '600' },
+  card: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16 },
+  avatar: { width: 50, height: 50, alignItems: 'center', justifyContent: 'center' },
+  avatarText: { fontSize: 20, fontWeight: '600' },
   cardBody: { flex: 1, gap: 4 },
   name: { fontSize: 17, fontWeight: '600' },
   role: { fontSize: 14 },

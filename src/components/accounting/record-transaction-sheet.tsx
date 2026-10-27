@@ -49,10 +49,10 @@ export function RecordTransactionSheet({ visible, onClose }: { visible: boolean;
       <DashboardGradient>
         <SafeAreaView style={styles.safe} edges={['top']}>
           <View style={[styles.header, { backgroundColor: theme.cardBackground }]}>
-            <Pressable onPress={onClose} hitSlop={8}><Text style={styles.action}>Cancel</Text></Pressable>
+            <Pressable onPress={onClose} hitSlop={8}><Text style={[styles.action, { color: theme.accent }]}>Cancel</Text></Pressable>
             <Text style={[styles.title, { color: theme.primaryText }]}>Record Transaction</Text>
             <Pressable onPress={save} disabled={!valid} hitSlop={8}>
-              <Text style={[styles.action, !valid ? styles.disabled : null]}>Save</Text>
+              <Text style={[styles.action, { color: theme.accent }, !valid ? styles.disabled : null]}>Save</Text>
             </Pressable>
           </View>
 
@@ -114,7 +114,7 @@ function Field({
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16 },
-  action: { fontSize: 16, fontWeight: '600', color: iOSColors.blue },
+  action: { fontSize: 16, fontWeight: '600' },
   disabled: { opacity: 0.4 },
   title: { fontSize: 18, fontWeight: '700' },
   body: { padding: 20, gap: 16, paddingBottom: 40 },

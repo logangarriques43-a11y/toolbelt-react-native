@@ -24,8 +24,6 @@ import { Icon } from '@/components/icon';
 import { TitleBadge } from '@/components/title-badge';
 import { firebaseAuthErrorMessage } from '@/lib/auth-errors';
 import { auth } from '@/lib/firebase';
-import { withOpacity } from '@/lib/color';
-import { Brand, iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
 const EMAIL_RE = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
@@ -68,13 +66,13 @@ export default function Login() {
         <ScrollView contentContainerStyle={styles.content}>
           <View style={styles.titleBlock}>
             <TitleBadge icon="person.fill" />
-            <Text style={[styles.h1, { color: theme.primaryText }]}>Welcome Back</Text>
+            <Text style={theme.display(28, '500')}>Welcome Back</Text>
             <Text style={[styles.subtitle, { color: theme.secondaryText }]}>
               Sign in to continue managing your business
             </Text>
           </View>
 
-          <View style={[styles.formCard, { backgroundColor: theme.cardBackground }]}>
+          <View style={[styles.formCard, theme.card]}>
             <AuthField
               title="Email or Phone"
               icon="person.fill"
@@ -95,7 +93,7 @@ export default function Login() {
               placeholder="Enter your password"
             />
             <Pressable style={styles.forgotRow} onPress={() => router.push('/forgot-password')}>
-              <Text style={[styles.forgot, { color: Brand.accent }]}>Forgot Password?</Text>
+              <Text style={[styles.forgot, { color: theme.accent }]}>Forgot Password?</Text>
             </Pressable>
           </View>
 
@@ -110,9 +108,9 @@ export default function Login() {
           </View>
 
           <View style={styles.dividerRow}>
-            <View style={[styles.line, { backgroundColor: withOpacity(iOSColors.gray, 0.3) }]} />
+            <View style={[styles.line, { backgroundColor: theme.divider }]} />
             <Text style={[styles.or, { color: theme.secondaryText }]}>or</Text>
-            <View style={[styles.line, { backgroundColor: withOpacity(iOSColors.gray, 0.3) }]} />
+            <View style={[styles.line, { backgroundColor: theme.divider }]} />
           </View>
 
           <View style={styles.altButtons}>
@@ -126,7 +124,7 @@ export default function Login() {
               Don&apos;t have an account?{' '}
             </Text>
             <Pressable onPress={() => router.push('/register')}>
-              <Text style={[styles.bottomLink, { color: Brand.accent }]}>Create Account</Text>
+              <Text style={[styles.bottomLink, { color: theme.accent }]}>Create Account</Text>
             </Pressable>
           </View>
         </ScrollView>
@@ -150,12 +148,13 @@ function OutlineButton({
       style={[
         styles.outline,
         {
-          backgroundColor: theme.cardBackground,
-          borderColor: accent ? withOpacity(Brand.accent, 0.4) : withOpacity(iOSColors.gray, 0.3),
-          borderWidth: accent ? 1.5 : 1,
+          backgroundColor: 'transparent',
+          borderColor: theme.divider,
+          borderWidth: 1,
+          borderRadius: theme.isEditorial ? 2 : 999,
         },
       ]}>
-      <Icon name={icon} size={18} color={theme.primaryText} />
+      <Icon name={icon} size={18} color={accent ? theme.accent : theme.primaryText} />
       <Text style={[styles.outlineText, { color: theme.primaryText }]}>{title}</Text>
     </Pressable>
   );
@@ -165,18 +164,11 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   content: { gap: 32, paddingBottom: 40 },
   titleBlock: { gap: 12, alignItems: 'center', paddingTop: 40 },
-  h1: { fontSize: 28, fontWeight: '700' },
   subtitle: { fontSize: 16, textAlign: 'center', paddingHorizontal: 20 },
   formCard: {
     marginHorizontal: 20,
     padding: 24,
-    borderRadius: 20,
     gap: 20,
-    shadowColor: '#000000',
-    shadowOpacity: 0.06,
-    shadowRadius: 15,
-    shadowOffset: { width: 0, height: 5 },
-    elevation: 4,
   },
   forgotRow: { alignSelf: 'flex-end' },
   forgot: { fontSize: 14, fontWeight: '500' },
@@ -191,7 +183,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 12,
     paddingVertical: 14,
-    borderRadius: 12,
   },
   outlineText: { fontSize: 16, fontWeight: '500' },
   bottomRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },

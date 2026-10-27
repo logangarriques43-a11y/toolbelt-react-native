@@ -12,7 +12,6 @@ import { withOpacity } from '@/lib/color';
 import { blockMetrics } from '@/lib/schedule-layout';
 import { STAFF_TINT_OPACITY } from '@/lib/staff-shading';
 import { appointmentTimeRange, type Appointment } from '@/models/appointment';
-import { iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
 export function AppointmentBlock({
@@ -47,7 +46,6 @@ export function AppointmentBlock({
             borderColor: staffTint ? withOpacity(staffTint, 0.55) : withOpacity(a.serviceColor, 0.3),
             borderBottomLeftRadius: hasTail ? 0 : 8,
             borderBottomRightRadius: hasTail ? 0 : 8,
-            shadowColor: theme.shadowColor,
           },
         ]}>
         {staffTint ? (
@@ -112,16 +110,16 @@ export function AppointmentBlock({
             {
               height: blockH,
               width,
-              backgroundColor: withOpacity(iOSColors.gray, 0.25),
-              borderColor: withOpacity(iOSColors.gray, 0.5),
+              backgroundColor: theme.inputBackground,
+              borderColor: theme.divider,
               borderBottomLeftRadius: 8,
               borderBottomRightRadius: 8,
             },
           ]}>
           {blockH >= 24 ? (
             <View style={styles.tailLabel}>
-              <Icon name="lock.fill" size={11} color={withOpacity(iOSColors.gray, 0.8)} />
-              <Text style={[styles.tailText, { color: withOpacity(iOSColors.gray, 0.8) }]}>Blocked</Text>
+              <Icon name="lock.fill" size={11} color={theme.secondaryText} />
+              <Text style={[styles.tailText, { color: theme.secondaryText }]}>Blocked</Text>
             </View>
           ) : null}
         </View>
@@ -141,9 +139,6 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 8,
     borderWidth: 1,
     overflow: 'hidden',
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
   },
   colorBar: { width: 4, alignSelf: 'stretch', borderRadius: 2 },
   textBlock: { flex: 1, gap: 4 },

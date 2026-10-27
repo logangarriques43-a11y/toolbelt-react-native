@@ -1,6 +1,6 @@
 /**
  * UserTypeCard — port of UserTypecard.swift (the role picker on the landing
- * screen). Large tappable card: tinted icon tile, title, description, and a
+ * screen). Large tappable card: themed icon tile, title, description, and a
  * "Get Started →" affordance. Press applies the same spring feedback as the
  * SwiftUI original (card scales to 0.98 / lifts, icon scales to 1.1, arrow
  * nudges right).
@@ -15,14 +15,15 @@ import type { SFSymbol } from 'expo-symbols';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Icon } from '@/components/icon';
-import { Radius } from '@/theme/tokens';
+import { ThemedIconTile } from '@/components/themed';
 import { useAppTheme } from '@/theme/theme-context';
 
 export interface UserTypeCardProps {
   icon: SFSymbol;
   title: string;
   description: string;
-  accentColor: string;
+  /** Ignored since the redesign (tiles use the look's accent); kept so callers compile. */
+  accentColor?: string;
   onPress: () => void;
 }
 
@@ -33,7 +34,6 @@ export function UserTypeCard({
   icon,
   title,
   description,
-  accentColor,
   onPress,
 }: UserTypeCardProps) {
   const theme = useAppTheme();
@@ -60,30 +60,23 @@ export function UserTypeCard({
       <Animated.View
         style={[
           styles.card,
-          { backgroundColor: theme.cardBackground },
+          theme.card,
           cardStyle,
         ]}>
-        {/* Decorative top-trailing circle. */}
-        <View
-          style={[styles.decorCircle, { backgroundColor: `${accentColor}1A` }]}
-          pointerEvents="none"
-        />
-
         <View style={styles.content}>
-          <Animated.View
-            style={[styles.iconTile, { backgroundColor: accentColor }, iconStyle]}>
-            <Icon name={icon} size={32} color="#FFFFFF" />
+          <Animated.View style={iconStyle}>
+            <ThemedIconTile name={icon} size={64} />
           </Animated.View>
 
-          <Text style={[styles.title, { color: theme.primaryText }]}>{title}</Text>
+          <Text style={theme.display(28, '500')}>{title}</Text>
           <Text style={[styles.description, { color: theme.secondaryText }]}>
             {description}
           </Text>
 
           <View style={styles.cta}>
-            <Text style={[styles.ctaText, { color: accentColor }]}>Get Started</Text>
+            <Text style={[styles.ctaText, { color: theme.accent }]}>Get Started</Text>
             <Animated.View style={arrowStyle}>
-              <Icon name="arrow.right" size={16} weight="semibold" color={accentColor} />
+              <Icon name="arrow.right" size={16} weight="semibold" color={theme.accent} />
             </Animated.View>
           </View>
         </View>
@@ -93,33 +86,8 @@ export function UserTypeCard({
 }
 
 const styles = StyleSheet.create({
-  card: {
-    borderRadius: Radius.card,
-    overflow: 'hidden',
-    // SwiftUI: .shadow(color: black.opacity(0.1), radius: 10, y: 4)
-    shadowColor: '#000000',
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 5,
-  },
-  decorCircle: {
-    position: 'absolute',
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    top: -30,
-    right: -30,
-  },
+  card: { overflow: 'hidden' },
   content: { padding: 32, gap: 16, alignItems: 'flex-start' },
-  iconTile: {
-    width: 64,
-    height: 64,
-    borderRadius: Radius.control,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: { fontSize: 28, fontWeight: '700' },
   description: { fontSize: 16, lineHeight: 22 },
   cta: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   ctaText: { fontSize: 16, fontWeight: '600' },

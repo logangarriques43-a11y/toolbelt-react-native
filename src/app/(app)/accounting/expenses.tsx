@@ -14,13 +14,12 @@ import { DashboardGradient } from '@/components/dashboard-gradient';
 import { Icon } from '@/components/icon';
 import { ScreenHeader } from '@/components/screen-header';
 import { SwipeToDelete } from '@/components/swipe-to-delete';
+import { ThemedButton } from '@/components/themed';
 import { useExpenses } from '@/context/expenses-store';
-import { withOpacity } from '@/lib/color';
 import { EXPENSE_CATEGORIES } from '@/models/expense';
 import { iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
-const PURPLE = '#9966E6';
 const usd = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
 
 export default function Expenses() {
@@ -48,13 +47,13 @@ export default function Expenses() {
           title="Expenses"
           right={
             <Pressable onPress={() => router.push('/accounting/record-expense')} hitSlop={8}>
-              <Icon name="plus.circle.fill" size={24} color={PURPLE} />
+              <Icon name="plus.circle.fill" size={24} color={theme.accent} />
             </Pressable>
           }
         />
 
         <View style={styles.controls}>
-          <View style={[styles.search, { backgroundColor: theme.cardBackground }]}>
+          <View style={[styles.search, { backgroundColor: theme.cardBackground, borderWidth: 1, borderColor: theme.divider }]}>
             <Icon name="magnifyingglass" size={16} color={theme.secondaryText} />
             <TextInput value={search} onChangeText={setSearch} placeholder="Search expenses..." placeholderTextColor={theme.tertiaryText} style={[styles.searchInput, { color: theme.primaryText }]} />
           </View>
@@ -70,7 +69,7 @@ export default function Expenses() {
             <Text style={[styles.count, { color: theme.secondaryText }]}>
               {filtered.length} expense{filtered.length === 1 ? '' : 's'}
             </Text>
-            <Text style={[styles.total, { color: PURPLE }]}>Total: {usd.format(total)}</Text>
+            <Text style={[styles.total, { color: iOSColors.red }]}>Total: {usd.format(total)}</Text>
           </View>
         </View>
 
@@ -78,9 +77,7 @@ export default function Expenses() {
           <View style={styles.empty}>
             <Icon name="tray" size={40} color={theme.secondaryText} />
             <Text style={[styles.emptyText, { color: theme.secondaryText }]}>No expenses found</Text>
-            <Pressable onPress={() => router.push('/accounting/record-expense')} style={[styles.recordBtn, { backgroundColor: PURPLE }]}>
-              <Text style={styles.recordText}>Record an Expense</Text>
-            </Pressable>
+            <ThemedButton title="Record an Expense" kind="accent" onPress={() => router.push('/accounting/record-expense')} />
           </View>
         ) : (
           <ScrollView contentContainerStyle={styles.list}>
@@ -99,9 +96,9 @@ export default function Expenses() {
 function Pill({ label, icon, active, onPress }: { label: string; icon?: SFSymbol; active: boolean; onPress: () => void }) {
   const theme = useAppTheme();
   return (
-    <Pressable onPress={onPress} style={[styles.pill, { backgroundColor: active ? PURPLE : withOpacity(PURPLE, 0.1) }]}>
-      {icon ? <Icon name={icon} size={11} color={active ? '#FFFFFF' : PURPLE} /> : null}
-      <Text style={[styles.pillText, { color: active ? '#FFFFFF' : PURPLE }]}>{label}</Text>
+    <Pressable onPress={onPress} style={[styles.pill, { borderRadius: theme.isEditorial ? 2 : 999, backgroundColor: active ? theme.accent : theme.accentSoft }]}>
+      {icon ? <Icon name={icon} size={11} color={active ? theme.onAccent : theme.accent} /> : null}
+      <Text style={[styles.pillText, { color: active ? theme.onAccent : theme.accent }]}>{label}</Text>
     </Pressable>
   );
 }
@@ -112,14 +109,12 @@ const styles = StyleSheet.create({
   search: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, marginHorizontal: 20, borderRadius: 12 },
   searchInput: { flex: 1, fontSize: 15, paddingVertical: 4, textAlignVertical: 'center' },
   pills: { gap: 8, paddingHorizontal: 20 },
-  pill: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 },
+  pill: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 6 },
   pillText: { fontSize: 12, fontWeight: '500' },
   summary: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 20 },
   count: { fontSize: 13 },
   total: { fontSize: 13, fontWeight: '600' },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
   emptyText: { fontSize: 16 },
-  recordBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 20 },
-  recordText: { color: '#FFFFFF', fontSize: 14, fontWeight: '600' },
   list: { padding: 16, gap: 8, paddingBottom: 40 },
 });

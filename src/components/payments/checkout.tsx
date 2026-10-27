@@ -6,23 +6,20 @@
  * opens an Edit/Delete menu (Swift `.contextMenu`).
  */
 
-import { LinearGradient } from 'expo-linear-gradient';
 import type { SFSymbol } from 'expo-symbols';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/icon';
+import { ThemedIconTile } from '@/components/themed';
 import type {
   SelectedProductItem,
   SelectedServiceItem,
 } from '@/models/cart';
 import type { Product } from '@/models/product';
 import type { Service } from '@/models/service';
+import { DISPLAY_FONT } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
-
-export const BRAND_BLUE = '#6680F2';
-export const BRAND_PURPLE = '#9966E6';
-const BRAND_GRADIENT = [BRAND_BLUE, BRAND_PURPLE] as const;
 
 export type CheckoutTab = 'Services' | 'Products' | 'Keypad';
 export const CHECKOUT_TABS: CheckoutTab[] = ['Services', 'Products', 'Keypad'];
@@ -77,19 +74,15 @@ export function Checkout(props: CheckoutProps) {
     <View style={styles.flex}>
       {/* Tab picker */}
       <View style={styles.tabBarWrap}>
-        <View style={[styles.tabBar, { backgroundColor: 'rgba(128,128,128,0.1)' }]}>
+        <View style={[styles.tabBar, { backgroundColor: theme.inputBackground, borderRadius: theme.isEditorial ? 2 : 999 }]}>
           {CHECKOUT_TABS.map((t) => {
             const active = tab === t;
             return (
-              <Pressable key={t} style={styles.tabBtn} onPress={() => props.onTabChange(t)}>
+              <Pressable key={t} style={[styles.tabBtn, { borderRadius: theme.isEditorial ? 2 : 999 }]} onPress={() => props.onTabChange(t)}>
                 {active ? (
-                  <LinearGradient
-                    colors={BRAND_GRADIENT}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={styles.tabFill}>
-                    <Text style={[styles.tabText, styles.tabTextActive]}>{t}</Text>
-                  </LinearGradient>
+                  <View style={[styles.tabFill, { backgroundColor: theme.accent, borderRadius: theme.isEditorial ? 2 : 999 }]}>
+                    <Text style={[styles.tabText, styles.tabTextActive, { color: theme.onAccent }]}>{t}</Text>
+                  </View>
                 ) : (
                   <Text style={[styles.tabText, { color: theme.secondaryText }]}>{t}</Text>
                 )}
@@ -117,7 +110,7 @@ export function Checkout(props: CheckoutProps) {
 
         {tab !== 'Keypad' && (
           <Pressable
-            style={[styles.layoutToggle, { backgroundColor: theme.cardBackground, bottom: insets.bottom + 16 }]}
+            style={[styles.layoutToggle, { backgroundColor: theme.cardBackground, borderColor: theme.divider, bottom: insets.bottom + 16 }]}
             onPress={props.onToggleLayout}>
             <LayoutToggleGlyph active={tab === 'Services' ? props.showServiceList : props.showProductList} />
           </Pressable>
@@ -129,10 +122,12 @@ export function Checkout(props: CheckoutProps) {
 
 /** The little grid/list stack glyph inside the layout toggle. */
 function LayoutToggleGlyph({ active }: { active: boolean }) {
+  const theme = useAppTheme();
+  const fill = active ? theme.accent : theme.tertiaryText;
   return (
     <View style={styles.glyph}>
-      <View style={{ width: 18, height: active ? 6 : 10, borderRadius: 2, backgroundColor: active ? BRAND_BLUE : '#999' }} />
-      <View style={{ width: 18, height: active ? 6 : 10, borderRadius: 2, backgroundColor: active ? BRAND_PURPLE : '#999' }} />
+      <View style={{ width: 18, height: active ? 6 : 10, borderRadius: 2, backgroundColor: fill }} />
+      <View style={{ width: 18, height: active ? 6 : 10, borderRadius: 2, backgroundColor: fill }} />
     </View>
   );
 }
@@ -170,7 +165,7 @@ function ServicesGrid(props: CheckoutProps) {
           />
         ))}
         {Array.from({ length: fillers }, (_, i) => (
-          <View key={`f${i}`} style={[styles.emptyCard, { borderColor: theme.divider }]} />
+          <View key={`f${i}`} style={[styles.emptyCard, { borderColor: theme.divider, backgroundColor: theme.inputBackground }]} />
         ))}
       </View>
     </ScrollView>
@@ -179,10 +174,10 @@ function ServicesGrid(props: CheckoutProps) {
 
 function ServicesList(props: CheckoutProps) {
   const theme = useAppTheme();
-  const buckets: { name: string; color: string; pred: (s: Service) => boolean }[] = [
-    { name: 'Quick Services', color: '#33C773', pred: (s) => s.duration <= 30 },
-    { name: 'Standard Services', color: BRAND_BLUE, pred: (s) => s.duration > 30 && s.duration <= 60 },
-    { name: 'Extended Services', color: BRAND_PURPLE, pred: (s) => s.duration > 60 },
+  const buckets: { name: string; pred: (s: Service) => boolean }[] = [
+    { name: 'Quick Services', pred: (s) => s.duration <= 30 },
+    { name: 'Standard Services', pred: (s) => s.duration > 30 && s.duration <= 60 },
+    { name: 'Extended Services', pred: (s) => s.duration > 60 },
   ];
   const groups = buckets
     .map((b) => ({ ...b, items: props.services.filter(b.pred) }))
@@ -197,7 +192,7 @@ function ServicesList(props: CheckoutProps) {
       ) : (
         groups.map((g) => (
           <View key={g.name}>
-            <SectionHeader title={g.name} color={g.color} count={g.items.length} />
+            <SectionHeader title={g.name} count={g.items.length} />
             <View style={styles.listGroup}>
               {g.items.map((s) => (
                 <ListRow
@@ -246,7 +241,7 @@ function ProductsGrid(props: CheckoutProps) {
           />
         ))}
         {Array.from({ length: fillers }, (_, i) => (
-          <View key={`f${i}`} style={[styles.emptyCard, { borderColor: theme.divider }]} />
+          <View key={`f${i}`} style={[styles.emptyCard, { borderColor: theme.divider, backgroundColor: theme.inputBackground }]} />
         ))}
       </View>
     </ScrollView>
@@ -271,7 +266,7 @@ function ProductsList(props: CheckoutProps) {
       ) : (
         groups.map(([category, items]) => (
           <View key={category}>
-            <SectionHeader title={category} color={BRAND_PURPLE} count={items.length} />
+            <SectionHeader title={category} count={items.length} />
             <View style={styles.listGroup}>
               {items.map((p) => (
                 <ListRow
@@ -318,7 +313,7 @@ function Keypad({ enteredAmount, onKey }: { enteredAmount: string; onKey: (k: st
               <Pressable
                 key={key}
                 onPress={() => onKey(key)}
-                style={[styles.key, { backgroundColor: theme.cardBackground }]}>
+                style={[styles.key, { backgroundColor: theme.cardBackground, borderColor: theme.divider }]}>
                 {key === '⌫' ? (
                   <Icon name="delete.left.fill" size={24} color={theme.secondaryText} />
                 ) : (
@@ -338,12 +333,12 @@ function Keypad({ enteredAmount, onKey }: { enteredAmount: string; onKey: (k: st
 function AddCard({ label, sub, onPress }: { label: string; sub: string; onPress: () => void }) {
   const theme = useAppTheme();
   return (
-    <Pressable style={[styles.card, styles.addCard]} onPress={onPress}>
-      <View style={[styles.cardTop, { backgroundColor: 'rgba(102,128,242,0.12)' }]}>
-        <Icon name="plus" size={30} color={BRAND_BLUE} weight="medium" />
+    <Pressable style={[styles.card, styles.addCard, { borderColor: theme.accent }]} onPress={onPress}>
+      <View style={[styles.cardTop, { backgroundColor: theme.accentSoft }]}>
+        <Icon name="plus" size={30} color={theme.accent} weight="medium" />
       </View>
       <View style={[styles.cardBody, { backgroundColor: theme.cardBackground }]}>
-        <Text style={[styles.cardName, { color: BRAND_BLUE }]}>{label}</Text>
+        <Text style={[styles.cardName, { color: theme.accent }]}>{label}</Text>
         <Text style={[styles.cardPrice, { color: theme.secondaryText }]}>{sub}</Text>
       </View>
     </Pressable>
@@ -378,9 +373,9 @@ function GridCard({
         <Text style={[styles.cardPrice, { color: theme.secondaryText }]}>{money0(price)}</Text>
       </View>
       {count > 0 && (
-        <LinearGradient colors={BRAND_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.qtyBadge}>
-          <Text style={styles.qtyBadgeText}>{count}</Text>
-        </LinearGradient>
+        <View style={[styles.qtyBadge, { backgroundColor: theme.accent }]}>
+          <Text style={[styles.qtyBadgeText, { color: theme.onAccent }]}>{count}</Text>
+        </View>
       )}
     </Pressable>
   );
@@ -389,9 +384,9 @@ function GridCard({
 function AddRow({ label, onPress }: { label: string; onPress: () => void }) {
   const theme = useAppTheme();
   return (
-    <Pressable style={[styles.addRow, { backgroundColor: theme.cardBackground }]} onPress={onPress}>
-      <Avatar color={BRAND_BLUE} icon="plus" />
-      <Text style={[styles.addRowText, { color: BRAND_BLUE }]}>{label}</Text>
+    <Pressable style={[styles.addRow, theme.card]} onPress={onPress}>
+      <ThemedIconTile name="plus" size={44} />
+      <Text style={[styles.addRowText, { color: theme.accent }]}>{label}</Text>
       <View style={styles.flex} />
       <Icon name="chevron.right" size={14} color={theme.secondaryText} />
     </Pressable>
@@ -420,7 +415,7 @@ function ListRow({
     <Pressable
       style={[
         styles.listRow,
-        { backgroundColor: theme.cardBackground, borderColor: qty > 0 ? 'rgba(102,128,242,0.3)' : 'transparent' },
+        { backgroundColor: theme.cardBackground, borderColor: qty > 0 ? theme.accent : theme.divider },
       ]}
       onPress={onPress}
       onLongPress={onLongPress}>
@@ -441,36 +436,33 @@ function ListRow({
       </View>
       {qty > 0 ? (
         <View style={styles.qtyInline}>
-          <Text style={[styles.qtyMult, { color: BRAND_BLUE }]}>{qty}x</Text>
+          <Text style={[styles.qtyMult, { color: theme.accent }]}>{qty}x</Text>
           <Text style={[styles.qtyTotal, { color: theme.primaryText }]}>{money0(price * qty)}</Text>
         </View>
       ) : (
-        <Icon name="plus.circle.fill" size={24} color={'rgba(102,128,242,0.6)'} />
+        <Icon name="plus.circle.fill" size={24} color={theme.accent} />
       )}
     </Pressable>
   );
 }
 
-function Avatar({ color, text, icon }: { color: string; text?: string; icon?: SFSymbol }) {
+/** Initials avatar tinted with the item's user-picked colour. */
+function Avatar({ color, text }: { color: string; text: string }) {
   return (
     <View style={[styles.avatar, { backgroundColor: withAlpha(color, 0.15) }]}>
-      {icon ? (
-        <Icon name={icon} size={18} color={color} weight="semibold" />
-      ) : (
-        <Text style={[styles.avatarText, { color }]}>{text}</Text>
-      )}
+      <Text style={[styles.avatarText, { color }]}>{text}</Text>
     </View>
   );
 }
 
-function SectionHeader({ title, color, count }: { title: string; color: string; count: number }) {
+function SectionHeader({ title, count }: { title: string; count: number }) {
   const theme = useAppTheme();
   return (
     <View style={styles.sectionHeader}>
-      <View style={[styles.sectionDot, { backgroundColor: color }]} />
+      <View style={[styles.sectionDot, { backgroundColor: theme.accent }]} />
       <Text style={[styles.sectionTitle, { color: theme.secondaryText }]}>{title}</Text>
-      <View style={[styles.sectionCount, { backgroundColor: withAlpha(color, 0.8) }]}>
-        <Text style={styles.sectionCountText}>{count}</Text>
+      <View style={[styles.sectionCount, { backgroundColor: theme.accentSoft }]}>
+        <Text style={[styles.sectionCountText, { color: theme.accent }]}>{count}</Text>
       </View>
       <View style={[styles.sectionRule, { backgroundColor: theme.divider }]} />
     </View>
@@ -481,7 +473,7 @@ function EmptyState({ icon, title, subtitle }: { icon: SFSymbol; title: string; 
   const theme = useAppTheme();
   return (
     <View style={styles.emptyState}>
-      <Icon name={icon} size={40} color={'rgba(150,150,150,0.5)'} />
+      <Icon name={icon} size={40} color={theme.tertiaryText} />
       <Text style={[styles.emptyTitle, { color: theme.secondaryText }]}>{title}</Text>
       <Text style={[styles.emptySub, { color: theme.secondaryText }]}>{subtitle}</Text>
     </View>
@@ -502,11 +494,11 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   // Tab picker
   tabBarWrap: { paddingHorizontal: 16, paddingBottom: 10 },
-  tabBar: { flexDirection: 'row', borderRadius: 12, padding: 4 },
-  tabBtn: { flex: 1, borderRadius: 10, overflow: 'hidden' },
-  tabFill: { alignItems: 'center', paddingVertical: 10, borderRadius: 10 },
+  tabBar: { flexDirection: 'row', padding: 4 },
+  tabBtn: { flex: 1, overflow: 'hidden' },
+  tabFill: { alignItems: 'center', paddingVertical: 10 },
   tabText: { fontSize: 14, fontWeight: '600', textAlign: 'center', paddingVertical: 10 },
-  tabTextActive: { color: '#FFFFFF', fontWeight: '700', paddingVertical: 0 },
+  tabTextActive: { fontWeight: '700', paddingVertical: 0 },
   // Layout toggle
   layoutToggle: {
     position: 'absolute',
@@ -517,26 +509,22 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
+    borderWidth: 1,
   },
   glyph: { gap: 3, alignItems: 'center' },
   // Grid
   gridPad: { padding: 16, paddingBottom: 20 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
   card: { width: '48%', marginBottom: 12, borderRadius: 12 },
-  addCard: { borderWidth: 1.5, borderColor: 'rgba(102,128,242,0.3)', borderStyle: 'dashed', overflow: 'hidden' },
+  addCard: { borderWidth: 1.5, borderStyle: 'dashed', overflow: 'hidden' },
   cardTop: { height: 80, alignItems: 'center', justifyContent: 'center', borderTopLeftRadius: 12, borderTopRightRadius: 12 },
   cardInitials: { fontSize: 28, fontWeight: '600', color: '#FFFFFF' },
   cardBody: { paddingHorizontal: 8, paddingVertical: 12, alignItems: 'center', gap: 4, borderBottomLeftRadius: 12, borderBottomRightRadius: 12 },
   cardName: { fontSize: 14, fontWeight: '500', textAlign: 'center' },
   cardPrice: { fontSize: 13, fontWeight: '600' },
-  emptyCard: { width: '48%', height: 130, marginBottom: 12, borderRadius: 12, borderWidth: 1, backgroundColor: 'rgba(150,150,150,0.08)' },
+  emptyCard: { width: '48%', height: 130, marginBottom: 12, borderRadius: 12, borderWidth: 1 },
   qtyBadge: { position: 'absolute', top: -8, right: -8, width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
-  qtyBadgeText: { fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
+  qtyBadgeText: { fontSize: 14, fontWeight: '700' },
   // List
   addRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, marginHorizontal: 16, marginTop: 12, borderRadius: 12 },
   addRowText: { fontSize: 16, fontWeight: '600' },
@@ -558,7 +546,7 @@ const styles = StyleSheet.create({
   sectionDot: { width: 8, height: 8, borderRadius: 4 },
   sectionTitle: { fontSize: 14, fontWeight: '600' },
   sectionCount: { width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
-  sectionCountText: { fontSize: 12, fontWeight: '700', color: '#FFFFFF' },
+  sectionCountText: { fontSize: 12, fontWeight: '700' },
   sectionRule: { flex: 1, height: 1 },
   // Empty state
   emptyState: { alignItems: 'center', gap: 16, paddingTop: 40 },
@@ -572,7 +560,7 @@ const styles = StyleSheet.create({
   keypadDisplay: { flex: 1, minHeight: 120, alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 16, paddingHorizontal: 24 },
   keypadLabel: { fontSize: 14, fontWeight: '500' },
   // lineHeight (~1.2x) so the tall bold glyphs aren't clipped top/bottom on Android.
-  keypadAmount: { fontSize: 46, fontWeight: '700', lineHeight: 56, textAlign: 'center' },
+  keypadAmount: { fontFamily: DISPLAY_FONT, fontSize: 46, fontWeight: '500', lineHeight: 56, textAlign: 'center' },
   keypadGrid: { gap: 14, paddingHorizontal: 30, paddingBottom: 16 },
   keypadRow: { flexDirection: 'row', justifyContent: 'center', gap: 14 },
   key: {
@@ -581,11 +569,7 @@ const styles = StyleSheet.create({
     borderRadius: 34,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 2,
+    borderWidth: 1,
   },
   keyText: { fontSize: 26, fontWeight: '500' },
 });

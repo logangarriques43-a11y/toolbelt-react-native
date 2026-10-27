@@ -17,6 +17,7 @@ import Animated, {
 
 import { Icon } from '@/components/icon';
 import { iOSColors } from '@/theme/tokens';
+import { useAppTheme } from '@/theme/theme-context';
 
 export function SwipeToDelete({
   children,
@@ -25,6 +26,7 @@ export function SwipeToDelete({
   children: ReactNode;
   onDelete: () => void;
 }) {
+  const theme = useAppTheme();
   const translateX = useSharedValue(0);
 
   const pan = Gesture.Pan()
@@ -51,7 +53,7 @@ export function SwipeToDelete({
 
   return (
     <View>
-      <Animated.View style={[styles.deleteBg, deleteBgStyle]}>
+      <Animated.View style={[styles.deleteBg, { borderRadius: theme.cornerRadius }, deleteBgStyle]}>
         <Icon name="trash.fill" size={24} color="#FFFFFF" />
       </Animated.View>
       <GestureDetector gesture={pan}>
@@ -64,8 +66,8 @@ export function SwipeToDelete({
 const styles = StyleSheet.create({
   deleteBg: {
     ...StyleSheet.absoluteFillObject,
+    // Destructive action: stays red in every look.
     backgroundColor: iOSColors.red,
-    borderRadius: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-end',

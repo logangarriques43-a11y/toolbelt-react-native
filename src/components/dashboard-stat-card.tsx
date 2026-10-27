@@ -1,20 +1,20 @@
 /**
  * DashboardStatCard — port of DashboardStatCard.swift.
- * Tappable stat tile: top-aligned tinted icon, then title + bold value.
+ * Tappable stat tile: top-aligned themed icon tile, then title + bold value.
  */
 
 import type { SFSymbol } from 'expo-symbols';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { Icon } from '@/components/icon';
-import { Radius, cardShadow } from '@/theme/tokens';
+import { ThemedIconTile } from '@/components/themed';
 import { useAppTheme } from '@/theme/theme-context';
 
 export interface DashboardStatCardProps {
   icon: SFSymbol;
   title: string;
   value: string;
-  color: string;
+  /** Accepted for older call sites; tiles use the look's accent. */
+  color?: string;
   onPress?: () => void;
 }
 
@@ -22,7 +22,6 @@ export function DashboardStatCard({
   icon,
   title,
   value,
-  color,
   onPress,
 }: DashboardStatCardProps) {
   const theme = useAppTheme();
@@ -32,12 +31,11 @@ export function DashboardStatCard({
       onPress={onPress}
       style={({ pressed }) => [
         styles.card,
-        { backgroundColor: theme.cardBackground },
-        cardShadow(theme),
+        theme.card,
         pressed && onPress ? styles.pressed : null,
       ]}>
       <View style={styles.iconRow}>
-        <Icon name={icon} size={28} color={color} />
+        <ThemedIconTile name={icon} size={40} />
       </View>
 
       <View style={styles.textBlock}>
@@ -57,7 +55,6 @@ const styles = StyleSheet.create({
     // row below. Cards in a row stretch to the tallest, so they stay aligned.
     minHeight: 130,
     padding: 20,
-    borderRadius: Radius.card,
     justifyContent: 'space-between',
     gap: 12,
   },

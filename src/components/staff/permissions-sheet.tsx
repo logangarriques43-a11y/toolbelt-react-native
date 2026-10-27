@@ -11,10 +11,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { DashboardGradient } from '@/components/dashboard-gradient';
 import { Icon } from '@/components/icon';
 import { useStaff } from '@/context/staff-store';
-import { withOpacity } from '@/lib/color';
 import { PERMISSIONS, permissionIcon, permissionSubtitle, permissionTitle } from '@/models/permission';
-import { STAFF_ORANGE, type StaffMember } from '@/models/staff';
-import { iOSColors } from '@/theme/tokens';
+import type { StaffMember } from '@/models/staff';
 import { useAppTheme } from '@/theme/theme-context';
 
 export function StaffPermissionsSheet({
@@ -56,17 +54,17 @@ export function StaffPermissionsSheet({
         <SafeAreaView style={styles.safe} edges={['top']}>
           <View style={styles.header}>
             <Pressable onPress={onClose} hitSlop={8}>
-              <Text style={styles.cancel}>Cancel</Text>
+              <Text style={[styles.cancel, { color: theme.accent }]}>Cancel</Text>
             </Pressable>
-            <Text style={[styles.title, { color: theme.primaryText }]}>Permissions</Text>
+            <Text style={theme.display(20)}>Permissions</Text>
             <Pressable onPress={save} hitSlop={8}>
-              <Text style={[styles.done, { color: STAFF_ORANGE }]}>Done</Text>
+              <Text style={[styles.done, { color: theme.accent }]}>Done</Text>
             </Pressable>
           </View>
 
           <ScrollView contentContainerStyle={styles.body}>
             <View style={styles.introHead}>
-              <Icon name="lock.shield.fill" size={15} color={STAFF_ORANGE} />
+              <Icon name="lock.shield.fill" size={15} color={theme.accent} />
               <Text style={[styles.introTitle, { color: theme.primaryText }]}>What this staff can see and do</Text>
             </View>
             <Text style={[styles.introSub, { color: theme.secondaryText }]}>
@@ -74,20 +72,20 @@ export function StaffPermissionsSheet({
             </Text>
 
             <View style={styles.bulkRow}>
-              <Pressable onPress={() => setAll(true)} style={[styles.bulkBtn, { backgroundColor: STAFF_ORANGE }]}>
-                <Text style={styles.bulkOn}>Enable all</Text>
+              <Pressable onPress={() => setAll(true)} style={[styles.bulkBtn, { backgroundColor: theme.accent, borderRadius: theme.isEditorial ? 2 : 999 }]}>
+                <Text style={[styles.bulkOn, { color: theme.onAccent }]}>Enable all</Text>
               </Pressable>
-              <Pressable onPress={() => setAll(false)} style={[styles.bulkBtn, { backgroundColor: withOpacity(STAFF_ORANGE, 0.12) }]}>
-                <Text style={[styles.bulkOff, { color: STAFF_ORANGE }]}>Disable all</Text>
+              <Pressable onPress={() => setAll(false)} style={[styles.bulkBtn, { backgroundColor: theme.accentSoft, borderRadius: theme.isEditorial ? 2 : 999 }]}>
+                <Text style={[styles.bulkOff, { color: theme.accent }]}>Disable all</Text>
               </Pressable>
             </View>
 
-            <View style={[styles.card, { backgroundColor: theme.cardBackground }]}>
+            <View style={[styles.card, theme.card]}>
               {PERMISSIONS.map((p, i) => (
                 <View key={p}>
                   {i > 0 ? <View style={[styles.divider, { backgroundColor: theme.divider }]} /> : null}
                   <View style={styles.row}>
-                    <Icon name={permissionIcon(p)} size={14} color={STAFF_ORANGE} />
+                    <Icon name={permissionIcon(p)} size={14} color={theme.accent} />
                     <View style={styles.rowText}>
                       <Text style={[styles.rowTitle, { color: theme.primaryText }]}>{permissionTitle(p)}</Text>
                       <Text style={[styles.rowSub, { color: theme.secondaryText }]}>{permissionSubtitle(p)}</Text>
@@ -95,7 +93,7 @@ export function StaffPermissionsSheet({
                     <Switch
                       value={states[p] ?? false}
                       onValueChange={(v) => setStates((prev) => ({ ...prev, [p]: v }))}
-                      trackColor={{ true: STAFF_ORANGE, false: withOpacity(iOSColors.gray, 0.3) }}
+                      trackColor={{ true: theme.accent, false: theme.inputBackground }}
                     />
                   </View>
                 </View>
@@ -111,18 +109,17 @@ export function StaffPermissionsSheet({
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16 },
-  cancel: { fontSize: 16, color: iOSColors.blue },
-  title: { fontSize: 18, fontWeight: '700' },
+  cancel: { fontSize: 16 },
   done: { fontSize: 16, fontWeight: '600' },
   body: { padding: 16, gap: 12, paddingBottom: 40 },
   introHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   introTitle: { fontSize: 14, fontWeight: '700' },
   introSub: { fontSize: 12 },
   bulkRow: { flexDirection: 'row', gap: 12 },
-  bulkBtn: { flex: 1, alignItems: 'center', paddingVertical: 8, borderRadius: 8 },
-  bulkOn: { color: '#FFFFFF', fontSize: 13, fontWeight: '600' },
+  bulkBtn: { flex: 1, alignItems: 'center', paddingVertical: 8 },
+  bulkOn: { fontSize: 13, fontWeight: '600' },
   bulkOff: { fontSize: 13, fontWeight: '600' },
-  card: { borderRadius: 14, paddingHorizontal: 14 },
+  card: { paddingHorizontal: 14 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10 },
   rowText: { flex: 1, gap: 2 },
   rowTitle: { fontSize: 15, fontWeight: '500' },

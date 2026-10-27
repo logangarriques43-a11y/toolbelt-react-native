@@ -8,11 +8,11 @@ import type { SFSymbol } from 'expo-symbols';
 import { ScrollView, StyleSheet, Text, View, Pressable } from 'react-native';
 
 import { Icon } from '@/components/icon';
-import { withOpacity } from '@/lib/color';
+import { ThemedIconTile } from '@/components/themed';
 import { addDays } from '@/lib/schedule-layout';
 import { appointmentTimeRange, type Appointment } from '@/models/appointment';
-import { Brand, iOSColors } from '@/theme/tokens';
-import { useAppTheme } from '@/theme/theme-context';
+import { iOSColors } from '@/theme/tokens';
+import { useAppTheme, type AppTheme } from '@/theme/theme-context';
 
 const headerFmt = new Intl.DateTimeFormat('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 const mdFmt = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' });
@@ -30,13 +30,13 @@ function headerLabel(d: Date): string {
   return headerFmt.format(d);
 }
 
-function status(a: Appointment): { text: string; color: string } {
+function status(a: Appointment, theme: AppTheme): { text: string; color: string; fg: string } {
   const now = Date.now();
   const start = new Date(a.startTime).getTime();
   const end = new Date(a.endTime).getTime();
-  if (end < now) return { text: 'COMPLETED', color: iOSColors.green };
-  if (start <= now && end >= now) return { text: 'IN PROGRESS', color: iOSColors.blue };
-  return { text: 'UPCOMING', color: iOSColors.orange };
+  if (end < now) return { text: 'COMPLETED', color: iOSColors.green, fg: '#FFFFFF' };
+  if (start <= now && end >= now) return { text: 'IN PROGRESS', color: theme.accent, fg: theme.onAccent };
+  return { text: 'UPCOMING', color: theme.accentSoft, fg: theme.accent };
 }
 
 export function ScheduleListView({
@@ -62,9 +62,9 @@ export function ScheduleListView({
   if (groups.length === 0) {
     return (
       <View style={styles.empty}>
-        <Icon name="calendar.badge.clock" size={48} color={withOpacity(iOSColors.gray, 0.5)} />
-        <Text style={[styles.emptyTitle, { color: theme.secondaryText }]}>No Appointments</Text>
-        <Text style={[styles.emptySub, { color: withOpacity(iOSColors.gray, 0.7) }]}>
+        <Icon name="calendar.badge.clock" size={48} color={theme.tertiaryText} />
+        <Text style={theme.display(22)}>No Appointments</Text>
+        <Text style={[styles.emptySub, { color: theme.secondaryText }]}>
           Your upcoming appointments will appear here
         </Text>
       </View>
@@ -87,11 +87,11 @@ export function ScheduleListView({
 
 function Card({ appointment: a, onPress }: { appointment: Appointment; onPress: () => void }) {
   const theme = useAppTheme();
-  const s = status(a);
+  const s = status(a, theme);
   return (
     <Pressable
       onPress={onPress}
-      style={[styles.card, { backgroundColor: withOpacity(a.serviceColor, 0.08), borderColor: withOpacity(a.serviceColor, 0.15) }]}>
+      style={[styles.card, { backgroundColor: theme.cardBackground, borderColor: theme.divider, borderRadius: theme.cornerRadius }]}>
       <View style={[styles.cardBar, { backgroundColor: a.serviceColor }]} />
       <View style={styles.cardContent}>
         <View style={styles.cardLeft}>
@@ -99,11 +99,11 @@ function Card({ appointment: a, onPress }: { appointment: Appointment; onPress: 
           <Text style={[styles.service, { color: theme.secondaryText }]}>{a.serviceName}</Text>
           {a.staffMemberName ? (
             <View style={styles.staffRow}>
-              <Icon name="person.fill" size={10} color={Brand.accent} />
-              <Text style={[styles.staff, { color: Brand.accent }]}>{a.staffMemberName}</Text>
+              <Icon name="person.fill" size={10} color={theme.accent} />
+              <Text style={[styles.staff, { color: theme.accent }]}>{a.staffMemberName}</Text>
             </View>
           ) : null}
-          <Text style={[styles.badge, { backgroundColor: s.color }]}>{s.text}</Text>
+          <Text style={[styles.badge, { backgroundColor: s.color, color: s.fg, borderRadius: theme.isEditorial ? 2 : 999 }]}>{s.text}</Text>
         </View>
         <View style={styles.cardRight}>
           <Text style={[styles.time, { color: theme.primaryText }]}>{appointmentTimeRange(a)}</Text>
@@ -121,31 +121,27 @@ function Card({ appointment: a, onPress }: { appointment: Appointment; onPress: 
 
 function ActionBtn({ icon }: { icon: SFSymbol }) {
   return (
-    <View style={[styles.actionBtn, { backgroundColor: Brand.accent }]}>
-      <Icon name={icon} size={12} color="#FFFFFF" />
-    </View>
+    <ThemedIconTile name={icon} size={32} />
   );
 }
 
 const styles = StyleSheet.create({
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, paddingTop: 80 },
-  emptyTitle: { fontSize: 18, fontWeight: '500' },
   emptySub: { fontSize: 14 },
   list: { padding: 20, gap: 24 },
   group: { gap: 12 },
   groupHeader: { fontSize: 16, fontWeight: '600', paddingHorizontal: 4 },
-  card: { flexDirection: 'row', borderRadius: 12, borderWidth: 1, overflow: 'hidden' },
-  cardBar: { width: 4, marginVertical: 8, marginLeft: 0, borderRadius: 2 },
+  card: { flexDirection: 'row', borderWidth: 1, overflow: 'hidden' },
+  cardBar: { width: 4, marginVertical: 10, marginLeft: 8, borderRadius: 2 },
   cardContent: { flex: 1, flexDirection: 'row', padding: 14, gap: 12 },
   cardLeft: { flex: 1, gap: 6, alignItems: 'flex-start' },
   client: { fontSize: 17, fontWeight: '600' },
   service: { fontSize: 14 },
   staffRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   staff: { fontSize: 12, fontWeight: '500' },
-  badge: { fontSize: 11, fontWeight: '700', color: '#FFFFFF', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, overflow: 'hidden' },
+  badge: { fontSize: 11, fontWeight: '700', paddingHorizontal: 10, paddingVertical: 4, overflow: 'hidden' },
   cardRight: { alignItems: 'flex-end', gap: 8 },
   time: { fontSize: 14, fontWeight: '500' },
   total: { fontSize: 13 },
   actions: { flexDirection: 'row', gap: 8 },
-  actionBtn: { width: 32, height: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
 });

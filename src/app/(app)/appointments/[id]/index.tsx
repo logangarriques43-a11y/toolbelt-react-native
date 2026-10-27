@@ -12,7 +12,6 @@
  * empty state with an inert Track button; Send Message is a stub.
  */
 
-import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { SFSymbol } from 'expo-symbols';
 import { useState } from 'react';
@@ -22,6 +21,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { DashboardGradient } from '@/components/dashboard-gradient';
 import { Icon } from '@/components/icon';
 import { ScreenHeader } from '@/components/screen-header';
+import { ThemedButton, ThemedIconTile } from '@/components/themed';
 import { OptionSheet } from '@/components/sheets/option-sheet';
 import { StaffPickerSheet } from '@/components/sheets/staff-picker-sheet';
 import { useAppointments } from '@/context/appointments-store';
@@ -42,8 +42,8 @@ import {
   type AppointmentStatus,
 } from '@/models/appointment';
 import { clientInitials } from '@/models/client';
-import { staffColor, staffInitials, STAFF_ORANGE, type StaffMember } from '@/models/staff';
-import { Radius, cardShadow, iOSColors, lightShadow } from '@/theme/tokens';
+import { staffColor, staffInitials, type StaffMember } from '@/models/staff';
+import { iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
 const STATUS_OPTIONS = APPOINTMENT_STATUSES.map((s) => ({ label: statusDisplayName(s), value: s }));
@@ -121,29 +121,25 @@ export default function AppointmentDetail() {
           <ScrollView contentContainerStyle={styles.body}>
             {/* Client header */}
             <View style={styles.clientBlock}>
-              <LinearGradient
-                colors={[iOSColors.blue, iOSColors.purple]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.avatar}>
-                <Text style={styles.avatarText}>{clientInitials(appt.clientName)}</Text>
-              </LinearGradient>
-              <Text style={[styles.clientName, { color: theme.primaryText }]}>{appt.clientName}</Text>
+              <View style={[styles.avatar, { backgroundColor: theme.accent, borderRadius: theme.isEditorial ? 2 : 50 }]}>
+                <Text style={[styles.avatarText, { color: theme.onAccent }]}>{clientInitials(appt.clientName)}</Text>
+              </View>
+              <Text style={theme.display(28)}>{appt.clientName}</Text>
               <View style={styles.metaLine}>
-                <Icon name="calendar" size={16} color={iOSColors.blue} />
+                <Icon name="calendar" size={16} color={theme.accent} />
                 <Text style={[styles.metaText, { color: theme.secondaryText }]}>
                   {detailDateFmt.format(new Date(appt.startTime))}
                 </Text>
               </View>
               <View style={styles.metaLine}>
-                <Icon name="clock" size={16} color={iOSColors.blue} />
+                <Icon name="clock" size={16} color={theme.accent} />
                 <Text style={[styles.metaText, { color: theme.secondaryText }]}>{appointmentTimeRange(appt)}</Text>
               </View>
             </View>
 
             {/* Status pills — mark Scheduled / Completed / Cancelled / No-show */}
             <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: theme.primaryText }]}>Status</Text>
+              <Text style={theme.display(20)}>Status</Text>
               <View style={styles.statusGrid}>
                 {APPOINTMENT_STATUSES.map((s) => (
                   <StatusPill key={s} status={s} active={appt.status === s} onPress={() => setStatus(s)} />
@@ -153,18 +149,20 @@ export default function AppointmentDetail() {
 
             {/* Assigned staff — tap to reassign */}
             <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: theme.primaryText }]}>Assigned Staff</Text>
+              <Text style={theme.display(20)}>Assigned Staff</Text>
               <Pressable
                 onPress={() => { if (canEditStaff) setStaffSheet(true); }}
                 disabled={!canEditStaff}
-                style={[styles.staffCard, { backgroundColor: theme.cardBackground }, cardShadow(theme)]}>
+                style={[styles.staffCard, theme.card]}>
                 {assignedStaff ? (
-                  <View style={[styles.staffAvatar, { backgroundColor: staffColor(assignedStaff) || STAFF_ORANGE }]}>
-                    <Text style={styles.staffAvatarText}>{staffInitials(assignedStaff.name)}</Text>
+                  <View style={[styles.staffAvatar, { backgroundColor: staffColor(assignedStaff) || theme.accent }]}>
+                    <Text style={[styles.staffAvatarText, { color: staffColor(assignedStaff) ? '#FFFFFF' : theme.onAccent }]}>
+                      {staffInitials(assignedStaff.name)}
+                    </Text>
                   </View>
                 ) : (
-                  <View style={[styles.staffAvatar, { backgroundColor: withOpacity(theme.secondaryText, 0.3) }]}>
-                    <Text style={styles.staffAvatarText}>—</Text>
+                  <View style={[styles.staffAvatar, { backgroundColor: theme.inputBackground }]}>
+                    <Text style={[styles.staffAvatarText, { color: theme.secondaryText }]}>—</Text>
                   </View>
                 )}
                 <View style={styles.staffText}>
@@ -177,24 +175,24 @@ export default function AppointmentDetail() {
                       : (canEditStaff ? 'Tap to assign someone' : 'Unassigned')}
                   </Text>
                 </View>
-                <Icon name="person.badge.key.fill" size={20} color={assignedStaff ? STAFF_ORANGE : theme.secondaryText} />
-                {canEditStaff ? <Icon name="chevron.right" size={14} color={theme.secondaryText} /> : null}
+                <Icon name="person.badge.key.fill" size={20} color={assignedStaff ? theme.accent : theme.secondaryText} />
+                {canEditStaff ? <Icon name="chevron.right" size={14} color={theme.chevronTint} /> : null}
               </Pressable>
             </View>
 
             {/* Service */}
             <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: theme.primaryText }]}>Service Details</Text>
-              <View style={[styles.serviceCard, { backgroundColor: theme.cardBackground }, cardShadow(theme)]}>
-                <View style={[styles.serviceDot, { backgroundColor: appt.serviceColor, shadowColor: appt.serviceColor }]} />
+              <Text style={theme.display(20)}>Service Details</Text>
+              <View style={[styles.serviceCard, theme.card]}>
+                <View style={[styles.serviceDot, { backgroundColor: appt.serviceColor }]} />
                 <View style={styles.serviceBody}>
-                  <Text style={[styles.serviceName, { color: theme.primaryText }]}>{appt.serviceName}</Text>
+                  <Text style={theme.display(20, '500')}>{appt.serviceName}</Text>
                   <View style={styles.metaLine}>
                     <Icon name="clock.fill" size={12} color={theme.secondaryText} />
                     <Text style={[styles.metaText, { color: theme.secondaryText }]}>{appt.duration} minutes</Text>
                   </View>
                 </View>
-                <Text style={[styles.servicePrice, { color: iOSColors.blue }]}>${appt.price.toFixed(2)}</Text>
+                <Text style={[theme.display(24, '500'), { color: theme.accent }]}>${appt.price.toFixed(2)}</Text>
               </View>
             </View>
 
@@ -202,7 +200,6 @@ export default function AppointmentDetail() {
             <View style={styles.infoCards}>
               <InfoCard
                 icon="bell.fill"
-                color={iOSColors.orange}
                 title="Reminder"
                 subtitle={appt.reminderMinutesBefore === 0 ? 'No reminder' : reminderLabel(appt.reminderMinutesBefore)}
                 onPress={() => setReminderSheet(true)}
@@ -225,7 +222,6 @@ export default function AppointmentDetail() {
               {appt.recurrenceFrequency ? (
                 <InfoCard
                   icon="repeat"
-                  color={iOSColors.purple}
                   title="Repeats"
                   subtitle={recurrenceDisplayName(appt.recurrenceFrequency)}
                   chevron={false}
@@ -234,7 +230,6 @@ export default function AppointmentDetail() {
 
               <InfoCard
                 icon={statusIcon(appt.status)}
-                color={statusTint(appt.status)}
                 title="Status"
                 subtitle={statusDisplayName(appt.status)}
                 onPress={() => setStatusSheet(true)}
@@ -247,18 +242,16 @@ export default function AppointmentDetail() {
             {/* Resources (deferred) */}
             <View style={styles.section}>
               <View style={styles.resourceHead}>
-                <Text style={[styles.sectionTitle, { color: theme.primaryText }]}>Resources Used</Text>
+                <Text style={theme.display(20)}>Resources Used</Text>
                 <Pressable
                   onPress={() => Alert.alert('Coming soon', 'Inventory resource tracking arrives in a later phase.')}
                   style={styles.trackBtn}>
-                  <Icon name="plus.circle.fill" size={14} color="#6680F2" />
-                  <Text style={styles.trackText}>Track</Text>
+                  <Icon name="plus.circle.fill" size={14} color={theme.accent} />
+                  <Text style={[styles.trackText, { color: theme.accent }]}>Track</Text>
                 </Pressable>
               </View>
-              <View style={[styles.resourceEmpty, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
-                <View style={[styles.resourceIcon, { backgroundColor: withOpacity(iOSColors.purple, 0.12) }]}>
-                  <Icon name="shippingbox" size={20} color={iOSColors.purple} />
-                </View>
+              <View style={[styles.resourceEmpty, theme.card]}>
+                <ThemedIconTile name="shippingbox" size={44} />
                 <View style={styles.resourceText}>
                   <Text style={[styles.resourceTitle, { color: theme.primaryText }]}>No resources tracked</Text>
                   <Text style={[styles.resourceSub, { color: theme.secondaryText }]}>Tap Track to log inventory used</Text>
@@ -268,16 +261,12 @@ export default function AppointmentDetail() {
 
             {/* Actions */}
             <View style={styles.actions}>
-              <Pressable onPress={() => router.push(`/appointments/${appt.id}/checkout`)}>
-                <LinearGradient
-                  colors={[iOSColors.blue, iOSColors.purple]}
-                  start={{ x: 0, y: 0.5 }}
-                  end={{ x: 1, y: 0.5 }}
-                  style={styles.primaryBtn}>
-                  <Icon name="creditcard.fill" size={18} color="#FFFFFF" />
-                  <Text style={styles.primaryText}>Checkout</Text>
-                </LinearGradient>
-              </Pressable>
+              <ThemedButton
+                title="Checkout"
+                icon="creditcard.fill"
+                kind="inverse"
+                onPress={() => router.push(`/appointments/${appt.id}/checkout`)}
+              />
 
               <OutlineBtn icon="calendar.badge.clock" label="Reschedule" onPress={() => router.push(`/appointments/${appt.id}/edit`)} />
               <OutlineBtn icon="message.fill" label="Send Message to Client" onPress={() => Alert.alert('Coming soon', 'Messaging arrives with the Messages phase.')} />
@@ -323,7 +312,11 @@ export default function AppointmentDetail() {
 }
 
 function StatusPill({ status, active, onPress }: { status: AppointmentStatus; active: boolean; onPress: () => void }) {
-  const tint = statusTint(status);
+  const theme = useAppTheme();
+  // Scheduled uses the look's accent; completed / cancelled / no-show keep their semantic colours.
+  const isAccent = status === 'scheduled';
+  const tint = isAccent ? theme.accent : statusTint(status);
+  const fg = isAccent ? theme.onAccent : '#FFFFFF';
   return (
     <Pressable
       onPress={onPress}
@@ -332,32 +325,33 @@ function StatusPill({ status, active, onPress }: { status: AppointmentStatus; ac
         {
           backgroundColor: active ? tint : withOpacity(tint, 0.1),
           borderColor: active ? 'transparent' : withOpacity(tint, 0.25),
+          borderRadius: theme.isEditorial ? 2 : 999,
         },
       ]}>
-      <Icon name={statusIcon(status)} size={14} color={active ? '#FFFFFF' : tint} />
-      <Text style={[styles.statusPillText, { color: active ? '#FFFFFF' : tint }]}>{statusDisplayName(status)}</Text>
-      {active ? <Icon name="checkmark" size={12} color="#FFFFFF" /> : null}
+      <Icon name={statusIcon(status)} size={14} color={active ? fg : tint} />
+      <Text style={[styles.statusPillText, { color: active ? fg : tint }]}>{statusDisplayName(status)}</Text>
+      {active ? <Icon name="checkmark" size={12} color={fg} /> : null}
     </Pressable>
   );
 }
 
-type DetailRow = { icon: SFSymbol; color: string; title: string; value: string };
+type DetailRow = { icon: SFSymbol; title: string; value: string };
 
 function NotesSection({ appointment }: { appointment: Appointment }) {
   const theme = useAppTheme();
   const rows: DetailRow[] = [];
-  if (appointment.notes) rows.push({ icon: 'doc.text.fill', color: iOSColors.blue, title: 'Notes', value: appointment.notes });
-  if (appointment.internalNotes) rows.push({ icon: 'lock.doc.fill', color: iOSColors.gray, title: 'Internal Notes', value: appointment.internalNotes });
-  if (appointment.location) rows.push({ icon: 'mappin.circle.fill', color: iOSColors.red, title: 'Location', value: appointment.location });
+  if (appointment.notes) rows.push({ icon: 'doc.text.fill', title: 'Notes', value: appointment.notes });
+  if (appointment.internalNotes) rows.push({ icon: 'lock.doc.fill', title: 'Internal Notes', value: appointment.internalNotes });
+  if (appointment.location) rows.push({ icon: 'mappin.circle.fill', title: 'Location', value: appointment.location });
 
   if (rows.length === 0) return null;
 
   return (
     <View style={styles.section}>
-      <Text style={[styles.sectionTitle, { color: theme.primaryText }]}>Details</Text>
+      <Text style={theme.display(20)}>Details</Text>
       {rows.map((r) => (
-        <View key={r.title} style={[styles.detailRow, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
-          <Icon name={r.icon} size={18} color={r.color} />
+        <View key={r.title} style={[styles.detailRow, theme.card]}>
+          <Icon name={r.icon} size={18} color={theme.accent} />
           <View style={styles.detailText}>
             <Text style={[styles.detailTitle, { color: theme.secondaryText }]}>{r.title}</Text>
             <Text style={[styles.detailValue, { color: theme.primaryText }]}>{r.value}</Text>
@@ -370,14 +364,12 @@ function NotesSection({ appointment }: { appointment: Appointment }) {
 
 function InfoCard({
   icon,
-  color,
   title,
   subtitle,
   onPress,
   chevron = true,
 }: {
   icon: SFSymbol;
-  color: string;
   title: string;
   subtitle: string;
   onPress?: () => void;
@@ -388,27 +380,19 @@ function InfoCard({
     <Pressable
       onPress={onPress}
       disabled={!onPress}
-      style={[styles.infoCard, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
-      <View style={[styles.infoIcon, { backgroundColor: withOpacity(color, 0.15) }]}>
-        <Icon name={icon} size={20} color={color} />
-      </View>
+      style={[styles.infoCard, theme.card]}>
+      <ThemedIconTile name={icon} size={44} />
       <View style={styles.infoText}>
         <Text style={[styles.infoTitle, { color: theme.primaryText }]}>{title}</Text>
         <Text style={[styles.infoSub, { color: theme.secondaryText }]}>{subtitle}</Text>
       </View>
-      {chevron ? <Icon name="chevron.right" size={14} color={withOpacity(iOSColors.gray, 0.5)} /> : null}
+      {chevron ? <Icon name="chevron.right" size={14} color={theme.chevronTint} /> : null}
     </Pressable>
   );
 }
 
 function OutlineBtn({ icon, label, onPress }: { icon: SFSymbol; label: string; onPress: () => void }) {
-  const theme = useAppTheme();
-  return (
-    <Pressable onPress={onPress} style={[styles.outlineBtn, { backgroundColor: theme.cardBackground, borderColor: iOSColors.blue }, lightShadow(theme)]}>
-      <Icon name={icon} size={18} color={iOSColors.blue} />
-      <Text style={styles.outlineText}>{label}</Text>
-    </Pressable>
-  );
+  return <ThemedButton title={label} icon={icon} kind="quiet" onPress={onPress} />;
 }
 
 const styles = StyleSheet.create({
@@ -417,32 +401,27 @@ const styles = StyleSheet.create({
   emptyText: { fontSize: 18 },
   body: { paddingBottom: 40, gap: 24 },
   clientBlock: { alignItems: 'center', gap: 12, paddingTop: 32 },
-  avatar: { width: 100, height: 100, borderRadius: 50, alignItems: 'center', justifyContent: 'center', shadowColor: iOSColors.blue, shadowOpacity: 0.3, shadowRadius: 10, shadowOffset: { width: 0, height: 5 } },
-  avatarText: { color: '#FFFFFF', fontSize: 36, fontWeight: '600' },
-  clientName: { fontSize: 28, fontWeight: '700' },
+  avatar: { width: 100, height: 100, alignItems: 'center', justifyContent: 'center' },
+  avatarText: { fontSize: 36, fontWeight: '600' },
   metaLine: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   metaText: { fontSize: 16, fontWeight: '500' },
   section: { gap: 16, paddingHorizontal: 20 },
-  sectionTitle: { fontSize: 18, fontWeight: '700' },
-  serviceCard: { flexDirection: 'row', alignItems: 'center', gap: 16, padding: 20, borderRadius: Radius.card },
-  serviceDot: { width: 50, height: 50, borderRadius: 25, shadowOpacity: 0.4, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } },
+  serviceCard: { flexDirection: 'row', alignItems: 'center', gap: 16, padding: 20 },
+  serviceDot: { width: 50, height: 50, borderRadius: 25 },
   serviceBody: { flex: 1, gap: 6 },
-  serviceName: { fontSize: 20, fontWeight: '600' },
-  servicePrice: { fontSize: 24, fontWeight: '700' },
   infoCards: { gap: 12, paddingHorizontal: 20 },
   infoCard: { flexDirection: 'row', alignItems: 'center', gap: 16, padding: 16, borderRadius: 12 },
-  infoIcon: { width: 50, height: 50, borderRadius: 25, alignItems: 'center', justifyContent: 'center' },
   infoText: { flex: 1, gap: 4 },
   infoTitle: { fontSize: 16, fontWeight: '600' },
   infoSub: { fontSize: 14 },
   defaultRow: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 4 },
   defaultText: { fontSize: 13 },
   statusGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  statusPill: { flexGrow: 1, flexBasis: '45%', flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, paddingVertical: 12, borderRadius: 12, borderWidth: 1 },
+  statusPill: { flexGrow: 1, flexBasis: '45%', flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, paddingVertical: 12, borderWidth: 1 },
   statusPillText: { fontSize: 14, fontWeight: '600', flex: 1 },
-  staffCard: { flexDirection: 'row', alignItems: 'center', gap: 16, padding: 20, borderRadius: Radius.card },
+  staffCard: { flexDirection: 'row', alignItems: 'center', gap: 16, padding: 20 },
   staffAvatar: { width: 50, height: 50, borderRadius: 25, alignItems: 'center', justifyContent: 'center' },
-  staffAvatarText: { color: '#FFFFFF', fontSize: 20, fontWeight: '600' },
+  staffAvatarText: { fontSize: 20, fontWeight: '600' },
   staffText: { flex: 1, gap: 4 },
   staffName: { fontSize: 18, fontWeight: '600' },
   staffSub: { fontSize: 14 },
@@ -452,15 +431,11 @@ const styles = StyleSheet.create({
   detailValue: { fontSize: 15 },
   resourceHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   trackBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  trackText: { color: '#6680F2', fontSize: 14, fontWeight: '600' },
+  trackText: { fontSize: 14, fontWeight: '600' },
   resourceEmpty: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16, borderRadius: 12 },
-  resourceIcon: { width: 50, height: 50, borderRadius: 25, alignItems: 'center', justifyContent: 'center' },
   resourceText: { flex: 1, gap: 4 },
   resourceTitle: { fontSize: 15, fontWeight: '500' },
   resourceSub: { fontSize: 13 },
   actions: { gap: 12, paddingHorizontal: 20 },
-  primaryBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, padding: 16, borderRadius: 12 },
-  primaryText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
-  outlineBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, padding: 16, borderRadius: 12, borderWidth: 2 },
-  outlineText: { color: iOSColors.blue, fontSize: 16, fontWeight: '600' },
+
 });

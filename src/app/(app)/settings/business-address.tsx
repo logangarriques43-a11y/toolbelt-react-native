@@ -5,20 +5,18 @@
 
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DashboardGradient } from '@/components/dashboard-gradient';
-import { Icon } from '@/components/icon';
 import { KeyboardAwareForm } from '@/components/keyboard-aware-form';
 import { ScreenHeader } from '@/components/screen-header';
+import { ThemedButton, ThemedIconTile } from '@/components/themed';
 import { useBusinessSettings } from '@/context/business-settings-store';
 import type { BusinessAddress } from '@/models/business-settings';
-import { iOSColors, lightShadow } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
 export default function BusinessAddressScreen() {
-  const theme = useAppTheme();
   const router = useRouter();
   const s = useBusinessSettings();
   const [addr, setAddr] = useState<BusinessAddress>(s.address);
@@ -35,9 +33,7 @@ export default function BusinessAddressScreen() {
       <SafeAreaView style={styles.safe} edges={['top']}>
         <ScreenHeader title="Business Address" />
         <KeyboardAwareForm contentContainerStyle={styles.body}>
-          <View style={[styles.iconCircle, { backgroundColor: theme.iconBackground(iOSColors.red) }]}>
-            <Icon name="mappin.circle.fill" size={30} color={iOSColors.red} />
-          </View>
+          <ThemedIconTile name="mappin.circle.fill" size={72} filled />
 
           <View style={styles.form}>
             <Field label="Street Address" placeholder="e.g. 123 Main St" value={addr.street} onChangeText={field('street')} />
@@ -50,9 +46,7 @@ export default function BusinessAddressScreen() {
             <Field label="Country" placeholder="e.g. United States" value={addr.country} onChangeText={field('country')} />
           </View>
 
-          <Pressable onPress={save} style={[styles.save, { backgroundColor: iOSColors.red }]}>
-            <Text style={styles.saveText}>Save Address</Text>
-          </Pressable>
+          <ThemedButton title="Save Address" onPress={save} style={styles.save} />
         </KeyboardAwareForm>
       </SafeAreaView>
     </DashboardGradient>
@@ -83,13 +77,11 @@ function Field({
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   body: { padding: 20, gap: 24, alignItems: 'center', paddingBottom: 40 },
-  iconCircle: { width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center' },
   form: { alignSelf: 'stretch', gap: 16 },
   rowFields: { flexDirection: 'row', gap: 12 },
   flex: { flex: 1 },
   field: { gap: 8 },
   fieldLabel: { fontSize: 14, fontWeight: '500' },
   input: { fontSize: 16, padding: 14, borderRadius: 12, borderWidth: 1 },
-  save: { alignSelf: 'stretch', paddingVertical: 16, borderRadius: 14, alignItems: 'center' },
-  saveText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
+  save: { alignSelf: 'stretch' },
 });

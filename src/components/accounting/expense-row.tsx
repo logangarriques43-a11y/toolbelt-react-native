@@ -4,7 +4,7 @@
 
 import { StyleSheet, Text, View } from 'react-native';
 
-import { Icon } from '@/components/icon';
+import { ThemedIconTile } from '@/components/themed';
 import { withOpacity } from '@/lib/color';
 import { expenseCategoryIcon, expenseDateString, type Expense } from '@/models/expense';
 import { iOSColors } from '@/theme/tokens';
@@ -15,17 +15,15 @@ const usd = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' 
 export function ExpenseRow({ expense: e }: { expense: Expense }) {
   const theme = useAppTheme();
   return (
-    <View style={[styles.row, { backgroundColor: theme.cardBackground }, lightShadow()]}>
-      <View style={[styles.iconTile, { backgroundColor: withOpacity(iOSColors.red, 0.1) }]}>
-        <Icon name={expenseCategoryIcon(e.category)} size={18} color={iOSColors.red} />
-      </View>
+    <View style={[styles.row, theme.card]}>
+      <ThemedIconTile name={expenseCategoryIcon(e.category)} size={44} />
       <View style={styles.body}>
         <Text style={[styles.title, { color: theme.primaryText }]}>{e.vendorName || e.category}</Text>
         {e.description ? <Text numberOfLines={1} style={[styles.detail, { color: theme.secondaryText }]}>{e.description}</Text> : null}
         <View style={styles.badges}>
-          <Text style={[styles.date, { color: iOSColors.gray }]}>{expenseDateString(e.date)}</Text>
+          <Text style={[styles.date, { color: theme.tertiaryText }]}>{expenseDateString(e.date)}</Text>
           {e.isTaxDeductible ? <Badge label="Deductible" color={iOSColors.green} /> : null}
-          {e.isRecurring ? <Badge label="Recurring" color={iOSColors.blue} /> : null}
+          {e.isRecurring ? <Badge label="Recurring" color={theme.accent} /> : null}
         </View>
       </View>
       <Text style={styles.amount}>-{usd.format(e.amount)}</Text>
@@ -37,13 +35,8 @@ function Badge({ label, color }: { label: string; color: string }) {
   return <Text style={[styles.badge, { color, backgroundColor: withOpacity(color, 0.1) }]}>{label}</Text>;
 }
 
-function lightShadow() {
-  return { shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 2 } as const;
-}
-
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 12, borderRadius: 12 },
-  iconTile: { width: 44, height: 44, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 12 },
   body: { flex: 1, gap: 4 },
   title: { fontSize: 15, fontWeight: '600' },
   detail: { fontSize: 13 },

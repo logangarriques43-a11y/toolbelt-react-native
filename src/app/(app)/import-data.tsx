@@ -18,6 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DetectedServicesReviewSheet } from '@/components/import/detected-services-review-sheet';
 import { Icon } from '@/components/icon';
+import { ThemedIconTile } from '@/components/themed';
 import { OptionSheet } from '@/components/sheets/option-sheet';
 import { useAppointments } from '@/context/appointments-store';
 import { useClients } from '@/context/clients-store';
@@ -53,9 +54,8 @@ import {
 import { iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
+/** Fallback colour for imported services (user data, not UI chrome). */
 const BLUE = '#4285F5';
-const GREEN = '#4CBF80';
-const PURPLE = '#9966E6';
 const SKIP = '__skip__';
 const PALETTE = [
   iOSColors.purple,
@@ -536,10 +536,10 @@ export default function ImportData() {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: theme.background }]} edges={['top']}>
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: theme.cardBackground }]}>
+      <View style={[styles.header, { backgroundColor: theme.cardBackground, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.divider }]}>
         <Pressable onPress={goBack} style={styles.back} hitSlop={8}>
-          <Icon name="chevron.left" size={16} color={BLUE} weight="semibold" />
-          {(step === 'selectSource' || step === 'complete') && <Text style={[styles.backText, { color: BLUE }]}>Back</Text>}
+          <Icon name="chevron.left" size={16} color={theme.accent} weight="semibold" />
+          {(step === 'selectSource' || step === 'complete') && <Text style={[styles.backText, { color: theme.accent }]}>Back</Text>}
         </Pressable>
         <Text style={[styles.headerTitle, { color: theme.primaryText }]}>{title}</Text>
         <View style={styles.back} />
@@ -548,7 +548,7 @@ export default function ImportData() {
       {showProgress && (
         <View style={styles.progressBar}>
           {PROGRESS_STEPS.map((s, i) => (
-            <View key={s} style={[styles.progressSeg, { backgroundColor: i <= progressIndex ? BLUE : theme.divider }]} />
+            <View key={s} style={[styles.progressSeg, { backgroundColor: i <= progressIndex ? theme.accent : theme.divider }]} />
           ))}
         </View>
       )}
@@ -637,22 +637,20 @@ function SelectSource({ onPick }: { onPick: (ft: ImportFileType, cat: ImportData
   return (
     <View style={styles.section}>
       <View style={styles.blockHead}>
-        <Icon name="arrow.triangle.2.circlepath.circle.fill" size={20} color={BLUE} />
-        <Text style={[styles.blockTitle, { color: theme.primaryText }]}>Sync with Calendar</Text>
+        <Icon name="arrow.triangle.2.circlepath.circle.fill" size={20} color={theme.accent} />
+        <Text style={theme.display(20, '500')}>Sync with Calendar</Text>
       </View>
       <Text style={[styles.blockSub, { color: theme.secondaryText }]}>Pull appointments from your phone's calendar apps directly.</Text>
       <SourceCard
         icon="calendar"
         title="Apple Calendar"
         subtitle="Sync events from your iPhone calendar"
-        color={iOSColors.red}
         onPress={() => Alert.alert('Apple Calendar', 'Direct calendar sync needs the native build (coming with Phase 7). For now, export an ICS file and import it below.')}
       />
       <SourceCard
         icon="g.circle.fill"
         title="Google Calendar"
         subtitle="Import via exported ICS file from Google Calendar"
-        color="#4285D1"
         onPress={() =>
           Alert.alert(
             'Import from Google Calendar',
@@ -662,54 +660,50 @@ function SelectSource({ onPick }: { onPick: (ft: ImportFileType, cat: ImportData
       />
 
       <View style={styles.orRow}>
-        <View style={[styles.orLine, { backgroundColor: withOpacity(iOSColors.gray, 0.25) }]} />
+        <View style={[styles.orLine, { backgroundColor: theme.divider }]} />
         <Text style={[styles.orText, { color: theme.secondaryText }]}>or import a file</Text>
-        <View style={[styles.orLine, { backgroundColor: withOpacity(iOSColors.gray, 0.25) }]} />
+        <View style={[styles.orLine, { backgroundColor: theme.divider }]} />
       </View>
 
       <View style={styles.blockHead}>
-        <Icon name="square.and.arrow.down.on.square" size={20} color="#33B399" />
-        <Text style={[styles.blockTitle, { color: theme.primaryText }]}>Import from File</Text>
+        <Icon name="square.and.arrow.down.on.square" size={20} color={theme.accent} />
+        <Text style={theme.display(20, '500')}>Import from File</Text>
       </View>
       <Text style={[styles.blockSub, { color: theme.secondaryText }]}>
         Upload a CSV or ICS file exported from apps like Goldie, Fresha, Square, or Vagaro.
       </Text>
-      <QuickCard icon="tablecells" title="CSV — Clients" subtitle="Import client names, phones, emails" color={GREEN} onPress={() => onPick('csv', 'clients')} />
-      <QuickCard icon="tablecells" title="CSV — Services" subtitle="Import service names, prices, durations" color={PURPLE} onPress={() => onPick('csv', 'services')} />
-      <QuickCard icon="tablecells" title="CSV — Appointments" subtitle="Import appointment dates, clients, services" color={BLUE} onPress={() => onPick('csv', 'appointments')} />
-      <QuickCard icon="calendar" title="ICS / iCal File" subtitle="Import calendar events as appointments" color="#F26666" onPress={() => onPick('ics', 'appointments')} />
+      <QuickCard icon="tablecells" title="CSV — Clients" subtitle="Import client names, phones, emails" onPress={() => onPick('csv', 'clients')} />
+      <QuickCard icon="tablecells" title="CSV — Services" subtitle="Import service names, prices, durations" onPress={() => onPick('csv', 'services')} />
+      <QuickCard icon="tablecells" title="CSV — Appointments" subtitle="Import appointment dates, clients, services" onPress={() => onPick('csv', 'appointments')} />
+      <QuickCard icon="calendar" title="ICS / iCal File" subtitle="Import calendar events as appointments" onPress={() => onPick('ics', 'appointments')} />
     </View>
   );
 }
 
-function SourceCard({ icon, title, subtitle, color, onPress }: { icon: SFSymbol; title: string; subtitle: string; color: string; onPress: () => void }) {
+function SourceCard({ icon, title, subtitle, onPress }: { icon: SFSymbol; title: string; subtitle: string; onPress: () => void }) {
   const theme = useAppTheme();
   return (
-    <Pressable style={[styles.card, { backgroundColor: theme.cardBackground }]} onPress={onPress}>
-      <View style={[styles.cardIcon, { backgroundColor: withOpacity(color, 0.12) }]}>
-        <Icon name={icon} size={20} color={color} />
-      </View>
+    <Pressable style={[styles.card, theme.card]} onPress={onPress}>
+      <ThemedIconTile name={icon} size={44} />
       <View style={styles.flex}>
         <Text style={[styles.cardTitle, { color: theme.primaryText }]}>{title}</Text>
         <Text style={[styles.cardSub, { color: theme.secondaryText }]} numberOfLines={1}>{subtitle}</Text>
       </View>
-      <Icon name="arrow.right.circle.fill" size={22} color={withOpacity(color, 0.5)} />
+      <Icon name="arrow.right.circle.fill" size={22} color={theme.accent} />
     </Pressable>
   );
 }
 
-function QuickCard({ icon, title, subtitle, color, onPress }: { icon: SFSymbol; title: string; subtitle: string; color: string; onPress: () => void }) {
+function QuickCard({ icon, title, subtitle, onPress }: { icon: SFSymbol; title: string; subtitle: string; onPress: () => void }) {
   const theme = useAppTheme();
   return (
-    <Pressable style={[styles.card, { backgroundColor: theme.cardBackground }]} onPress={onPress}>
-      <View style={[styles.cardIconSm, { backgroundColor: withOpacity(color, 0.1) }]}>
-        <Icon name={icon} size={18} color={color} />
-      </View>
+    <Pressable style={[styles.card, theme.card]} onPress={onPress}>
+      <ThemedIconTile name={icon} size={40} />
       <View style={styles.flex}>
         <Text style={[styles.cardTitle, { color: theme.primaryText }]}>{title}</Text>
         <Text style={[styles.cardSub, { color: theme.secondaryText }]} numberOfLines={1}>{subtitle}</Text>
       </View>
-      <Icon name="chevron.right" size={13} color={withOpacity(iOSColors.gray, 0.5)} weight="medium" />
+      <Icon name="chevron.right" size={13} color={theme.chevronTint} weight="medium" />
     </Pressable>
   );
 }
@@ -733,11 +727,11 @@ function MapColumns({
   const firstRow = rows[0];
   return (
     <View style={styles.section}>
-      <Text style={[styles.centerTitle, { color: theme.primaryText }]}>Map Your Columns</Text>
+      <Text style={[styles.centerTitle, theme.display(20, '500')]}>Map Your Columns</Text>
       <Text style={[styles.centerSub, { color: theme.secondaryText }]}>We've auto-detected what we can. Adjust any that look wrong.</Text>
 
       {firstRow && (
-        <View style={[styles.sampleCard, { backgroundColor: withOpacity(BLUE, 0.06) }]}>
+        <View style={[styles.sampleCard, { backgroundColor: theme.inputBackground }]}>
           <Text style={[styles.sampleLabel, { color: theme.secondaryText }]}>Sample data:</Text>
           {headers.slice(0, 5).map((h) => (
             <View key={h} style={styles.sampleRow}>
@@ -749,14 +743,14 @@ function MapColumns({
       )}
 
       {mappings.map((m) => (
-        <Pressable key={m.id} style={[styles.mapRow, { backgroundColor: theme.cardBackground }]} onPress={() => onEdit(m)}>
+        <Pressable key={m.id} style={[styles.mapRow, theme.card]} onPress={() => onEdit(m)}>
           <View style={styles.flex}>
             <Text style={[styles.mapColLabel, { color: theme.secondaryText }]}>CSV Column</Text>
             <Text style={[styles.mapColName, { color: theme.primaryText }]} numberOfLines={1}>{m.csvHeader}</Text>
           </View>
           <Icon name="arrow.right" size={14} color={theme.secondaryText} />
           <View style={[styles.mapField, { backgroundColor: theme.inputBackground }]}>
-            <Text style={[styles.mapFieldText, { color: m.mappedField ? theme.primaryText : iOSColors.gray }]} numberOfLines={1}>
+            <Text style={[styles.mapFieldText, { color: m.mappedField ? theme.primaryText : theme.tertiaryText }]} numberOfLines={1}>
               {m.mappedField ? mappedLabel(m.mappedField) : 'Not mapped'}
             </Text>
             <Icon name="chevron.up.chevron.down" size={11} color={theme.secondaryText} />
@@ -764,8 +758,8 @@ function MapColumns({
         </Pressable>
       ))}
 
-      <Pressable style={[styles.primaryBtn, { backgroundColor: BLUE }]} onPress={onPreview}>
-        <Text style={styles.primaryBtnText}>Preview Import</Text>
+      <Pressable style={[styles.primaryBtn, { backgroundColor: theme.accent, borderRadius: theme.isEditorial ? 2 : 999 }]} onPress={onPreview}>
+        <Text style={[styles.primaryBtnText, { color: theme.onAccent }]}>Preview Import</Text>
       </Pressable>
     </View>
   );
@@ -806,15 +800,15 @@ function Preview({
   return (
     <View style={styles.section}>
       <View style={styles.previewHead}>
-        <Text style={[styles.centerTitle, { color: theme.primaryText, textAlign: 'left' }]}>Review & Import</Text>
+        <Text style={[styles.centerTitle, theme.display(20, '500'), { textAlign: 'left' }]}>Review & Import</Text>
         <Pressable onPress={onToggleAll}>
-          <Text style={[styles.link, { color: BLUE }]}>{selectedCount === totalCount ? 'Deselect All' : 'Select All'}</Text>
+          <Text style={[styles.link, { color: theme.accent }]}>{selectedCount === totalCount ? 'Deselect All' : 'Select All'}</Text>
         </Pressable>
       </View>
       <Text style={[styles.blockSub, { color: theme.secondaryText }]}>{selectedCount} of {totalCount} items selected</Text>
 
       {clients.length > 0 && (
-        <PreviewSection title="Clients" icon="person.3.fill" color={GREEN} count={clients.filter((c) => c.selected).length} total={clients.length}>
+        <PreviewSection title="Clients" icon="person.3.fill" count={clients.filter((c) => c.selected).length} total={clients.length}>
           {clients.map((c, i) => (
             <PreviewRow
               key={c.id}
@@ -827,14 +821,14 @@ function Preview({
         </PreviewSection>
       )}
       {services.length > 0 && (
-        <PreviewSection title="Services" icon="list.clipboard.fill" color={PURPLE} count={services.filter((s) => s.selected).length} total={services.length}>
+        <PreviewSection title="Services" icon="list.clipboard.fill" count={services.filter((s) => s.selected).length} total={services.length}>
           {services.map((s, i) => (
             <PreviewRow key={s.id} title={s.name} subtitle={`$${s.price.toFixed(0)} · ${s.duration} min`} selected={s.selected} onToggle={() => onToggleService(i)} />
           ))}
         </PreviewSection>
       )}
       {appointments.length > 0 && (
-        <PreviewSection title="Appointments" icon="calendar.badge.plus" color={BLUE} count={appointments.filter((a) => a.selected).length} total={appointments.length}>
+        <PreviewSection title="Appointments" icon="calendar.badge.plus" count={appointments.filter((a) => a.selected).length} total={appointments.length}>
           {appointments.map((a, i) => (
             <PreviewRow
               key={a.id}
@@ -848,11 +842,11 @@ function Preview({
       )}
 
       <Pressable
-        style={[styles.primaryBtn, { backgroundColor: selectedCount > 0 ? BLUE : iOSColors.gray, flexDirection: 'row', gap: 8 }]}
+        style={[styles.primaryBtn, { backgroundColor: theme.accent, borderRadius: theme.isEditorial ? 2 : 999, opacity: selectedCount > 0 ? 1 : 0.4, flexDirection: 'row', gap: 8 }]}
         disabled={selectedCount === 0}
         onPress={onImport}>
-        <Icon name="square.and.arrow.down" size={16} color="#FFFFFF" />
-        <Text style={styles.primaryBtnText}>Import {selectedCount} Items</Text>
+        <Icon name="square.and.arrow.down" size={16} color={theme.onAccent} />
+        <Text style={[styles.primaryBtnText, { color: theme.onAccent }]}>Import {selectedCount} Items</Text>
       </Pressable>
     </View>
   );
@@ -861,14 +855,12 @@ function Preview({
 function PreviewSection({
   title,
   icon,
-  color,
   count,
   total,
   children,
 }: {
   title: string;
   icon: SFSymbol;
-  color: string;
   count: number;
   total: number;
   children: ReactNode;
@@ -876,9 +868,9 @@ function PreviewSection({
   const theme = useAppTheme();
   const [expanded, setExpanded] = useState(true);
   return (
-    <View style={[styles.previewSection, { backgroundColor: theme.cardBackground }]}>
+    <View style={[styles.previewSection, theme.card]}>
       <Pressable style={styles.previewSectionHead} onPress={() => setExpanded((v) => !v)}>
-        <Icon name={icon} size={16} color={color} />
+        <Icon name={icon} size={16} color={theme.accent} />
         <Text style={[styles.previewSectionTitle, { color: theme.primaryText }]}>{title}</Text>
         <Text style={[styles.previewSectionCount, { color: theme.secondaryText }]}>{count}/{total}</Text>
         <View style={styles.flex} />
@@ -898,7 +890,7 @@ function PreviewRow({ title, subtitle, selected, onToggle }: { title: string; su
   const theme = useAppTheme();
   return (
     <Pressable style={styles.previewRow} onPress={onToggle}>
-      <Icon name={selected ? 'checkmark.circle.fill' : 'circle'} size={20} color={selected ? BLUE : withOpacity(iOSColors.gray, 0.4)} />
+      <Icon name={selected ? 'checkmark.circle.fill' : 'circle'} size={20} color={selected ? theme.accent : theme.tertiaryText} />
       <View style={styles.flex}>
         <Text style={[styles.previewRowTitle, { color: selected ? theme.primaryText : theme.secondaryText }]} numberOfLines={1}>{title}</Text>
         {subtitle.length > 0 && <Text style={[styles.previewRowSub, { color: theme.secondaryText }]} numberOfLines={1}>{subtitle}</Text>}
@@ -913,10 +905,10 @@ function Importing({ progress }: { progress: number }) {
   const theme = useAppTheme();
   return (
     <View style={styles.centered}>
-      <ActivityIndicator size="large" color={BLUE} />
-      <Text style={[styles.centerTitle, { color: theme.primaryText }]}>Importing your data...</Text>
+      <ActivityIndicator size="large" color={theme.accent} />
+      <Text style={[styles.centerTitle, theme.display(20, '500')]}>Importing your data...</Text>
       <View style={[styles.track, { backgroundColor: theme.divider }]}>
-        <View style={[styles.fill, { backgroundColor: BLUE, width: `${Math.round(progress * 100)}%` }]} />
+        <View style={[styles.fill, { backgroundColor: theme.accent, width: `${Math.round(progress * 100)}%` }]} />
       </View>
       <Text style={[styles.centerSub, { color: theme.secondaryText }]}>{Math.round(progress * 100)}%</Text>
     </View>
@@ -933,20 +925,20 @@ function Complete({ result, onDone, onMore }: { result: ImportResult | null; onD
     <View style={styles.centered}>
       {total > 0 ? (
         <>
-          <Icon name="checkmark.circle.fill" size={60} color={GREEN} />
-          <Text style={[styles.completeTitle, { color: theme.primaryText }]}>Import Complete!</Text>
+          <Icon name="checkmark.circle.fill" size={60} color={iOSColors.green} />
+          <Text style={theme.display(24, '500')}>Import Complete!</Text>
           <Text style={[styles.centerSub, { color: theme.secondaryText }]}>Successfully imported {importSummary(result)}</Text>
-          <View style={[styles.resultCard, { backgroundColor: theme.cardBackground }]}>
-            {result.clientsImported > 0 && <ResultRow icon="person.3.fill" label="Clients" count={result.clientsImported} color={GREEN} />}
-            {result.servicesImported > 0 && <ResultRow icon="list.clipboard.fill" label="Services" count={result.servicesImported} color={PURPLE} />}
-            {result.appointmentsImported > 0 && <ResultRow icon="calendar.badge.plus" label="Appointments" count={result.appointmentsImported} color={BLUE} />}
-            {result.timeOffImported > 0 && <ResultRow icon="moon.zzz.fill" label="Time Off" count={result.timeOffImported} color={iOSColors.orange} />}
+          <View style={[styles.resultCard, theme.card]}>
+            {result.clientsImported > 0 && <ResultRow icon="person.3.fill" label="Clients" count={result.clientsImported} />}
+            {result.servicesImported > 0 && <ResultRow icon="list.clipboard.fill" label="Services" count={result.servicesImported} />}
+            {result.appointmentsImported > 0 && <ResultRow icon="calendar.badge.plus" label="Appointments" count={result.appointmentsImported} />}
+            {result.timeOffImported > 0 && <ResultRow icon="moon.zzz.fill" label="Time Off" count={result.timeOffImported} />}
           </View>
         </>
       ) : (
         <>
           <Icon name="exclamationmark.triangle.fill" size={60} color={iOSColors.orange} />
-          <Text style={[styles.completeTitle, { color: theme.primaryText }]}>No Data Imported</Text>
+          <Text style={theme.display(24, '500')}>No Data Imported</Text>
         </>
       )}
 
@@ -959,24 +951,24 @@ function Complete({ result, onDone, onMore }: { result: ImportResult | null; onD
         </View>
       )}
 
-      <Pressable style={[styles.primaryBtn, { backgroundColor: BLUE, alignSelf: 'stretch' }]} onPress={onDone}>
-        <Text style={styles.primaryBtnText}>Done</Text>
+      <Pressable style={[styles.primaryBtn, { backgroundColor: theme.accent, borderRadius: theme.isEditorial ? 2 : 999, alignSelf: 'stretch' }]} onPress={onDone}>
+        <Text style={[styles.primaryBtnText, { color: theme.onAccent }]}>Done</Text>
       </Pressable>
-      <Pressable style={[styles.primaryBtn, { backgroundColor: withOpacity(BLUE, 0.1), alignSelf: 'stretch' }]} onPress={onMore}>
-        <Text style={[styles.primaryBtnText, { color: BLUE }]}>Import More Data</Text>
+      <Pressable style={[styles.primaryBtn, { backgroundColor: theme.accentSoft, borderRadius: theme.isEditorial ? 2 : 999, alignSelf: 'stretch' }]} onPress={onMore}>
+        <Text style={[styles.primaryBtnText, { color: theme.accent }]}>Import More Data</Text>
       </Pressable>
     </View>
   );
 }
 
-function ResultRow({ icon, label, count, color }: { icon: SFSymbol; label: string; count: number; color: string }) {
+function ResultRow({ icon, label, count }: { icon: SFSymbol; label: string; count: number }) {
   const theme = useAppTheme();
   return (
     <View style={styles.resultRow}>
-      <Icon name={icon} size={18} color={color} />
+      <Icon name={icon} size={18} color={theme.accent} />
       <Text style={[styles.resultLabel, { color: theme.primaryText }]}>{label}</Text>
       <View style={styles.flex} />
-      <Text style={[styles.resultCount, { color }]}>+{count}</Text>
+      <Text style={[styles.resultCount, { color: theme.primaryText }]}>+{count}</Text>
     </View>
   );
 }
@@ -993,33 +985,30 @@ const styles = StyleSheet.create({
   body: { paddingHorizontal: 20, paddingBottom: 40 },
   section: { gap: 12, paddingTop: 8 },
   blockHead: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 },
-  blockTitle: { fontSize: 18, fontWeight: '700' },
   blockSub: { fontSize: 14 },
-  card: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 14, borderRadius: 12 },
-  cardIcon: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  cardIconSm: { width: 40, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  card: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 14 },
   cardTitle: { fontSize: 15, fontWeight: '600' },
   cardSub: { fontSize: 12, marginTop: 2 },
   orRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginVertical: 4 },
   orLine: { flex: 1, height: 1 },
   orText: { fontSize: 13, fontWeight: '500' },
-  centerTitle: { fontSize: 18, fontWeight: '700', textAlign: 'center' },
+  centerTitle: { textAlign: 'center' },
   centerSub: { fontSize: 14, textAlign: 'center' },
   sampleCard: { padding: 14, borderRadius: 10, gap: 8 },
   sampleLabel: { fontSize: 13, fontWeight: '500' },
   sampleRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
   sampleKey: { fontSize: 13, fontWeight: '500', flexShrink: 1 },
   sampleVal: { fontSize: 13, flexShrink: 1, textAlign: 'right' },
-  mapRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: 10 },
+  mapRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12 },
   mapColLabel: { fontSize: 11 },
   mapColName: { fontSize: 14, fontWeight: '500' },
   mapField: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 8, maxWidth: '45%' },
   mapFieldText: { fontSize: 14, fontWeight: '500', flexShrink: 1 },
-  primaryBtn: { alignItems: 'center', justifyContent: 'center', paddingVertical: 16, borderRadius: 12, marginTop: 8 },
-  primaryBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
+  primaryBtn: { alignItems: 'center', justifyContent: 'center', paddingVertical: 16, marginTop: 8 },
+  primaryBtnText: { fontSize: 16, fontWeight: '600' },
   previewHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   link: { fontSize: 14, fontWeight: '500' },
-  previewSection: { borderRadius: 12, overflow: 'hidden' },
+  previewSection: { overflow: 'hidden' },
   previewSectionHead: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14 },
   previewSectionTitle: { fontSize: 16, fontWeight: '600' },
   previewSectionCount: { fontSize: 13 },
@@ -1030,8 +1019,7 @@ const styles = StyleSheet.create({
   centered: { alignItems: 'center', gap: 16, paddingTop: 30 },
   track: { width: 250, height: 6, borderRadius: 3, overflow: 'hidden' },
   fill: { height: 6, borderRadius: 3 },
-  completeTitle: { fontSize: 24, fontWeight: '700' },
-  resultCard: { alignSelf: 'stretch', padding: 16, borderRadius: 12, gap: 12 },
+  resultCard: { alignSelf: 'stretch', padding: 16, gap: 12 },
   resultRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   resultLabel: { fontSize: 15 },
   resultCount: { fontSize: 15, fontWeight: '600' },

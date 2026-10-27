@@ -119,17 +119,23 @@ export interface SendInvoiceResult {
   recipient?: string;
   postmarkMessageId?: string | null;
   paymentLinkUrl?: string | null;
+  /** Set when the email went out without a Pay Now link (e.g. PAYOUTS_NOT_SET_UP). */
+  paymentLinkError?: string | null;
 }
 
 /**
  * Dispatch the invoice by email via the backend's Postmark integration
- * (`POST /invoices/:id/send`, no body). The invoice must already exist, so
+ * (`POST /invoices/:id/send`). `businessName` (Settings → Business Name & Info)
+ * is the sender-name fallback after Sender Settings. The invoice must already exist, so
  * callers create it first, then send. The backend enforces preconditions with
  * distinct errors surfaced as ApiError.message:
  * - 400 no email address on the invoice
+ * - 409 BUSINESS_NAME_MISSING (no business name anywhere — ApiError.code)
  * - 409 SENDER_SETTINGS_INCOMPLETE (business name + address not set up)
+ * If the owner hasn't set up payouts, the email still goes out but without a
+ * Pay Now link, and the result carries `paymentLinkError: 'PAYOUTS_NOT_SET_UP'`.
  * - 503 POSTMARK_NOT_CONFIGURED / 502 Postmark send failure
  */
-export async function sendInvoice(id: string): Promise<SendInvoiceResult> {
-  return api.post<SendInvoiceResult>(`/invoices/${id}/send`);
+export async function sendInvoice(id: string, businessName?: string): Promise<SendInvoiceResult> {
+  return api.post<SendInvoiceResult>(`/invoices/${id}/send`, businessName ? { businessName } : {});
 }

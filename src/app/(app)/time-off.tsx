@@ -17,13 +17,12 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { KeyboardAwareForm } from '@/components/keyboard-aware-form';
 
 import {
-  BLUE, DateButton, DurationRow, FieldRow, InputRow, PURPLE, Section, TimeCard,
+  DateButton, DurationRow, FieldRow, InputRow, Section, TimeCard,
 } from '@/components/appointment-bits';
 import { DashboardGradient } from '@/components/dashboard-gradient';
 import { Icon } from '@/components/icon';
@@ -45,7 +44,7 @@ import {
   recurrenceOccurrences, type RecurrenceFrequency,
 } from '@/models/appointment';
 import { appointmentsConflictingWithTimeOff, timeOffIsRecurring } from '@/models/time-off';
-import { Brand, iOSColors } from '@/theme/tokens';
+import { iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
 type Sheet = 'date' | 'endDate' | 'start' | 'end' | 'color' | 'who' | 'recurrence' | null;
@@ -166,15 +165,13 @@ export default function TimeOff() {
   return (
     <DashboardGradient>
       <SafeAreaView style={styles.safe} edges={['top']}>
-        <View style={[styles.header, { backgroundColor: theme.cardBackground }]}>
-          <Pressable onPress={() => router.back()} hitSlop={8} style={[styles.closeBtn, { backgroundColor: theme.cardBackground }]}>
+        <View style={[styles.header, { backgroundColor: theme.background, borderBottomColor: theme.divider }]}>
+          <Pressable onPress={() => router.back()} hitSlop={8} style={[styles.closeBtn, { backgroundColor: theme.cardBackground, borderColor: theme.divider, borderRadius: theme.isEditorial ? 2 : 18 }]}>
             <Icon name="xmark" size={16} color={theme.secondaryText} />
           </Pressable>
-          <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.headerTitle, { color: theme.primaryText }]}>New personal event</Text>
-          <Pressable onPress={save}>
-            <LinearGradient colors={Brand.gradient} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }} style={styles.savePill}>
-              <Text numberOfLines={1} style={styles.saveText}>Save</Text>
-            </LinearGradient>
+          <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.headerTitle, theme.display(20)]}>New personal event</Text>
+          <Pressable onPress={save} style={[styles.savePill, { backgroundColor: theme.accent, borderRadius: theme.isEditorial ? 2 : 999 }]}>
+            <Text numberOfLines={1} style={[styles.saveText, { color: theme.onAccent }]}>Save</Text>
           </Pressable>
         </View>
 
@@ -185,12 +182,12 @@ export default function TimeOff() {
 
           <Section label="Who's off">
             <FieldRow onPress={() => setSheet('who')}>
-              <Icon name={businessWide ? 'building.2.fill' : 'person.fill'} size={20} color={PURPLE} />
+              <Icon name={businessWide ? 'building.2.fill' : 'person.fill'} size={20} color={theme.accent} />
               <Text style={[styles.rowLabel, { color: businessWide || selectedStaff ? theme.primaryText : theme.secondaryText }]}>{whoLabel}</Text>
               <View style={styles.flexEnd}><Icon name="chevron.up.chevron.down" size={13} color={theme.secondaryText} /></View>
             </FieldRow>
             <FieldRow onPress={() => setSheet('endDate')}>
-              <Icon name="calendar.badge.clock" size={20} color={PURPLE} />
+              <Icon name="calendar.badge.clock" size={20} color={theme.accent} />
               <Text style={[styles.rowLabel, { color: theme.primaryText }]}>End date</Text>
               <View style={styles.flexEnd}><Text style={[styles.rowValue, { color: theme.secondaryText }]}>{dayFmt.format(new Date(endDate))}</Text></View>
             </FieldRow>
@@ -202,8 +199,8 @@ export default function TimeOff() {
           <Section label="Start date & time">
             <View style={styles.recurrenceHead}>
               <Pressable onPress={() => setSheet('recurrence')} style={styles.recurrenceBtn}>
-                <Icon name="repeat" size={12} color={BLUE} />
-                <Text style={styles.recurrenceBtnText}>{frequency ? recurrenceDisplayName(frequency) : '+ Add recurrence'}</Text>
+                <Icon name="repeat" size={12} color={theme.accent} />
+                <Text style={[styles.recurrenceBtnText, { color: theme.accent }]}>{frequency ? recurrenceDisplayName(frequency) : '+ Add recurrence'}</Text>
               </Pressable>
             </View>
             {frequency ? (
@@ -225,9 +222,9 @@ export default function TimeOff() {
             {!isMultiDay ? (
               <>
                 <View style={styles.timeRow}>
-                  <TimeCard label="Start" hour={sH} minute={sM} isPM={sPM} accent={BLUE} onPress={() => setSheet('start')} />
+                  <TimeCard label="Start" hour={sH} minute={sM} isPM={sPM} onPress={() => setSheet('start')} />
                   <Icon name="arrow.right" size={16} color={theme.secondaryText} />
-                  <TimeCard label="End" hour={eH} minute={eM} isPM={ePM} accent={PURPLE} onPress={() => setSheet('end')} />
+                  <TimeCard label="End" hour={eH} minute={eM} isPM={ePM} onPress={() => setSheet('end')} />
                 </View>
                 <DurationRow label={formatDurationLabel(duration)} />
               </>
@@ -238,7 +235,7 @@ export default function TimeOff() {
             <FieldRow onPress={() => setSheet('color')}>
               <View style={[styles.colorDot, { backgroundColor: color }]} />
               <Text style={[styles.colorLabel, { color: theme.primaryText }]}>Selected color</Text>
-              <View style={styles.flexEnd}><Icon name="chevron.right" size={14} color={theme.secondaryText} /></View>
+              <View style={styles.flexEnd}><Icon name="chevron.right" size={14} color={theme.chevronTint} /></View>
             </FieldRow>
           </Section>
 
@@ -253,14 +250,14 @@ export default function TimeOff() {
             <Section label="Scheduled Time Off">
               {events.map((ev) => (
                 <SwipeToDelete key={ev.id} onDelete={() => deleteEvent(ev.id)}>
-                  <View style={[styles.eventCard, { backgroundColor: theme.cardBackground }]}>
+                  <View style={[styles.eventCard, theme.card]}>
                     <View style={[styles.eventBar, { backgroundColor: ev.colorHex }]} />
                     <View style={styles.eventBody}>
                       <View style={styles.eventTitleRow}>
                         <Text style={[styles.eventTitle, { color: theme.primaryText }]}>{ev.title}</Text>
                         {timeOffIsRecurring(ev) ? <Icon name="repeat" size={12} color={theme.secondaryText} /> : null}
                       </View>
-                      <Text style={[styles.eventScope, { color: PURPLE }]}>
+                      <Text style={[styles.eventScope, { color: theme.accent }]}>
                         {ev.isBusinessWide ? 'Whole Business' : ev.staffName}
                       </Text>
                       <Text style={[styles.eventTime, { color: theme.secondaryText }]}>
@@ -279,8 +276,8 @@ export default function TimeOff() {
 
       <DatePickerSheet visible={sheet === 'date'} date={date} onChange={setDate} onClose={() => setSheet(null)} />
       <DatePickerSheet visible={sheet === 'endDate'} date={endDate} onChange={setEndDate} onClose={() => setSheet(null)} />
-      <TimeStepperSheet visible={sheet === 'start'} title="Start Time" accent={BLUE} hour={sH} minute={sM} isPM={sPM} onChange={(h, m, pm) => { setSH(h); setSM(m); setSPM(pm); }} onClose={() => setSheet(null)} />
-      <TimeStepperSheet visible={sheet === 'end'} title="End Time" accent={PURPLE} hour={eH} minute={eM} isPM={ePM} onChange={(h, m, pm) => { setEH(h); setEM(m); setEPM(pm); }} onClose={() => setSheet(null)} />
+      <TimeStepperSheet visible={sheet === 'start'} title="Start Time" hour={sH} minute={sM} isPM={sPM} onChange={(h, m, pm) => { setSH(h); setSM(m); setSPM(pm); }} onClose={() => setSheet(null)} />
+      <TimeStepperSheet visible={sheet === 'end'} title="End Time" hour={eH} minute={eM} isPM={ePM} onChange={(h, m, pm) => { setEH(h); setEM(m); setEPM(pm); }} onClose={() => setSheet(null)} />
       <ColorPickerSheet visible={sheet === 'color'} selected={color} onSelect={setColor} onClose={() => setSheet(null)} />
       <OptionSheet
         visible={sheet === 'who'}
@@ -307,11 +304,11 @@ export default function TimeOff() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16 },
-  closeBtn: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { flex: 1, textAlign: 'center', marginHorizontal: 6, fontSize: 17, fontWeight: '700' },
-  savePill: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20 },
-  saveText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: StyleSheet.hairlineWidth },
+  closeBtn: { width: 36, height: 36, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  headerTitle: { flex: 1, textAlign: 'center', marginHorizontal: 6 },
+  savePill: { paddingHorizontal: 16, paddingVertical: 10 },
+  saveText: { fontSize: 16, fontWeight: '600' },
   body: { paddingTop: 24, paddingBottom: 60, gap: 24 },
   rowLabel: { flex: 1, fontSize: 16 },
   rowValue: { fontSize: 14 },
@@ -319,13 +316,13 @@ const styles = StyleSheet.create({
   hint: { fontSize: 12, paddingHorizontal: 4 },
   recurrenceHead: { flexDirection: 'row', justifyContent: 'flex-end' },
   recurrenceBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  recurrenceBtnText: { color: BLUE, fontSize: 14, fontWeight: '500' },
+  recurrenceBtnText: { fontSize: 14, fontWeight: '500' },
   stepperRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  stepBtn: { width: 32, height: 32, borderRadius: 8, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  stepBtn: { width: 32, height: 32, borderRadius: 999, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   timeRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   colorDot: { width: 24, height: 24, borderRadius: 12 },
   colorLabel: { flex: 1, fontSize: 16 },
-  eventCard: { flexDirection: 'row', borderRadius: 12, overflow: 'hidden' },
+  eventCard: { flexDirection: 'row', overflow: 'hidden' },
   eventBar: { width: 5 },
   eventBody: { flex: 1, padding: 14, gap: 4 },
   eventTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },

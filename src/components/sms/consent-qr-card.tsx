@@ -15,10 +15,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Icon } from '@/components/icon';
-import { withOpacity } from '@/lib/color';
 import { useAppTheme } from '@/theme/theme-context';
-
-const ACCENT = '#6680F2';
 
 export function ConsentQRCard({ consentURL }: { consentURL: string }) {
   const theme = useAppTheme();
@@ -27,9 +24,9 @@ export function ConsentQRCard({ consentURL }: { consentURL: string }) {
   const canShare = false;
 
   return (
-    <View style={[styles.card, { backgroundColor: theme.cardBackground }, styles.shadow]}>
+    <View style={[styles.card, theme.card]}>
       <View style={styles.head}>
-        <Icon name="qrcode" size={18} color={ACCENT} />
+        <Icon name="qrcode" size={18} color={theme.accent} />
         <Text style={[styles.title, { color: theme.primaryText }]}>SMS Consent QR</Text>
       </View>
 
@@ -38,22 +35,27 @@ export function ConsentQRCard({ consentURL }: { consentURL: string }) {
         require before your AI assistant can message them.
       </Text>
 
-      <View style={[styles.tile, { backgroundColor: theme.inputBackground }]}>
+      <View style={[styles.tile, { backgroundColor: theme.inputBackground, borderRadius: theme.isEditorial ? 2 : 14 }]}>
         <Text style={[styles.tileText, { color: theme.secondaryText }]}>
           {hasURL ? 'QR preview arrives with Online Booking' : 'Set up your booking page first'}
         </Text>
       </View>
 
       <View style={styles.actions}>
-        <Pressable disabled={!canShare} style={[styles.primaryBtn, { opacity: canShare ? 1 : 0.5 }]}>
-          <Icon name="square.and.arrow.up" size={15} color="#FFFFFF" />
-          <Text style={styles.primaryText}>Share / Print</Text>
+        <Pressable
+          disabled={!canShare}
+          style={[styles.primaryBtn, { backgroundColor: theme.accent, borderRadius: theme.isEditorial ? 2 : 999, opacity: canShare ? 1 : 0.5 }]}>
+          <Icon name="square.and.arrow.up" size={15} color={theme.onAccent} />
+          <Text style={[styles.primaryText, { color: theme.onAccent }]}>Share / Print</Text>
         </Pressable>
         <Pressable
           disabled={!hasURL}
-          style={[styles.secondaryBtn, { backgroundColor: theme.cardBackground, borderColor: withOpacity(ACCENT, 0.3), opacity: hasURL ? 1 : 0.5 }]}>
-          <Icon name="doc.on.doc" size={15} color={ACCENT} />
-          <Text style={styles.secondaryText}>Copy Link</Text>
+          style={[
+            styles.secondaryBtn,
+            { backgroundColor: 'transparent', borderColor: theme.divider, borderRadius: theme.isEditorial ? 2 : 999, opacity: hasURL ? 1 : 0.5 },
+          ]}>
+          <Icon name="doc.on.doc" size={15} color={theme.primaryText} />
+          <Text style={[styles.secondaryText, { color: theme.primaryText }]}>Copy Link</Text>
         </Pressable>
       </View>
     </View>
@@ -61,16 +63,15 @@ export function ConsentQRCard({ consentURL }: { consentURL: string }) {
 }
 
 const styles = StyleSheet.create({
-  card: { alignSelf: 'stretch', padding: 20, borderRadius: 16, gap: 14 },
-  shadow: { shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 12, shadowOffset: { width: 0, height: 4 } },
+  card: { alignSelf: 'stretch', padding: 20, gap: 14 },
   head: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   title: { fontSize: 16, fontWeight: '700' },
   body: { fontSize: 13, lineHeight: 18 },
-  tile: { height: 232, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  tile: { height: 232, alignItems: 'center', justifyContent: 'center' },
   tileText: { fontSize: 13 },
   actions: { flexDirection: 'row', gap: 12 },
-  primaryBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: ACCENT, paddingVertical: 13, borderRadius: 12 },
-  primaryText: { color: '#FFFFFF', fontSize: 15, fontWeight: '600' },
-  secondaryBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 13, borderRadius: 12, borderWidth: 1 },
-  secondaryText: { color: ACCENT, fontSize: 15, fontWeight: '600' },
+  primaryBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 13 },
+  primaryText: { fontSize: 15, fontWeight: '600' },
+  secondaryBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 13, borderWidth: 1 },
+  secondaryText: { fontSize: 15, fontWeight: '600' },
 });

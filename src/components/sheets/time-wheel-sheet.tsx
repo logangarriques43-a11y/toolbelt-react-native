@@ -7,8 +7,6 @@
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Icon } from '@/components/icon';
-import { withOpacity } from '@/lib/color';
-import { iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
 const MINUTE_STEPS = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
@@ -59,9 +57,9 @@ export function TimeWheelSheet({
           <Pressable onPress={onClose} hitSlop={8}>
             <Text style={[styles.cancel, { color: theme.secondaryText }]}>Cancel</Text>
           </Pressable>
-          <Text style={[styles.title, { color: theme.primaryText }]}>{title}</Text>
+          <Text style={theme.display(20)}>{title}</Text>
           <Pressable onPress={onClose} hitSlop={8}>
-            <Text style={styles.done}>Done</Text>
+            <Text style={[styles.done, { color: theme.accent }]}>Done</Text>
           </Pressable>
         </View>
 
@@ -87,7 +85,7 @@ export function TimeWheelSheet({
             />
           </View>
 
-          <Text style={[styles.preview, { backgroundColor: withOpacity(iOSColors.blue, 0.1) }]}>
+          <Text style={[styles.preview, { color: theme.accent, backgroundColor: theme.accentSoft, borderRadius: theme.isEditorial ? 2 : 999 }]}>
             {preview()}
           </Text>
 
@@ -101,9 +99,13 @@ export function TimeWheelSheet({
                   onPress={() => onChange(q.h, q.m)}
                   style={[
                     styles.chip,
-                    { backgroundColor: active ? iOSColors.blue : theme.cardBackground },
+                    {
+                      backgroundColor: active ? theme.accent : theme.cardBackground,
+                      borderColor: active ? theme.accent : theme.divider,
+                      borderRadius: theme.isEditorial ? 2 : 999,
+                    },
                   ]}>
-                  <Text style={[styles.chipText, { color: active ? '#FFFFFF' : iOSColors.blue }]}>
+                  <Text style={[styles.chipText, { color: active ? theme.onAccent : theme.accent }]}>
                     {q.label}
                   </Text>
                 </Pressable>
@@ -135,14 +137,14 @@ function Stepper({
 }) {
   const theme = useAppTheme();
   return (
-    <View style={[styles.stepper, { backgroundColor: theme.cardBackground }]}>
+    <View style={[styles.stepper, theme.card]}>
       <Text style={[styles.stepperLabel, { color: theme.secondaryText }]}>{label}</Text>
       <View style={styles.stepperControls}>
         <Pressable onPress={onDec} disabled={decDisabled} hitSlop={6}>
           <Icon
             name="minus.circle.fill"
             size={28}
-            color={decDisabled ? withOpacity(iOSColors.gray, 0.3) : iOSColors.blue}
+            color={decDisabled ? theme.tertiaryText : theme.accent}
           />
         </Pressable>
         <Text style={[styles.stepperValue, { color: theme.primaryText }]}>{value}</Text>
@@ -150,7 +152,7 @@ function Stepper({
           <Icon
             name="plus.circle.fill"
             size={28}
-            color={incDisabled ? withOpacity(iOSColors.gray, 0.3) : iOSColors.blue}
+            color={incDisabled ? theme.tertiaryText : theme.accent}
           />
         </Pressable>
       </View>
@@ -161,11 +163,10 @@ function Stepper({
 
 const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.25)' },
-  sheet: { borderTopLeftRadius: 16, borderTopRightRadius: 16, maxHeight: '75%' },
+  sheet: { borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '75%' },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16 },
   cancel: { fontSize: 16, fontWeight: '500' },
-  title: { fontSize: 18, fontWeight: '700' },
-  done: { fontSize: 16, fontWeight: '600', color: iOSColors.blue },
+  done: { fontSize: 16, fontWeight: '600' },
   body: { padding: 16, gap: 20, alignItems: 'center' },
   steppers: { flexDirection: 'row', gap: 12, alignSelf: 'stretch' },
   stepper: {
@@ -173,7 +174,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     padding: 12,
-    borderRadius: 12,
   },
   stepperLabel: { fontSize: 12, fontWeight: '500' },
   stepperControls: { flexDirection: 'row', alignItems: 'center', gap: 12 },
@@ -182,10 +182,8 @@ const styles = StyleSheet.create({
   preview: {
     fontSize: 18,
     fontWeight: '600',
-    color: iOSColors.blue,
     paddingHorizontal: 20,
     paddingVertical: 10,
-    borderRadius: 10,
     overflow: 'hidden',
   },
   quickLabel: { fontSize: 12, fontWeight: '500' },
@@ -193,9 +191,7 @@ const styles = StyleSheet.create({
   chip: {
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: 8,
     borderWidth: 1,
-    borderColor: iOSColors.blue,
   },
   chipText: { fontSize: 14, fontWeight: '500' },
 });

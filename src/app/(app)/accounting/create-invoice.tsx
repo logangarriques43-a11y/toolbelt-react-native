@@ -8,7 +8,6 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { KeyboardAwareForm } from '@/components/keyboard-aware-form';
@@ -16,6 +15,7 @@ import { KeyboardAwareForm } from '@/components/keyboard-aware-form';
 import { InvoicePreview } from '@/components/accounting/invoice-preview';
 import { DashboardGradient } from '@/components/dashboard-gradient';
 import { Icon } from '@/components/icon';
+import { ThemedButton } from '@/components/themed';
 import { DatePickerSheet } from '@/components/sheets/date-picker-sheet';
 import { useClients } from '@/context/clients-store';
 import { useInvoices } from '@/context/invoices-store';
@@ -30,7 +30,7 @@ import {
   invoiceDisplayName, invoiceSubtotal, invoiceTaxAmount, invoiceTotalDue, lineItemTotal,
   type Invoice, type InvoiceLineItem, type InvoiceStatus,
 } from '@/models/invoice';
-import { iOSColors, lightShadow } from '@/theme/tokens';
+import { iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
 const usd = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
@@ -121,13 +121,33 @@ export default function CreateInvoice() {
       return Alert.alert("Couldn't save invoice", message);
     }
     try {
-      const result = await sendInvoice(saved.id);
+      const result = await sendInvoice(saved.id, account?.businessName || undefined);
       router.back();
-      Alert.alert('Invoice sent', `Emailed to ${result.recipient ?? to}.`);
+      if (result.paymentLinkError === 'PAYOUTS_NOT_SET_UP') {
+        // The server refuses Pay Now links until payouts are set up (so client
+        // money can't land in the platform's account); the email still went out.
+        Alert.alert(
+          'Invoice sent without Pay Now',
+          `Emailed to ${result.recipient ?? to}, but without a Pay Now button. Set up payouts so clients can pay online and the money goes to your bank account.`,
+          [
+            { text: 'Not Now', style: 'cancel' },
+            { text: 'Set Up Payouts', onPress: () => router.push('/payout') },
+          ],
+        );
+      } else {
+        Alert.alert('Invoice sent', `Emailed to ${result.recipient ?? to}.`);
+      }
     } catch (err) {
       router.back();
       const message = err instanceof ApiError ? err.message : 'Please check your connection and try again.';
-      Alert.alert('Saved as draft — email not sent', message);
+      if (err instanceof ApiError && err.code === 'BUSINESS_NAME_MISSING') {
+        Alert.alert('Saved as draft — email not sent', message, [
+          { text: 'Not Now', style: 'cancel' },
+          { text: 'Business Name & Info', onPress: () => router.push('/settings/business-info') },
+        ]);
+      } else {
+        Alert.alert('Saved as draft — email not sent', message);
+      }
     } finally {
       setSending(false);
     }
@@ -152,30 +172,30 @@ export default function CreateInvoice() {
     <DashboardGradient>
       <SafeAreaView style={styles.safe} edges={['top']}>
         <View style={[styles.header, { backgroundColor: withOpacity(theme.cardBackground, 0.9) }]}>
-          <Pressable onPress={() => router.back()} style={[styles.closeBtn, { backgroundColor: theme.cardBackground }, lightShadow(theme)]} hitSlop={8}>
+          <Pressable onPress={() => router.back()} style={[styles.closeBtn, { backgroundColor: theme.cardBackground, borderWidth: 1, borderColor: theme.divider }]} hitSlop={8}>
             <Icon name="xmark" size={18} color={theme.secondaryText} />
           </Pressable>
           <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.headerTitle, { color: theme.primaryText }]}>New invoice</Text>
-          <Pressable onPress={onSend} disabled={sending || lineItems.length === 0} style={[styles.sendBtn, { backgroundColor: sending || lineItems.length === 0 ? iOSColors.gray : iOSColors.blue }]}>
-            <Text numberOfLines={1} style={styles.sendText}>{sending ? 'Sending…' : 'Send'}</Text>
+          <Pressable onPress={onSend} disabled={sending || lineItems.length === 0} style={[styles.sendBtn, { backgroundColor: theme.accent, borderRadius: theme.isEditorial ? 2 : 999, opacity: sending || lineItems.length === 0 ? 0.5 : 1 }]}>
+            <Text numberOfLines={1} style={[styles.sendText, { color: theme.onAccent }]}>{sending ? 'Sending…' : 'Send'}</Text>
           </Pressable>
         </View>
 
         <KeyboardAwareForm contentContainerStyle={styles.body}>
           {/* Invoice number badge */}
           <View style={styles.badgeRow}>
-            <View style={[styles.badge, { backgroundColor: withOpacity(iOSColors.green, 0.1) }]}>
-              <Icon name="doc.text.fill" size={16} color={iOSColors.green} />
+            <View style={[styles.badge, { backgroundColor: theme.accentSoft, borderRadius: theme.isEditorial ? 2 : 999 }]}>
+              <Icon name="doc.text.fill" size={16} color={theme.accent} />
               <Text style={[styles.badgeText, { color: theme.primaryText }]}>{displayName}</Text>
             </View>
           </View>
 
           <Section label="Invoice name (optional)" hint="Defaults to invoice number if left blank">
-            <Field icon="pencil" iconColor={iOSColors.purple} placeholder="e.g. April Haircut" value={invoiceName} onChangeText={setInvoiceName} />
+            <Field icon="pencil" iconColor={theme.accent} placeholder="e.g. April Haircut" value={invoiceName} onChangeText={setInvoiceName} />
           </Section>
 
-          <View style={[styles.banner, { borderColor: withOpacity(iOSColors.blue, 0.2) }]}>
-            <Icon name="creditcard.fill" size={20} color={iOSColors.blue} />
+          <View style={[styles.banner, { backgroundColor: theme.accentSoft, borderColor: theme.divider, borderRadius: theme.cornerRadius }]}>
+            <Icon name="creditcard.fill" size={20} color={theme.accent} />
             <View style={styles.bannerText}>
               <Text style={[styles.bannerTitle, { color: theme.primaryText }]}>Online payments via Stripe</Text>
               <Text style={[styles.bannerSub, { color: theme.secondaryText }]}>When you send this invoice, clients can pay online with a secure Stripe payment link.</Text>
@@ -183,15 +203,15 @@ export default function CreateInvoice() {
           </View>
 
           <Section label="Client">
-            <Pressable onPress={() => setClientSheet(true)} style={[styles.fieldCard, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
-              <Icon name="person.fill" size={20} color={iOSColors.blue} />
+            <Pressable onPress={() => setClientSheet(true)} style={[styles.fieldCard, theme.card]}>
+              <Icon name="person.fill" size={20} color={theme.accent} />
               {client ? (
                 <View style={styles.fieldText}>
                   <Text style={[styles.fieldValue, { color: theme.primaryText }]}>{client.name}</Text>
                   <Text style={[styles.fieldSub, { color: theme.secondaryText }]}>{client.phoneNumber}</Text>
                 </View>
               ) : (
-                <Text style={[styles.fieldPlaceholder, { color: iOSColors.blue }]}>Select client</Text>
+                <Text style={[styles.fieldPlaceholder, { color: theme.accent }]}>Select client</Text>
               )}
               <Icon name="chevron.right" size={14} color={theme.secondaryText} />
             </Pressable>
@@ -202,33 +222,33 @@ export default function CreateInvoice() {
             <View style={styles.lineHead}>
               <Text style={[styles.sectionLabel, { color: theme.secondaryText }]}>Line items</Text>
               <Pressable onPress={() => setAddItem(true)} hitSlop={8}>
-                <Text style={[styles.addItem, { color: iOSColors.blue }]}>+ Add item</Text>
+                <Text style={[styles.addItem, { color: theme.accent }]}>+ Add item</Text>
               </Pressable>
             </View>
 
             {lineItems.length === 0 ? (
-              <View style={[styles.fieldCard, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
-                <Icon name="cart.fill" size={20} color={withOpacity(iOSColors.gray, 0.5)} />
+              <View style={[styles.fieldCard, theme.card]}>
+                <Icon name="cart.fill" size={20} color={theme.tertiaryText} />
                 <Text style={[styles.fieldPlaceholder, { color: theme.secondaryText }]}>No items added yet</Text>
               </View>
             ) : (
               lineItems.map((item, index) => (
-                <View key={item.id} style={[styles.itemCard, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
-                  <View style={[styles.itemDot, { backgroundColor: iOSColors.green }]} />
+                <View key={item.id} style={[styles.itemCard, theme.card]}>
+                  <View style={[styles.itemDot, { backgroundColor: theme.accent }]} />
                   <View style={styles.itemBody}>
                     <Text style={[styles.itemName, { color: theme.primaryText }]}>{item.description || 'Item'}</Text>
                     <Text style={[styles.itemQty, { color: theme.secondaryText }]}>{item.quantity} × {usd.format(item.unitPrice)}</Text>
                   </View>
                   <Text style={[styles.itemTotal, { color: theme.primaryText }]}>{usd.format(lineItemTotal(item))}</Text>
                   <Pressable onPress={() => setLineItems((prev) => prev.filter((_, i) => i !== index))} hitSlop={8}>
-                    <Icon name="xmark.circle.fill" size={18} color={withOpacity(iOSColors.gray, 0.5)} />
+                    <Icon name="xmark.circle.fill" size={18} color={theme.tertiaryText} />
                   </Pressable>
                 </View>
               ))
             )}
 
             {/* Totals */}
-            <View style={[styles.totals, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
+            <View style={[styles.totals, theme.card]}>
               <View style={styles.totalRow}>
                 <Text style={[styles.totalLabel, { color: theme.secondaryText }]}>Subtotal</Text>
                 <Text style={[styles.totalValue, { color: theme.primaryText }]}>{usd.format(subtotal)}</Text>
@@ -236,8 +256,8 @@ export default function CreateInvoice() {
               <View style={[styles.divider, { backgroundColor: theme.divider }]} />
               <Pressable onPress={() => setTaxSheet(true)} style={styles.totalRow}>
                 <View style={styles.taxLeft}>
-                  <Icon name="percent" size={14} color={iOSColors.blue} />
-                  <Text style={[styles.totalLabel, { color: taxRate === null ? iOSColors.blue : theme.secondaryText }]}>
+                  <Icon name="percent" size={14} color={theme.accent} />
+                  <Text style={[styles.totalLabel, { color: taxRate === null ? theme.accent : theme.secondaryText }]}>
                     {taxRate === null ? 'Add tax' : `Tax (${taxRate}%)`}
                   </Text>
                 </View>
@@ -247,9 +267,9 @@ export default function CreateInvoice() {
                 </View>
               </Pressable>
               <View style={[styles.divider, { backgroundColor: theme.divider }]} />
-              <View style={[styles.totalDue, { backgroundColor: withOpacity(iOSColors.green, 0.05) }]}>
+              <View style={[styles.totalDue, { backgroundColor: theme.inputBackground }]}>
                 <Text style={[styles.totalDueLabel, { color: theme.primaryText }]}>Total due</Text>
-                <Text style={[styles.totalDueValue, { color: iOSColors.green }]}>{usd.format(total)}</Text>
+                <Text style={[theme.display(20, '500'), { color: theme.accent }]}>{usd.format(total)}</Text>
               </View>
             </View>
           </View>
@@ -257,11 +277,11 @@ export default function CreateInvoice() {
           {/* Due date */}
           <Section label="Due date">
             <Pressable onPress={() => setDateSheet(true)}>
-              <LinearGradient colors={[iOSColors.blue, withOpacity(iOSColors.purple, 0.8)]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.dueCard}>
-                <Icon name="calendar" size={18} color="#FFFFFF" />
-                <Text style={styles.dueText}>{dateFmt.format(new Date(dueDate))}</Text>
-                <Icon name="chevron.down" size={14} color="rgba(255,255,255,0.8)" />
-              </LinearGradient>
+              <View style={[styles.dueCard, { backgroundColor: theme.accent, borderRadius: theme.cornerRadius }]}>
+                <Icon name="calendar" size={18} color={theme.onAccent} />
+                <Text style={[styles.dueText, { color: theme.onAccent }]}>{dateFmt.format(new Date(dueDate))}</Text>
+                <Icon name="chevron.down" size={14} color={withOpacity(theme.onAccent, 0.8)} />
+              </View>
             </Pressable>
           </Section>
 
@@ -270,12 +290,12 @@ export default function CreateInvoice() {
           </Section>
 
           <Section label="Email address" hint="Invoice notification will be sent to this address">
-            <Field icon="envelope.fill" iconColor={iOSColors.blue} placeholder="email@example.com" value={email} onChangeText={setEmail} keyboardType="email-address" />
+            <Field icon="envelope.fill" iconColor={theme.accent} placeholder="email@example.com" value={email} onChangeText={setEmail} keyboardType="email-address" />
           </Section>
 
-          <View style={[styles.notifyCard, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
+          <View style={[styles.notifyCard, theme.card]}>
             <Text style={[styles.notifyText, { color: theme.primaryText }]}>Notify me when paid</Text>
-            <Switch value={notifyWhenPaid} onValueChange={setNotifyWhenPaid} trackColor={{ true: iOSColors.blue, false: theme.divider }} />
+            <Switch value={notifyWhenPaid} onValueChange={setNotifyWhenPaid} trackColor={{ true: theme.accent, false: theme.divider }} />
           </View>
 
           <Pressable onPress={() => setPreview(true)} disabled={lineItems.length === 0} style={[styles.previewBtn, { borderColor: theme.divider, opacity: lineItems.length === 0 ? 0.5 : 1 }]}>
@@ -314,7 +334,7 @@ function Field({
 }) {
   const theme = useAppTheme();
   return (
-    <View style={[styles.fieldCard, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
+    <View style={[styles.fieldCard, theme.card]}>
       <Icon name={icon} size={18} color={iconColor} />
       <TextInput value={value} onChangeText={onChangeText} placeholder={placeholder} placeholderTextColor={theme.tertiaryText} keyboardType={keyboardType} autoCapitalize={keyboardType === 'email-address' ? 'none' : 'sentences'} style={[styles.fieldInput, { color: theme.primaryText }]} />
     </View>
@@ -355,12 +375,12 @@ function AddItemSheet({ visible, onClose, onAdd }: { visible: boolean; onClose: 
       <DashboardGradient>
         <SafeAreaView style={styles.safe} edges={['top']}>
           <View style={[styles.header, { backgroundColor: withOpacity(theme.cardBackground, 0.9) }]}>
-            <Pressable onPress={onClose} style={[styles.closeBtn, { backgroundColor: theme.cardBackground }, lightShadow(theme)]} hitSlop={8}>
+            <Pressable onPress={onClose} style={[styles.closeBtn, { backgroundColor: theme.cardBackground, borderWidth: 1, borderColor: theme.divider }]} hitSlop={8}>
               <Icon name="xmark" size={18} color={theme.secondaryText} />
             </Pressable>
             <Text style={[styles.headerTitle, { color: theme.primaryText }]}>Add item</Text>
-            <Pressable onPress={add} disabled={!valid} style={[styles.sendBtn, { backgroundColor: valid ? iOSColors.blue : iOSColors.gray }]}>
-              <Text style={styles.sendText}>Add</Text>
+            <Pressable onPress={add} disabled={!valid} style={[styles.sendBtn, { backgroundColor: theme.accent, borderRadius: theme.isEditorial ? 2 : 999, opacity: valid ? 1 : 0.5 }]}>
+              <Text style={[styles.sendText, { color: theme.onAccent }]}>Add</Text>
             </Pressable>
           </View>
 
@@ -375,9 +395,9 @@ function AddItemSheet({ visible, onClose, onAdd }: { visible: boolean; onClose: 
                       <Pressable
                         key={s.id}
                         onPress={() => selectService(s)}
-                        style={[styles.serviceChip, { backgroundColor: selected ? withOpacity(iOSColors.blue, 0.12) : theme.cardBackground, borderColor: selected ? iOSColors.blue : withOpacity(iOSColors.gray, 0.2) }]}>
+                        style={[styles.serviceChip, { backgroundColor: selected ? theme.accentSoft : theme.cardBackground, borderColor: selected ? theme.accent : theme.divider }]}>
                         <Text style={[styles.serviceChipName, { color: theme.primaryText }]} numberOfLines={1}>{s.name}</Text>
-                        <Text style={styles.serviceChipPrice}>{usd.format(s.price)}</Text>
+                        <Text style={[styles.serviceChipPrice, { color: theme.accent }]}>{usd.format(s.price)}</Text>
                       </Pressable>
                     );
                   })}
@@ -386,13 +406,13 @@ function AddItemSheet({ visible, onClose, onAdd }: { visible: boolean; onClose: 
             ) : null}
 
             <Section label="Description">
-              <Field icon="doc.text.fill" iconColor={iOSColors.blue} placeholder="Item description..." value={description} onChangeText={setDescription} />
+              <Field icon="doc.text.fill" iconColor={theme.accent} placeholder="Item description..." value={description} onChangeText={setDescription} />
             </Section>
 
             <View style={styles.section}>
               <Text style={[styles.sectionLabel, { color: theme.secondaryText }]}>Quantity</Text>
-              <View style={[styles.fieldCard, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
-                <Icon name="number" size={18} color={iOSColors.purple} />
+              <View style={[styles.fieldCard, theme.card]}>
+                <Icon name="number" size={18} color={theme.accent} />
                 <View style={styles.stepperInline}>
                   <Pressable onPress={() => setQuantity((q) => Math.max(1, q - 1))} style={[styles.stepBtn, { backgroundColor: theme.inputBackground }]}><Icon name="minus" size={16} color={theme.primaryText} /></Pressable>
                   <Text style={[styles.stepValue, { color: theme.primaryText }]}>{quantity}</Text>
@@ -402,8 +422,8 @@ function AddItemSheet({ visible, onClose, onAdd }: { visible: boolean; onClose: 
             </View>
 
             <Section label="Unit price">
-              <View style={[styles.fieldCard, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
-                <Icon name="dollarsign" size={18} color={iOSColors.green} />
+              <View style={[styles.fieldCard, theme.card]}>
+                <Icon name="dollarsign" size={18} color={theme.accent} />
                 <TextInput value={unitPrice} onChangeText={(t) => setUnitPrice(t.replace(/[^0-9.]/g, ''))} placeholder="0.00" placeholderTextColor={theme.tertiaryText} keyboardType="decimal-pad" style={[styles.fieldInput, { color: theme.primaryText }]} />
               </View>
             </Section>
@@ -427,9 +447,7 @@ function TaxSheet({ visible, current, onClose, onApply }: { visible: boolean; cu
             <Text style={[styles.sheetLabel, { color: theme.secondaryText }]}>Rate (%)</Text>
             <TextInput value={rate} onChangeText={(t) => setRate(t.replace(/[^0-9.]/g, ''))} placeholder="0.00" placeholderTextColor={theme.tertiaryText} keyboardType="decimal-pad" style={[styles.priceInput, { backgroundColor: theme.inputBackground, color: theme.primaryText }]} />
           </View>
-          <Pressable onPress={() => onApply(rate ? Number(rate) : null)} style={[styles.sheetSave, { backgroundColor: iOSColors.blue }]}>
-            <Text style={styles.sheetSaveText}>Apply</Text>
-          </Pressable>
+          <ThemedButton title="Apply" kind="accent" onPress={() => onApply(rate ? Number(rate) : null)} />
           <Pressable onPress={() => onApply(null)} style={styles.sheetClear}>
             <Text style={[styles.sheetClearText, { color: iOSColors.red }]}>Remove tax</Text>
           </Pressable>
@@ -468,16 +486,16 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16 },
   closeBtn: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   headerTitle: { flex: 1, textAlign: 'center', marginHorizontal: 6, fontSize: 17, fontWeight: '700' },
-  sendBtn: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20 },
-  sendText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
+  sendBtn: { paddingHorizontal: 16, paddingVertical: 10 },
+  sendText: { fontSize: 16, fontWeight: '600' },
   body: { paddingBottom: 40, gap: 20 },
   badgeRow: { paddingHorizontal: 16, paddingTop: 8 },
-  badge: { flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20 },
+  badge: { flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start', paddingHorizontal: 16, paddingVertical: 10 },
   badgeText: { fontSize: 16, fontWeight: '600' },
   section: { gap: 12, paddingHorizontal: 16 },
   sectionLabel: { fontSize: 14, fontWeight: '500' },
   hint: { fontSize: 12 },
-  banner: { flexDirection: 'row', gap: 12, marginHorizontal: 16, padding: 16, borderRadius: 12, borderWidth: 1, backgroundColor: 'rgba(0,122,255,0.08)' },
+  banner: { flexDirection: 'row', gap: 12, marginHorizontal: 16, padding: 16, borderWidth: 1 },
   bannerText: { flex: 1, gap: 4 },
   bannerTitle: { fontSize: 15, fontWeight: '600' },
   bannerSub: { fontSize: 14 },
@@ -504,9 +522,8 @@ const styles = StyleSheet.create({
   divider: { height: StyleSheet.hairlineWidth, marginHorizontal: 16 },
   totalDue: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14 },
   totalDueLabel: { fontSize: 16, fontWeight: '700' },
-  totalDueValue: { fontSize: 20, fontWeight: '700' },
-  dueCard: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 14, borderRadius: 12 },
-  dueText: { flex: 1, color: '#FFFFFF', fontSize: 16, fontWeight: '500' },
+  dueCard: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 14 },
+  dueText: { flex: 1, fontSize: 16, fontWeight: '500' },
   notifyCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginHorizontal: 16, padding: 16, borderRadius: 12 },
   notifyText: { fontSize: 15, fontWeight: '500' },
   previewBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginHorizontal: 16, paddingVertical: 14, borderRadius: 12, borderWidth: 1 },
@@ -515,7 +532,7 @@ const styles = StyleSheet.create({
   chipRow: { gap: 10, paddingVertical: 2 },
   serviceChip: { minWidth: 120, gap: 4, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10, borderWidth: 1.5 },
   serviceChipName: { fontSize: 14, fontWeight: '600' },
-  serviceChipPrice: { fontSize: 13, fontWeight: '500', color: iOSColors.green },
+  serviceChipPrice: { fontSize: 13, fontWeight: '500' },
   stepperInline: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 16 },
   // sheets
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' },
@@ -527,8 +544,6 @@ const styles = StyleSheet.create({
   stepBtn: { width: 36, height: 36, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   stepValue: { fontSize: 18, fontWeight: '600', minWidth: 24, textAlign: 'center' },
   priceInput: { fontSize: 16, padding: 12, borderRadius: 10, minWidth: 120, textAlign: 'right' },
-  sheetSave: { paddingVertical: 14, borderRadius: 12, alignItems: 'center' },
-  sheetSaveText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
   sheetClear: { alignItems: 'center', paddingVertical: 4 },
   sheetClearText: { fontSize: 15, fontWeight: '500' },
   clientRow: { paddingVertical: 12, gap: 2 },

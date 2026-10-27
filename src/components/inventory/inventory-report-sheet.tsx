@@ -9,6 +9,7 @@ import { useState } from 'react';
 import { Modal, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 
 import { Icon } from '@/components/icon';
+import { ThemedButton, ThemedIconTile } from '@/components/themed';
 import { useInventory } from '@/context/inventory-store';
 import { withOpacity } from '@/lib/color';
 import { itemTotalValue, statusColor, statusLabel, stockStatus, type InventoryItem } from '@/models/inventory';
@@ -56,7 +57,7 @@ export function InventoryReportSheet({ visible, onClose }: { visible: boolean; o
         <View style={styles.grabber} />
         <View style={styles.header}>
           <Pressable onPress={onClose} hitSlop={8}>
-            <Text style={styles.action}>Close</Text>
+            <Text style={[styles.action, { color: theme.accent }]}>Close</Text>
           </Pressable>
           <Text style={[styles.title, { color: theme.primaryText }]}>Inventory Report</Text>
           <Text style={[styles.action, styles.hidden]}>Close</Text>
@@ -65,26 +66,26 @@ export function InventoryReportSheet({ visible, onClose }: { visible: boolean; o
         <ScrollView contentContainerStyle={styles.body}>
           {/* Report header */}
           <View style={styles.reportHead}>
-            <Icon name="doc.text.fill" size={40} color={iOSColors.purple} />
-            <Text style={[styles.reportTitle, { color: theme.primaryText }]}>Inventory Report</Text>
+            <ThemedIconTile name="doc.text.fill" size={56} filled />
+            <Text style={theme.display(24)}>Inventory Report</Text>
             <Text style={[styles.reportDate, { color: theme.secondaryText }]}>Generated {generated}</Text>
           </View>
 
           {/* Summary */}
-          <SectionHeader title="Summary" icon="chart.bar.fill" color={iOSColors.blue} />
-          <View style={[styles.panel, { borderColor: theme.divider }]}>
-            <MetricRow label="Total Unique Products" value={`${items.length}`} color={iOSColors.blue} />
-            <MetricRow label="Total Units in Stock" value={`${inventory.totalItemCount}`} color={iOSColors.blue} />
-            <MetricRow label="Total Inventory Value" value={usd.format(inventory.totalValue)} color={iOSColors.green} />
+          <SectionHeader title="Summary" icon="chart.bar.fill" />
+          <View style={[styles.panel, { borderColor: theme.divider, borderRadius: theme.cornerRadius }]}>
+            <MetricRow label="Total Unique Products" value={`${items.length}`} />
+            <MetricRow label="Total Units in Stock" value={`${inventory.totalItemCount}`} />
+            <MetricRow label="Total Inventory Value" value={usd.format(inventory.totalValue)} />
             <MetricRow label="In Stock Items" value={`${inventory.inStockItems.length}`} color={iOSColors.green} />
             <MetricRow label="Low Stock Items" value={`${inventory.lowStockItems.length}`} color={iOSColors.orange} />
             <MetricRow label="Out of Stock Items" value={`${inventory.outOfStockItems.length}`} color={iOSColors.red} />
           </View>
 
           {/* By category */}
-          <SectionHeader title="By Category" icon="tag.fill" color={iOSColors.purple} />
-          <View style={[styles.panel, { borderColor: theme.divider }]}>
-            <View style={[styles.tableHead, { backgroundColor: withOpacity(iOSColors.gray, 0.08) }]}>
+          <SectionHeader title="By Category" icon="tag.fill" />
+          <View style={[styles.panel, { borderColor: theme.divider, borderRadius: theme.cornerRadius }]}>
+            <View style={[styles.tableHead, { backgroundColor: theme.inputBackground }]}>
               <Text style={[styles.thLeft, { color: theme.secondaryText }]}>Category</Text>
               <Text style={[styles.thNum, { color: theme.secondaryText }]}>Items</Text>
               <Text style={[styles.thNum, { color: theme.secondaryText }]}>Units</Text>
@@ -109,7 +110,7 @@ export function InventoryReportSheet({ visible, onClose }: { visible: boolean; o
           {/* Needs attention */}
           <SectionHeader title="Needs Attention" icon="exclamationmark.triangle.fill" color={iOSColors.orange} />
           {alertItems.length === 0 ? (
-            <View style={[styles.okBanner, { backgroundColor: withOpacity(iOSColors.green, 0.05) }]}>
+            <View style={[styles.okBanner, { backgroundColor: withOpacity(iOSColors.green, 0.05), borderRadius: theme.cornerRadius }]}>
               <Icon name="checkmark.circle.fill" size={18} color={iOSColors.green} />
               <Text style={[styles.okText, { color: theme.secondaryText }]}>All items are sufficiently stocked</Text>
             </View>
@@ -122,9 +123,9 @@ export function InventoryReportSheet({ visible, onClose }: { visible: boolean; o
           )}
 
           {/* Full list */}
-          <SectionHeader title="All Items" icon="list.bullet.rectangle.fill" color={iOSColors.blue} />
-          <View style={[styles.panel, { borderColor: theme.divider }]}>
-            <View style={[styles.tableHead, { backgroundColor: withOpacity(iOSColors.gray, 0.08) }]}>
+          <SectionHeader title="All Items" icon="list.bullet.rectangle.fill" />
+          <View style={[styles.panel, { borderColor: theme.divider, borderRadius: theme.cornerRadius }]}>
+            <View style={[styles.tableHead, { backgroundColor: theme.inputBackground }]}>
               <Text style={[styles.thLeft, { color: theme.secondaryText }]}>Item</Text>
               <Text style={[styles.thNum, { color: theme.secondaryText }]}>Qty</Text>
               <Text style={[styles.thValue, { color: theme.secondaryText }]}>Status</Text>
@@ -141,34 +142,29 @@ export function InventoryReportSheet({ visible, onClose }: { visible: boolean; o
         </ScrollView>
 
         <View style={[styles.footer, { borderTopColor: theme.divider }]}>
-          <Pressable onPress={exportReport} style={styles.exportWrap}>
-            <View style={[styles.export, { backgroundColor: iOSColors.purple }]}>
-              <Icon name="square.and.arrow.up" size={16} color="#FFFFFF" />
-              <Text style={styles.exportText}>Export Report</Text>
-            </View>
-          </Pressable>
+          <ThemedButton title="Export Report" icon="square.and.arrow.up" onPress={exportReport} />
         </View>
       </View>
     </Modal>
   );
 }
 
-function SectionHeader({ title, icon, color }: { title: string; icon: import('expo-symbols').SymbolViewProps['name']; color: string }) {
+function SectionHeader({ title, icon, color }: { title: string; icon: import('expo-symbols').SymbolViewProps['name']; color?: string }) {
   const theme = useAppTheme();
   return (
     <View style={styles.sectionHead}>
-      <Icon name={icon} size={16} color={color} />
+      <Icon name={icon} size={16} color={color ?? theme.accent} />
       <Text style={[styles.sectionTitle, { color: theme.primaryText }]}>{title}</Text>
     </View>
   );
 }
 
-function MetricRow({ label, value, color }: { label: string; value: string; color: string }) {
+function MetricRow({ label, value, color }: { label: string; value: string; color?: string }) {
   const theme = useAppTheme();
   return (
     <View style={styles.metricRow}>
       <Text style={[styles.metricLabel, { color: theme.secondaryText }]}>{label}</Text>
-      <Text style={[styles.metricValue, { color }]}>{value}</Text>
+      <Text style={[styles.metricValue, { color: color ?? theme.primaryText }]}>{value}</Text>
     </View>
   );
 }
@@ -195,15 +191,14 @@ const styles = StyleSheet.create({
   grabber: { alignSelf: 'center', width: 40, height: 6, borderRadius: 3, backgroundColor: 'rgba(150,150,150,0.5)', marginTop: 12, marginBottom: 8 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
   title: { fontSize: 18, fontWeight: '700' },
-  action: { fontSize: 16, color: iOSColors.blue },
+  action: { fontSize: 16 },
   hidden: { opacity: 0 },
   body: { padding: 16, gap: 14 },
   reportHead: { alignItems: 'center', gap: 8, paddingVertical: 8 },
-  reportTitle: { fontSize: 22, fontWeight: '700' },
   reportDate: { fontSize: 13 },
   sectionHead: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 },
   sectionTitle: { fontSize: 16, fontWeight: '700' },
-  panel: { borderRadius: 12, borderWidth: 1, overflow: 'hidden' },
+  panel: { borderWidth: 1, overflow: 'hidden' },
   metricRow: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 14, paddingVertical: 10 },
   metricLabel: { fontSize: 14 },
   metricValue: { fontSize: 14, fontWeight: '700' },
@@ -216,7 +211,7 @@ const styles = StyleSheet.create({
   tdNum: { width: 50, textAlign: 'center', fontSize: 13 },
   tdValue: { width: 80, textAlign: 'right', fontSize: 13 },
   emptyHint: { fontSize: 13, padding: 14 },
-  okBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 14, borderRadius: 12 },
+  okBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 14 },
   okText: { fontSize: 14 },
   attention: { gap: 8 },
   attentionRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: 10 },
@@ -226,7 +221,4 @@ const styles = StyleSheet.create({
   attQty: { fontSize: 13, fontWeight: '600' },
   attStatus: { fontSize: 10, marginTop: 2 },
   footer: { padding: 16, borderTopWidth: StyleSheet.hairlineWidth },
-  exportWrap: {},
-  export: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, paddingVertical: 16, borderRadius: 12 },
-  exportText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
 });

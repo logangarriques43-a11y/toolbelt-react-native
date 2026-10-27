@@ -8,7 +8,6 @@
  * also has a backend Stripe-Tax path + a global manual rate, both deferred).
  */
 
-import { LinearGradient } from 'expo-linear-gradient';
 import type { Dispatch, ReactNode, SetStateAction } from 'react';
 import { useEffect, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -17,7 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { DashboardGradient } from '@/components/dashboard-gradient';
 import { Icon } from '@/components/icon';
 import { KeyboardAwareForm } from '@/components/keyboard-aware-form';
-import { BRAND_BLUE, BRAND_PURPLE } from '@/components/payments/checkout';
+import { ThemedButton, ThemedIconTile } from '@/components/themed';
 import { useClients } from '@/context/clients-store';
 import { useProducts } from '@/context/products-store';
 import { useSales } from '@/context/sales-store';
@@ -31,11 +30,8 @@ import {
   type SelectedServiceItem,
 } from '@/models/cart';
 import { PAYMENT_METHODS, type PaymentMethod, type SaleItem } from '@/models/sale';
-import { iOSColors, lightShadow } from '@/theme/tokens';
+import { iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
-
-const GREEN = '#33C773';
-const GREEN_DARK = '#27AE60';
 
 interface ReviewSaleSheetProps {
   visible: boolean;
@@ -157,7 +153,7 @@ export function ReviewSaleSheet(props: ReviewSaleSheetProps) {
         <SafeAreaView style={styles.flex} edges={['top', 'bottom']}>
           {/* Header */}
           <View style={[styles.header, { backgroundColor: theme.cardBackground }]}>
-            <Pressable onPress={onClose} style={[styles.roundBtn, { backgroundColor: theme.cardBackground }]}>
+            <Pressable onPress={onClose} style={[styles.roundBtn, { backgroundColor: theme.cardBackground, borderWidth: 1, borderColor: theme.divider }]}>
               <Icon name="xmark" size={16} color={theme.secondaryText} weight="medium" />
             </Pressable>
             <Text style={[styles.headerTitle, { color: theme.primaryText }]}>Review Sale</Text>
@@ -168,7 +164,7 @@ export function ReviewSaleSheet(props: ReviewSaleSheetProps) {
             {/* Total */}
             <View style={styles.totalBlock}>
               <Text style={[styles.totalLabel, { color: theme.secondaryText }]}>Total</Text>
-              <Text style={[styles.totalValue, { color: theme.primaryText }]}>${totalWithTax.toFixed(2)}</Text>
+              <Text style={theme.display(52, '500')}>${totalWithTax.toFixed(2)}</Text>
               {hasTax && subtotal > 0 && (
                 <View style={styles.taxLines}>
                   <Text style={[styles.taxLine, { color: theme.secondaryText }]}>Subtotal ${subtotal.toFixed(2)}</Text>
@@ -179,9 +175,9 @@ export function ReviewSaleSheet(props: ReviewSaleSheetProps) {
               )}
               {sourceChips && (
                 <View style={styles.sourceRow}>
-                  {selectedServices.length > 0 && <Source dot={BRAND_BLUE} label={`Services $${servicesSub.toFixed(2)}`} />}
-                  {selectedProducts.length > 0 && <Source dot={BRAND_PURPLE} label={`Products $${productsSub.toFixed(2)}`} />}
-                  {hasKeypadAmount && <Source dot={iOSColors.orange} label={`Keypad $${custom.toFixed(2)}`} />}
+                  {selectedServices.length > 0 && <Source dot={theme.accent} label={`Services $${servicesSub.toFixed(2)}`} />}
+                  {selectedProducts.length > 0 && <Source dot={theme.accent} label={`Products $${productsSub.toFixed(2)}`} />}
+                  {hasKeypadAmount && <Source dot={theme.accent} label={`Keypad $${custom.toFixed(2)}`} />}
                 </View>
               )}
             </View>
@@ -189,24 +185,24 @@ export function ReviewSaleSheet(props: ReviewSaleSheetProps) {
             {/* Client */}
             <Field label="Client">
               <Pressable
-                style={[styles.card, styles.clientCard, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}
+                style={[styles.card, styles.clientCard, theme.card]}
                 onPress={() => setShowClientPicker(true)}>
                 {client ? (
                   <>
-                    <View style={[styles.clientAvatar, { backgroundColor: withOpacity(iOSColors.blue, 0.15) }]}>
-                      <Text style={[styles.clientAvatarText, { color: iOSColors.blue }]}>{clientInitials(client.name)}</Text>
+                    <View style={[styles.clientAvatar, { backgroundColor: theme.accentSoft }]}>
+                      <Text style={[styles.clientAvatarText, { color: theme.accent }]}>{clientInitials(client.name)}</Text>
                     </View>
                     <View style={styles.flex}>
                       <Text style={[styles.clientName, { color: theme.primaryText }]}>{client.name}</Text>
                       <Text style={[styles.clientPhone, { color: theme.secondaryText }]}>{client.phoneNumber}</Text>
                     </View>
                     <Pressable onPress={() => setClient(null)} hitSlop={8}>
-                      <Icon name="xmark.circle.fill" size={20} color={withOpacity(iOSColors.gray, 0.4)} />
+                      <Icon name="xmark.circle.fill" size={20} color={theme.tertiaryText} />
                     </Pressable>
                   </>
                 ) : (
                   <>
-                    <View style={[styles.clientAvatar, { backgroundColor: withOpacity(iOSColors.gray, 0.1) }]}>
+                    <View style={[styles.clientAvatar, { backgroundColor: theme.inputBackground }]}>
                       <Icon name="person.badge.plus" size={16} color={theme.secondaryText} />
                     </View>
                     <Text style={[styles.addClient, { color: theme.secondaryText }]}>Add Client (Optional)</Text>
@@ -222,7 +218,7 @@ export function ReviewSaleSheet(props: ReviewSaleSheetProps) {
               <Field
                 label="Items"
                 trailing={`${selectedServices.length} service${selectedServices.length === 1 ? '' : 's'}`}>
-                <View style={[styles.listCard, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
+                <View style={[styles.listCard, theme.card]}>
                   {selectedServices.map((it, i) => (
                     <ReviewRow
                       key={`${it.service.id}-${i}`}
@@ -243,7 +239,7 @@ export function ReviewSaleSheet(props: ReviewSaleSheetProps) {
               <Field
                 label="Products"
                 trailing={`${selectedProducts.length} product${selectedProducts.length === 1 ? '' : 's'}`}>
-                <View style={[styles.listCard, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
+                <View style={[styles.listCard, theme.card]}>
                   {selectedProducts.map((it, i) => (
                     <ReviewRow
                       key={`${it.product.id}-${i}`}
@@ -262,27 +258,25 @@ export function ReviewSaleSheet(props: ReviewSaleSheetProps) {
             {/* Keypad amount */}
             {hasKeypadAmount && (
               <Field label="Custom Amount">
-                <View style={[styles.card, styles.clientCard, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
-                  <View style={[styles.clientAvatar, { backgroundColor: withOpacity(iOSColors.orange, 0.15) }]}>
-                    <Icon name="number.square.fill" size={18} color={iOSColors.orange} />
-                  </View>
+                <View style={[styles.card, styles.clientCard, theme.card]}>
+                  <ThemedIconTile name="number.square.fill" size={40} />
                   <View style={styles.flex}>
                     <Text style={[styles.clientName, { color: theme.primaryText }]}>Keypad Entry</Text>
                     <Text style={[styles.clientPhone, { color: theme.secondaryText }]}>Entered via keypad</Text>
                   </View>
-                  <Text style={[styles.keypadAmount, { color: iOSColors.orange }]}>${custom.toFixed(2)}</Text>
+                  <Text style={[styles.keypadAmount, { color: theme.accent }]}>${custom.toFixed(2)}</Text>
                 </View>
               </Field>
             )}
 
             {/* Notes */}
             <Field label="Notes">
-              <View style={[styles.notesCard, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
+              <View style={[styles.notesCard, theme.card]}>
                 <TextInput
                   value={notes}
                   onChangeText={setNotes}
                   placeholder="Add notes about this sale..."
-                  placeholderTextColor={withOpacity(iOSColors.gray, 0.5)}
+                  placeholderTextColor={theme.tertiaryText}
                   multiline
                   style={[styles.notesInput, { color: theme.primaryText }]}
                 />
@@ -297,17 +291,13 @@ export function ReviewSaleSheet(props: ReviewSaleSheetProps) {
                   return (
                     <Pressable key={m.method} style={styles.methodWrap} onPress={() => setMethod(m.method)}>
                       {active ? (
-                        <LinearGradient
-                          colors={[m.color, withOpacity(m.color, 0.8)]}
-                          start={{ x: 0, y: 0 }}
-                          end={{ x: 1, y: 1 }}
-                          style={styles.method}>
-                          <Icon name={m.icon} size={28} color="#FFFFFF" />
-                          <Text style={[styles.methodLabel, { color: '#FFFFFF' }]}>{m.method}</Text>
-                        </LinearGradient>
+                        <View style={[styles.method, { backgroundColor: theme.accent, borderColor: theme.accent, borderWidth: 1, borderRadius: theme.cornerRadius }]}>
+                          <Icon name={m.icon} size={28} color={theme.onAccent} />
+                          <Text style={[styles.methodLabel, { color: theme.onAccent }]}>{m.method}</Text>
+                        </View>
                       ) : (
-                        <View style={[styles.method, { backgroundColor: theme.cardBackground, borderColor: theme.divider, borderWidth: 1 }]}>
-                          <Icon name={m.icon} size={28} color={m.color} />
+                        <View style={[styles.method, { backgroundColor: theme.cardBackground, borderColor: theme.divider, borderWidth: 1, borderRadius: theme.cornerRadius }]}>
+                          <Icon name={m.icon} size={28} color={theme.accent} />
                           <Text style={[styles.methodLabel, { color: theme.primaryText }]}>{m.method}</Text>
                         </View>
                       )}
@@ -319,20 +309,14 @@ export function ReviewSaleSheet(props: ReviewSaleSheetProps) {
           </KeyboardAwareForm>
 
           {/* Complete */}
-          <View style={[styles.footer, { backgroundColor: theme.cardBackground }]}>
-            <Pressable onPress={completeSale} disabled={!canComplete}>
-              {canComplete ? (
-                <LinearGradient colors={[GREEN, GREEN_DARK]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.completeBtn}>
-                  <Icon name="checkmark.circle.fill" size={20} color="#FFFFFF" />
-                  <Text style={styles.completeText}>Complete Sale</Text>
-                </LinearGradient>
-              ) : (
-                <View style={[styles.completeBtn, { backgroundColor: withOpacity(iOSColors.gray, 0.4) }]}>
-                  <Icon name="checkmark.circle.fill" size={20} color="#FFFFFF" />
-                  <Text style={styles.completeText}>Complete Sale</Text>
-                </View>
-              )}
-            </Pressable>
+          <View style={[styles.footer, { backgroundColor: theme.cardBackground, borderTopWidth: 1, borderTopColor: theme.divider }]}>
+            <ThemedButton
+              title="Complete Sale"
+              icon="checkmark.circle.fill"
+              kind="accent"
+              onPress={completeSale}
+              disabled={!canComplete}
+            />
           </View>
         </SafeAreaView>
       </DashboardGradient>
@@ -371,7 +355,7 @@ function Field({ label, trailing, children }: { label: string; trailing?: string
     <View style={styles.field}>
       <View style={styles.fieldHead}>
         <Text style={[styles.fieldLabel, { color: theme.secondaryText }]}>{label}</Text>
-        {trailing && <Text style={[styles.fieldTrailing, { color: withOpacity(iOSColors.gray, 0.6) }]}>{trailing}</Text>}
+        {trailing && <Text style={[styles.fieldTrailing, { color: theme.tertiaryText }]}>{trailing}</Text>}
       </View>
       {children}
     </View>
@@ -417,8 +401,8 @@ function ReviewRow({
             Qty: {quantity} × ${price.toFixed(0)}
           </Text>
         </View>
-        <Pressable onPress={onDec} style={[styles.stepBtn, { backgroundColor: withOpacity(iOSColors.gray, 0.1) }]}>
-          <Icon name={removing ? 'trash' : 'minus'} size={12} color={removing ? iOSColors.red : iOSColors.gray} weight="semibold" />
+        <Pressable onPress={onDec} style={[styles.stepBtn, { backgroundColor: theme.inputBackground }]}>
+          <Icon name={removing ? 'trash' : 'minus'} size={12} color={removing ? iOSColors.red : theme.secondaryText} weight="semibold" />
         </Pressable>
         <Text style={[styles.reviewTotal, { color: theme.primaryText }]}>${(price * quantity).toFixed(2)}</Text>
       </View>
@@ -450,14 +434,14 @@ function ClientPicker({
       <View style={styles.pickerBackdrop}>
         <Pressable style={styles.flex} onPress={onClose} />
         <View style={[styles.picker, { backgroundColor: theme.cardBackground }]}>
-          <View style={styles.grabber} />
+          <View style={[styles.grabber, { backgroundColor: theme.divider }]} />
           <View style={styles.pickerHead}>
             <Text style={[styles.pickerTitle, { color: theme.primaryText }]}>Select Client</Text>
             <Pressable onPress={onClose} hitSlop={8}>
-              <Icon name="xmark.circle.fill" size={24} color={withOpacity(iOSColors.gray, 0.4)} />
+              <Icon name="xmark.circle.fill" size={24} color={theme.tertiaryText} />
             </Pressable>
           </View>
-          <View style={[styles.searchBar, { backgroundColor: withOpacity(iOSColors.gray, 0.08) }]}>
+          <View style={[styles.searchBar, { backgroundColor: theme.inputBackground }]}>
             <Icon name="magnifyingglass" size={15} color={theme.secondaryText} />
             <TextInput
               value={search}
@@ -482,15 +466,15 @@ function ClientPicker({
                   <Pressable
                     key={c.id}
                     onPress={() => onSelect(c)}
-                    style={[styles.pickerRow, active && { backgroundColor: withOpacity(BRAND_BLUE, 0.06) }]}>
-                    <View style={[styles.clientAvatar, { backgroundColor: withOpacity(iOSColors.blue, 0.15) }]}>
-                      <Text style={[styles.clientAvatarText, { color: iOSColors.blue }]}>{clientInitials(c.name)}</Text>
+                    style={[styles.pickerRow, active && { backgroundColor: theme.accentSoft }]}>
+                    <View style={[styles.clientAvatar, { backgroundColor: theme.accentSoft }]}>
+                      <Text style={[styles.clientAvatarText, { color: theme.accent }]}>{clientInitials(c.name)}</Text>
                     </View>
                     <View style={styles.flex}>
                       <Text style={[styles.clientName, { color: theme.primaryText }]}>{c.name}</Text>
                       <Text style={[styles.clientPhone, { color: theme.secondaryText }]}>{c.phoneNumber}</Text>
                     </View>
-                    {active && <Icon name="checkmark.circle.fill" size={20} color={BRAND_BLUE} />}
+                    {active && <Icon name="checkmark.circle.fill" size={20} color={theme.accent} />}
                   </Pressable>
                 );
               })}
@@ -519,7 +503,7 @@ function NoClientWarning({
   return (
     <Modal visible={visible} animationType="fade" transparent onRequestClose={onDismiss}>
       <Pressable style={styles.warningBackdrop} onPress={onDismiss}>
-        <Pressable style={[styles.warningCard, { backgroundColor: theme.cardBackground }]} onPress={() => {}}>
+        <Pressable style={[styles.warningCard, { backgroundColor: theme.cardBackground, borderRadius: theme.cornerRadius }]} onPress={() => {}}>
           <View style={[styles.warningIcon, { backgroundColor: withOpacity(iOSColors.orange, 0.15) }]}>
             <Icon name="exclamationmark.triangle.fill" size={26} color={iOSColors.orange} />
           </View>
@@ -529,8 +513,8 @@ function NoClientWarning({
             transaction history.
           </Text>
           <View style={styles.warningButtons}>
-            <Pressable style={[styles.warningBtn, { backgroundColor: withOpacity(BRAND_BLUE, 0.1) }]} onPress={onAddClient}>
-              <Text style={[styles.warningBtnText, { color: BRAND_BLUE }]}>Add Client</Text>
+            <Pressable style={[styles.warningBtn, { backgroundColor: theme.accentSoft }]} onPress={onAddClient}>
+              <Text style={[styles.warningBtnText, { color: theme.accent }]}>Add Client</Text>
             </Pressable>
             <Pressable style={[styles.warningBtn, { backgroundColor: iOSColors.orange }]} onPress={onContinue}>
               <Text style={[styles.warningBtnText, { color: '#FFFFFF' }]}>Continue Anyway</Text>
@@ -551,7 +535,6 @@ const styles = StyleSheet.create({
   // Total
   totalBlock: { alignItems: 'center', gap: 8 },
   totalLabel: { fontSize: 14, fontWeight: '500' },
-  totalValue: { fontSize: 52, fontWeight: '700' },
   taxLines: { alignItems: 'center', gap: 4 },
   taxLine: { fontSize: 12, fontWeight: '500' },
   sourceRow: { flexDirection: 'row', gap: 12, marginTop: 2 },
@@ -564,7 +547,7 @@ const styles = StyleSheet.create({
   fieldLabel: { fontSize: 14, fontWeight: '500' },
   fieldTrailing: { fontSize: 12, fontWeight: '500' },
   // Cards
-  card: { borderRadius: 12, marginHorizontal: 16 },
+  card: { marginHorizontal: 16 },
   clientCard: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 },
   clientAvatar: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   clientAvatarText: { fontSize: 15, fontWeight: '700' },
@@ -572,7 +555,7 @@ const styles = StyleSheet.create({
   clientPhone: { fontSize: 13 },
   addClient: { fontSize: 15, fontWeight: '500' },
   keypadAmount: { fontSize: 16, fontWeight: '700' },
-  listCard: { borderRadius: 12, marginHorizontal: 16, overflow: 'hidden' },
+  listCard: { marginHorizontal: 16, overflow: 'hidden' },
   reviewRow: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 16, paddingVertical: 12 },
   reviewAvatar: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   reviewAvatarText: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
@@ -582,21 +565,19 @@ const styles = StyleSheet.create({
   reviewTotal: { fontSize: 15, fontWeight: '700', minWidth: 50, textAlign: 'right' },
   rowDivider: { height: StyleSheet.hairlineWidth, marginLeft: 68 },
   // Notes
-  notesCard: { borderRadius: 12, marginHorizontal: 16, padding: 12 },
+  notesCard: { marginHorizontal: 16, padding: 12 },
   notesInput: { fontSize: 15, minHeight: 80, textAlignVertical: 'top' },
   // Methods
   methodGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, paddingHorizontal: 16 },
   methodWrap: { width: '47%', flexGrow: 1 },
-  method: { alignItems: 'center', gap: 10, paddingVertical: 24, borderRadius: 12 },
+  method: { alignItems: 'center', gap: 10, paddingVertical: 24 },
   methodLabel: { fontSize: 14, fontWeight: '600' },
   // Footer
   footer: { paddingHorizontal: 20, paddingVertical: 16 },
-  completeBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, paddingVertical: 18, borderRadius: 14 },
-  completeText: { color: '#FFFFFF', fontSize: 18, fontWeight: '600' },
   // Client picker
   pickerBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.3)' },
   picker: { maxHeight: '60%', borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingBottom: 20 },
-  grabber: { alignSelf: 'center', width: 40, height: 5, borderRadius: 3, backgroundColor: 'rgba(150,150,150,0.3)', marginTop: 12, marginBottom: 8 },
+  grabber: { alignSelf: 'center', width: 40, height: 5, borderRadius: 3, marginTop: 12, marginBottom: 8 },
   pickerHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 12 },
   pickerTitle: { fontSize: 18, fontWeight: '700' },
   searchBar: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: 10, marginHorizontal: 20, marginBottom: 12 },
@@ -607,7 +588,7 @@ const styles = StyleSheet.create({
   pickerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10 },
   // Warning
   warningBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.3)', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 30 },
-  warningCard: { width: '100%', alignItems: 'center', gap: 16, padding: 24, borderRadius: 20 },
+  warningCard: { width: '100%', alignItems: 'center', gap: 16, padding: 24 },
   warningIcon: { width: 60, height: 60, borderRadius: 30, alignItems: 'center', justifyContent: 'center' },
   warningTitle: { fontSize: 18, fontWeight: '700' },
   warningBody: { fontSize: 14, textAlign: 'center', lineHeight: 20 },

@@ -8,7 +8,6 @@
  * time-wheel sheet), and SMS consent are fully wired.
  */
 
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import type { SFSymbol } from 'expo-symbols';
 import { useMemo, useState, type ReactNode } from 'react';
@@ -22,11 +21,9 @@ import { TimeWheelSheet } from '@/components/sheets/time-wheel-sheet';
 import { useClients } from '@/context/clients-store';
 import { clientInitials } from '@/models/client';
 import { formatPhoneNumber } from '@/lib/phone';
-import { withOpacity } from '@/lib/color';
-import { Brand, iOSColors, lightShadow } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
-const SECTION_TITLE = '#4D4D59';
+// Required-field asterisks stay red (semantic).
 const REQUIRED_RED = '#F26666';
 
 function formatBuffer(h: number, m: number): string {
@@ -105,16 +102,25 @@ export function ClientForm({ editingId }: { editingId?: string }) {
     <View style={[styles.root, { backgroundColor: theme.background }]}>
       <SafeAreaView style={styles.safe} edges={['top']}>
         {/* Header */}
-        <View style={[styles.header, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
+        <View style={[styles.header, { backgroundColor: theme.cardBackground, borderBottomWidth: 1, borderBottomColor: theme.divider }]}>
           <Pressable onPress={() => router.back()} hitSlop={8} style={styles.back}>
-            <Icon name="chevron.left" size={16} weight="semibold" color={iOSColors.blue} />
-            <Text style={styles.backText}>Back</Text>
+            <Icon name="chevron.left" size={16} weight="semibold" color={theme.accent} />
+            <Text style={[styles.backText, { color: theme.accent }]}>Back</Text>
           </Pressable>
           <Text style={[styles.headerTitle, { color: theme.primaryText }]}>
             {editing ? 'Edit Client' : 'New Client'}
           </Text>
           <Pressable onPress={save} disabled={!canSave || saving}>
-            <Text style={[styles.saveCapsule, { backgroundColor: canSave ? iOSColors.blue : withOpacity(iOSColors.gray, 0.4) }]}>
+            <Text
+              style={[
+                styles.saveCapsule,
+                {
+                  backgroundColor: theme.accent,
+                  color: theme.onAccent,
+                  opacity: canSave ? 1 : 0.5,
+                  borderRadius: theme.isEditorial ? 2 : 999,
+                },
+              ]}>
               Save
             </Text>
           </Pressable>
@@ -124,26 +130,22 @@ export function ClientForm({ editingId }: { editingId?: string }) {
           {/* Photo (deferred) */}
           <View style={styles.photoBlock}>
             <Pressable onPress={() => stub('Photo picker is coming with a later phase.')}>
-              <LinearGradient
-                colors={[theme.gradientTop, theme.gradientBottom]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.photoCircle}>
+              <View style={[styles.photoCircle, { backgroundColor: theme.accentSoft }]}>
                 {editing ? (
-                  <Text style={styles.photoInitials}>{clientInitials(name || '?')}</Text>
+                  <Text style={[styles.photoInitials, { color: theme.accent }]}>{clientInitials(name || '?')}</Text>
                 ) : (
                   <>
-                    <Icon name="camera.fill" size={24} color={Brand.accent} />
-                    <Text style={[styles.photoLabel, { color: Brand.accent }]}>Add Photo</Text>
+                    <Icon name="camera.fill" size={24} color={theme.accent} />
+                    <Text style={[styles.photoLabel, { color: theme.accent }]}>Add Photo</Text>
                   </>
                 )}
-              </LinearGradient>
+              </View>
             </Pressable>
             <Pressable
               onPress={() => stub('Import from Contacts is coming with a later phase.')}
               style={styles.importRow}>
-              <Icon name="person.crop.circle.badge.plus" size={14} color={Brand.accent} />
-              <Text style={[styles.importText, { color: Brand.accent }]}>Import from Contacts</Text>
+              <Icon name="person.crop.circle.badge.plus" size={14} color={theme.accent} />
+              <Text style={[styles.importText, { color: theme.accent }]}>Import from Contacts</Text>
             </Pressable>
           </View>
 
@@ -173,7 +175,7 @@ export function ClientForm({ editingId }: { editingId?: string }) {
             </Field>
             <Divider />
             <Field label="Notes" icon="note.text">
-              <TextInput value={notes} onChangeText={setNotes} placeholder="Add notes about preferences" placeholderTextColor={withOpacity(iOSColors.gray, 0.5)} multiline style={[styles.input, styles.notes, { color: theme.primaryText }]} />
+              <TextInput value={notes} onChangeText={setNotes} placeholder="Add notes about preferences" placeholderTextColor={theme.tertiaryText} multiline style={[styles.input, styles.notes, { color: theme.primaryText }]} />
             </Field>
           </Section>
 
@@ -240,10 +242,10 @@ function Section({ title, icon, children }: { title: string; icon: SFSymbol; chi
   return (
     <View style={styles.section}>
       <View style={styles.sectionHead}>
-        <Icon name={icon} size={14} weight="semibold" color={Brand.accent} />
-        <Text style={styles.sectionHeadTitle}>{title}</Text>
+        <Icon name={icon} size={14} weight="semibold" color={theme.accent} />
+        <Text style={[styles.sectionHeadTitle, { color: theme.secondaryText }]}>{title}</Text>
       </View>
-      <View style={[styles.sectionCard, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>{children}</View>
+      <View style={[styles.sectionCard, theme.card]}>{children}</View>
     </View>
   );
 }
@@ -253,7 +255,7 @@ function Field({ label, required, icon, children }: { label: string; required?: 
   return (
     <View style={styles.field}>
       <View style={styles.fieldLabelRow}>
-        <Icon name={icon} size={14} color={Brand.accent} />
+        <Icon name={icon} size={14} color={theme.accent} />
         <Text style={[styles.fieldLabel, { color: theme.secondaryText }]}>{label}</Text>
         {required ? <Text style={styles.required}>*</Text> : null}
       </View>
@@ -271,9 +273,9 @@ function ToggleRow({ icon, title, value, onChange }: { icon: SFSymbol; title: st
   const theme = useAppTheme();
   return (
     <View style={styles.toggleRow}>
-      <Icon name={icon} size={14} color={Brand.accent} />
+      <Icon name={icon} size={14} color={theme.accent} />
       <Text style={[styles.toggleTitle, { color: theme.primaryText }]}>{title}</Text>
-      <Switch value={value} onValueChange={onChange} trackColor={{ true: Brand.accent, false: withOpacity(iOSColors.gray, 0.3) }} />
+      <Switch value={value} onValueChange={onChange} trackColor={{ true: theme.accent, false: theme.inputBackground }} />
     </View>
   );
 }
@@ -283,20 +285,20 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
   back: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  backText: { color: iOSColors.blue, fontSize: 16, fontWeight: '600' },
+  backText: { fontSize: 16, fontWeight: '600' },
   headerTitle: { fontSize: 18, fontWeight: '700' },
-  saveCapsule: { color: '#FFFFFF', fontSize: 16, fontWeight: '700', paddingHorizontal: 20, paddingVertical: 8, borderRadius: 999, overflow: 'hidden' },
+  saveCapsule: { fontSize: 16, fontWeight: '700', paddingHorizontal: 20, paddingVertical: 8, overflow: 'hidden' },
   body: { paddingBottom: 40, gap: 20, paddingTop: 24 },
   photoBlock: { alignItems: 'center', gap: 16 },
   photoCircle: { width: 100, height: 100, borderRadius: 50, alignItems: 'center', justifyContent: 'center', gap: 6 },
-  photoInitials: { fontSize: 32, fontWeight: '600', color: Brand.accent },
+  photoInitials: { fontSize: 32, fontWeight: '600' },
   photoLabel: { fontSize: 12, fontWeight: '500' },
   importRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   importText: { fontSize: 14, fontWeight: '500' },
   section: { gap: 10 },
   sectionHead: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 20 },
-  sectionHeadTitle: { fontSize: 15, fontWeight: '700', color: SECTION_TITLE },
-  sectionCard: { marginHorizontal: 16, borderRadius: 14 },
+  sectionHeadTitle: { fontSize: 15, fontWeight: '700' },
+  sectionCard: { marginHorizontal: 16 },
   field: { paddingHorizontal: 16, paddingVertical: 12, gap: 6 },
   fieldLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   fieldLabel: { fontSize: 13, fontWeight: '500' },

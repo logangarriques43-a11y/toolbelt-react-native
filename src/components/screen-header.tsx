@@ -8,7 +8,7 @@ import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Icon } from '@/components/icon';
-import { iOSColors } from '@/theme/tokens';
+import { DISPLAY_FONT } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
 export function ScreenHeader({
@@ -29,7 +29,7 @@ export function ScreenHeader({
       {/* Home icon (matches the calendar top bar) but keeps BACK behavior —
           onPress is router.back / onBack, NOT a jump to the dashboard route. */}
       <Pressable onPress={back} hitSlop={8} style={styles.back} accessibilityLabel="Back">
-        <Icon name="house.fill" size={20} color={iOSColors.blue} />
+        <Icon name="house.fill" size={20} color={theme.accent} />
       </Pressable>
 
       <Text
@@ -52,6 +52,6 @@ const styles = StyleSheet.create({
   // Base 20 (down from 24) fits most titles; adjustsFontSizeToFit shrinks the
   // longest ("Our Special Features") to one line. marginHorizontal keeps a gap
   // so the title never touches the Back button / right action on Android.
-  title: { flex: 1, textAlign: 'center', marginHorizontal: 10, fontSize: 20, fontWeight: '700' },
+  title: { flex: 1, textAlign: 'center', marginHorizontal: 10, fontSize: 20, fontFamily: DISPLAY_FONT },
   right: { minWidth: 64, alignItems: 'flex-end' },
 });

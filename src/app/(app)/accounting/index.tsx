@@ -10,7 +10,6 @@ import { useRouter } from 'expo-router';
 import type { SFSymbol } from 'expo-symbols';
 import { useState } from 'react';
 import { Alert, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
-import { LinearGradient as Gradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { RecordTransactionSheet } from '@/components/accounting/record-transaction-sheet';
@@ -18,13 +17,14 @@ import { TransactionRow } from '@/components/accounting/transaction-row';
 import { DashboardGradient } from '@/components/dashboard-gradient';
 import { Icon } from '@/components/icon';
 import { ScreenHeader } from '@/components/screen-header';
+import { ThemedIconTile } from '@/components/themed';
 import { useAccounting } from '@/context/accounting-store';
 import { useExpenses } from '@/context/expenses-store';
 import { useSales } from '@/context/sales-store';
 import { withOpacity } from '@/lib/color';
 import { compactMoney } from '@/lib/compact-money';
 import { TRANSACTION_PERIODS, type TransactionPeriod } from '@/models/transaction';
-import { iOSColors, lightShadow } from '@/theme/tokens';
+import { iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
 export default function Accounting() {
@@ -60,7 +60,7 @@ export default function Accounting() {
           title="Accounting"
           right={
             <Pressable onPress={exportCsv} hitSlop={8}>
-              <Icon name="square.and.arrow.up" size={20} color={iOSColors.blue} />
+              <Icon name="square.and.arrow.up" size={20} color={theme.accent} />
             </Pressable>
           }
         />
@@ -71,28 +71,24 @@ export default function Accounting() {
               <Pressable
                 key={p}
                 onPress={() => setPeriod(p)}
-                style={[styles.period, { borderColor: iOSColors.blue, backgroundColor: period === p ? iOSColors.blue : theme.cardBackground }]}>
-                <Text style={[styles.periodText, { color: period === p ? '#FFFFFF' : iOSColors.blue }]}>{p}</Text>
+                style={[styles.period, { borderRadius: theme.isEditorial ? 2 : 999, borderColor: period === p ? theme.accent : theme.divider, backgroundColor: period === p ? theme.accent : theme.cardBackground }]}>
+                <Text style={[styles.periodText, { color: period === p ? theme.onAccent : theme.primaryText }]}>{p}</Text>
               </Pressable>
             ))}
           </ScrollView>
 
           {/* Net revenue card */}
           <Pressable onPress={() => router.push('/accounting/financial-overview')} style={styles.section}>
-            <Gradient
-              colors={[withOpacity(iOSColors.blue, 0.1), withOpacity(iOSColors.purple, 0.05)]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={[styles.netCard, { borderColor: withOpacity(iOSColors.blue, 0.2) }]}>
+            <View style={[styles.netCard, { backgroundColor: theme.hero, borderColor: theme.divider, borderRadius: theme.cornerRadius }]}>
               <View style={styles.netText}>
-                <Text style={[styles.netLabel, { color: theme.secondaryText }]}>Net Revenue</Text>
-                <Text style={[styles.netValue, { color: theme.primaryText }]} numberOfLines={1}>{compactMoney(net)}</Text>
+                <Text style={[styles.netLabel, { color: withOpacity(theme.onHero, 0.75) }]}>Net Revenue</Text>
+                <Text style={[theme.display(36, '500'), { color: theme.onHero }]} numberOfLines={1}>{compactMoney(net)}</Text>
               </View>
               <View style={styles.netRight}>
-                <Icon name="chart.line.uptrend.xyaxis" size={50} color={withOpacity(iOSColors.blue, 0.3)} />
-                <Icon name="chevron.right" size={12} weight="semibold" color={theme.secondaryText} />
+                <Icon name="chart.line.uptrend.xyaxis" size={50} color={withOpacity(theme.onHero, 0.3)} />
+                <Icon name="chevron.right" size={12} weight="semibold" color={withOpacity(theme.onHero, 0.75)} />
               </View>
-            </Gradient>
+            </View>
           </Pressable>
 
           {/* Income / Expense */}
@@ -104,10 +100,10 @@ export default function Accounting() {
           {/* Quick actions */}
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: theme.primaryText }]}>Quick Actions</Text>
-            <ActionButton icon="plus.circle.fill" title="Record Transaction" color={iOSColors.blue} onPress={() => setRecordOpen(true)} />
-            <ActionButton icon="doc.text.fill" title="Create Invoice" color={iOSColors.purple} onPress={() => router.push('/accounting/create-invoice')} />
-            <ActionButton icon="doc.text.magnifyingglass" title="View Invoices" color={iOSColors.indigo} onPress={() => router.push('/accounting/invoices')} />
-            <ActionButton icon="chart.bar.fill" title="View Reports" color={iOSColors.green} onPress={() => router.push('/accounting/reports')} />
+            <ActionButton icon="plus.circle.fill" title="Record Transaction" onPress={() => setRecordOpen(true)} />
+            <ActionButton icon="doc.text.fill" title="Create Invoice" onPress={() => router.push('/accounting/create-invoice')} />
+            <ActionButton icon="doc.text.magnifyingglass" title="View Invoices" onPress={() => router.push('/accounting/invoices')} />
+            <ActionButton icon="chart.bar.fill" title="View Reports" onPress={() => router.push('/accounting/reports')} />
           </View>
 
           {/* Recent */}
@@ -115,7 +111,7 @@ export default function Accounting() {
             <View style={styles.recentHead}>
               <Text style={[styles.sectionTitle, { color: theme.primaryText }]}>Recent Transactions</Text>
               <Pressable onPress={() => router.push('/accounting/transactions')}>
-                <Text style={[styles.viewAll, { color: iOSColors.blue }]}>View All</Text>
+                <Text style={[styles.viewAll, { color: theme.accent }]}>View All</Text>
               </Pressable>
             </View>
             {recent.length === 0 ? (
@@ -135,21 +131,19 @@ export default function Accounting() {
 function StatCard({ title, value, icon, color }: { title: string; value: string; icon: SFSymbol; color: string }) {
   const theme = useAppTheme();
   return (
-    <View style={[styles.statCard, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
+    <View style={[styles.statCard, theme.card]}>
       <Icon name={icon} size={24} color={color} />
-      <Text style={[styles.statValue, { color: theme.primaryText }]} numberOfLines={1}>{value}</Text>
+      <Text style={theme.display(24, '500')} numberOfLines={1}>{value}</Text>
       <Text style={[styles.statTitle, { color: theme.secondaryText }]}>{title}</Text>
     </View>
   );
 }
 
-function ActionButton({ icon, title, color, onPress }: { icon: SFSymbol; title: string; color: string; onPress: () => void }) {
+function ActionButton({ icon, title, onPress }: { icon: SFSymbol; title: string; onPress: () => void }) {
   const theme = useAppTheme();
   return (
-    <Pressable onPress={onPress} style={[styles.action, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
-      <View style={[styles.actionIcon, { backgroundColor: color }]}>
-        <Icon name={icon} size={20} color="#FFFFFF" />
-      </View>
+    <Pressable onPress={onPress} style={[styles.action, theme.card]}>
+      <ThemedIconTile name={icon} size={44} />
       <Text style={[styles.actionTitle, { color: theme.primaryText }]}>{title}</Text>
       <Icon name="chevron.right" size={14} color={theme.secondaryText} />
     </Pressable>
@@ -160,21 +154,18 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   body: { paddingBottom: 40, gap: 24 },
   periods: { gap: 12, paddingHorizontal: 16, paddingTop: 16 },
-  period: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, borderWidth: 1 },
+  period: { paddingHorizontal: 16, paddingVertical: 8, borderWidth: 1 },
   periodText: { fontSize: 14, fontWeight: '500' },
   section: { gap: 12, paddingHorizontal: 16 },
-  netCard: { flexDirection: 'row', alignItems: 'center', padding: 24, borderRadius: 16, borderWidth: 1 },
+  netCard: { flexDirection: 'row', alignItems: 'center', padding: 24, borderWidth: 1 },
   netText: { flex: 1, gap: 8 },
   netLabel: { fontSize: 16 },
-  netValue: { fontSize: 36, fontWeight: '700' },
   netRight: { alignItems: 'center', gap: 6 },
   statRow: { flexDirection: 'row', gap: 12, paddingHorizontal: 16 },
-  statCard: { flex: 1, padding: 16, borderRadius: 12, gap: 12 },
-  statValue: { fontSize: 24, fontWeight: '700' },
+  statCard: { flex: 1, padding: 16, gap: 12 },
   statTitle: { fontSize: 14 },
   sectionTitle: { fontSize: 18, fontWeight: '700' },
-  action: { flexDirection: 'row', alignItems: 'center', gap: 16, padding: 16, borderRadius: 12 },
-  actionIcon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  action: { flexDirection: 'row', alignItems: 'center', gap: 16, padding: 16 },
   actionTitle: { flex: 1, fontSize: 16, fontWeight: '500' },
   recentHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   viewAll: { fontSize: 14, fontWeight: '500' },

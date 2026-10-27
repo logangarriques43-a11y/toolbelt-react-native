@@ -6,7 +6,6 @@
  * Backend webhook sync (Stripe invoice payments → sales) is omitted.
  */
 
-import { LinearGradient } from 'expo-linear-gradient';
 import type { SFSymbol } from 'expo-symbols';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
@@ -15,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DashboardGradient } from '@/components/dashboard-gradient';
 import { Icon } from '@/components/icon';
-import { BRAND_BLUE, BRAND_PURPLE } from '@/components/payments/checkout';
+import { ThemedIconTile } from '@/components/themed';
 import { useAppointments } from '@/context/appointments-store';
 import { useSales } from '@/context/sales-store';
 import { withOpacity } from '@/lib/color';
@@ -26,7 +25,6 @@ import { iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
 const GREEN = '#33C773';
-const SALES_ORANGE = '#E68C33';
 
 type Filter = 'All' | 'Upcoming' | 'Today' | 'Sales' | 'Past';
 const FILTERS: Filter[] = ['All', 'Upcoming', 'Today', 'Sales', 'Past'];
@@ -128,18 +126,16 @@ export function PaymentTransactions() {
   const upcomingRevenue = upcomingAppts.reduce((s, a) => s + a.price, 0);
   const salesRevenue = sales.revenue('Lifetime');
 
-  const sectionColor =
-    filter === 'Upcoming' ? GREEN : filter === 'Past' ? BRAND_PURPLE : filter === 'Sales' ? SALES_ORANGE : BRAND_BLUE;
 
   return (
     <View style={styles.flex}>
       {/* Summary */}
-      <View style={[styles.summary, { backgroundColor: theme.cardBackground }]}>
-        <SummaryPill label="Today" amount={todayRevenue} count={todayAppts.length + todaySales.length} color={BRAND_BLUE} />
+      <View style={[styles.summary, theme.card]}>
+        <SummaryPill label="Today" amount={todayRevenue} count={todayAppts.length + todaySales.length} color={theme.accent} />
         <View style={[styles.summaryDiv, { backgroundColor: theme.divider }]} />
-        <SummaryPill label="Upcoming" amount={upcomingRevenue} count={upcomingAppts.length} color={GREEN} />
+        <SummaryPill label="Upcoming" amount={upcomingRevenue} count={upcomingAppts.length} color={theme.primaryText} />
         <View style={[styles.summaryDiv, { backgroundColor: theme.divider }]} />
-        <SummaryPill label="Sales" amount={salesRevenue} count={sales.sales.length} color={BRAND_PURPLE} />
+        <SummaryPill label="Sales" amount={salesRevenue} count={sales.sales.length} color={theme.primaryText} />
       </View>
 
       {/* Filter tabs */}
@@ -148,15 +144,9 @@ export function PaymentTransactions() {
           const active = filter === f;
           return (
             <Pressable key={f} onPress={() => setFilter(f)}>
-              {active ? (
-                <LinearGradient colors={[BRAND_BLUE, BRAND_PURPLE]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.tab}>
-                  <Text style={[styles.tabText, { color: '#FFFFFF', fontWeight: '700' }]}>{f}</Text>
-                </LinearGradient>
-              ) : (
-                <View style={[styles.tab, { backgroundColor: withOpacity(iOSColors.gray, 0.1) }]}>
-                  <Text style={[styles.tabText, { color: iOSColors.gray }]}>{f}</Text>
-                </View>
-              )}
+              <View style={[styles.tab, { backgroundColor: active ? theme.accent : theme.inputBackground, borderRadius: theme.isEditorial ? 2 : 999 }]}>
+                <Text style={[styles.tabText, active ? { color: theme.onAccent, fontWeight: '700' } : { color: theme.secondaryText }]}>{f}</Text>
+              </View>
             </Pressable>
           );
         })}
@@ -170,10 +160,10 @@ export function PaymentTransactions() {
           {groups.map((g) => (
             <View key={g.key}>
               <View style={styles.sectionHeader}>
-                <View style={[styles.sectionDot, { backgroundColor: sectionColor }]} />
+                <View style={[styles.sectionDot, { backgroundColor: theme.accent }]} />
                 <Text style={[styles.sectionLabel, { color: theme.secondaryText }]}>{g.key}</Text>
-                <View style={[styles.sectionTotal, { backgroundColor: withOpacity(sectionColor, 0.12) }]}>
-                  <Text style={[styles.sectionTotalText, { color: sectionColor }]}>
+                <View style={[styles.sectionTotal, { backgroundColor: theme.accentSoft }]}>
+                  <Text style={[styles.sectionTotalText, { color: theme.accent }]}>
                     {money0(g.items.reduce((s, u) => s + uniAmount(u), 0))}
                   </Text>
                 </View>
@@ -207,7 +197,7 @@ function SummaryPill({ label, amount, count, color }: { label: string; amount: n
       <Text style={[styles.pillAmount, { color }]}>{money0(amount)}</Text>
       <View style={styles.pillSub}>
         <Text style={[styles.pillLabel, { color: theme.secondaryText }]}>{label}</Text>
-        <Text style={[styles.pillCount, { color: withOpacity(iOSColors.gray, 0.6) }]}>({count})</Text>
+        <Text style={[styles.pillCount, { color: theme.tertiaryText }]}>({count})</Text>
       </View>
     </View>
   );
@@ -218,9 +208,9 @@ function SummaryPill({ label, amount, count, color }: { label: string; amount: n
 function AppointmentCard({ appt, isPast }: { appt: Appointment; isPast: boolean }) {
   const theme = useAppTheme();
   const color = appt.serviceColor;
-  const priceColor = isPast ? GREEN : BRAND_BLUE;
+  const priceColor = isPast ? GREEN : theme.accent;
   return (
-    <View style={[styles.card, { backgroundColor: theme.cardBackground, opacity: isPast ? 0.7 : 1 }]}>
+    <View style={[styles.card, theme.card, { opacity: isPast ? 0.7 : 1 }]}>
       <View style={[styles.accent, { backgroundColor: withOpacity(color, isPast ? 0.5 : 1) }]} />
       <View style={styles.cardBody}>
         <View style={[styles.cardAvatar, { backgroundColor: withOpacity(color, 0.15) }]}>
@@ -250,12 +240,12 @@ function AppointmentCard({ appt, isPast }: { appt: Appointment; isPast: boolean 
 
 function SaleCard({ sale }: { sale: SaleTransaction }) {
   const theme = useAppTheme();
-  const lead = sale.isKeypadSale ? iOSColors.orange : sale.items[0]?.colorHex ?? BRAND_PURPLE;
+  const lead = sale.isKeypadSale ? theme.accent : sale.items[0]?.colorHex ?? theme.accent;
   const itemSummary = sale.isKeypadSale
     ? 'Custom amount'
     : `${sale.items.reduce((s, i) => s + i.quantity, 0)} item${sale.items.reduce((s, i) => s + i.quantity, 0) === 1 ? '' : 's'}`;
   return (
-    <View style={[styles.card, { backgroundColor: theme.cardBackground }]}>
+    <View style={[styles.card, theme.card]}>
       <View style={[styles.accent, { backgroundColor: lead }]} />
       <View style={styles.cardBody}>
         <View style={[styles.cardAvatar, { backgroundColor: withOpacity(lead, 0.15) }]}>
@@ -264,14 +254,14 @@ function SaleCard({ sale }: { sale: SaleTransaction }) {
         <View style={styles.flex}>
           <View style={styles.nameRow}>
             <Text style={[styles.cardName, { color: theme.primaryText }]} numberOfLines={1}>{sale.clientName ?? 'Walk-in'}</Text>
-            <Badge text="Sale" color="#FFFFFF" tint={BRAND_PURPLE} />
+            <Badge text="Sale" color={theme.onAccent} tint={theme.accent} />
             {!sale.clientId && <Icon name="person.slash" size={10} color={withOpacity(iOSColors.orange, 0.7)} />}
           </View>
           <Text style={[styles.cardSub, { color: theme.secondaryText }]}>{itemSummary}</Text>
           <View style={styles.metaRow}>
             <Meta icon="clock" text={timeFmt.format(new Date(sale.date))} />
             <Meta icon={paymentIcon(sale.paymentMethod)} text={sale.paymentMethod} />
-            {sale.notes.length > 0 && <Icon name="note.text" size={10} color={withOpacity(iOSColors.orange, 0.6)} />}
+            {sale.notes.length > 0 && <Icon name="note.text" size={10} color={theme.secondaryText} />}
           </View>
         </View>
         <View style={styles.priceCol}>
@@ -335,9 +325,7 @@ function EmptyState({ filter }: { filter: Filter }) {
   const c = map[filter];
   return (
     <View style={styles.empty}>
-      <View style={[styles.emptyCircle, { backgroundColor: withOpacity(iOSColors.gray, 0.08) }]}>
-        <Icon name={c.icon} size={32} color={withOpacity(iOSColors.gray, 0.4)} />
-      </View>
+      <ThemedIconTile name={c.icon} size={72} filled />
       <Text style={[styles.emptyTitle, { color: theme.primaryText }]}>{c.title}</Text>
       <Text style={[styles.emptySub, { color: theme.secondaryText }]}>{c.sub}</Text>
     </View>
@@ -353,7 +341,7 @@ function TransactionDetailSheet({ txn, onClose }: { txn: Unified | null; onClose
       <DashboardGradient>
         <SafeAreaView style={styles.flex} edges={['top', 'bottom']}>
           <View style={[styles.detailHeader, { backgroundColor: theme.cardBackground }]}>
-            <Pressable onPress={onClose} style={[styles.roundBtn, { backgroundColor: theme.cardBackground }]}>
+            <Pressable onPress={onClose} style={[styles.roundBtn, { backgroundColor: theme.cardBackground, borderWidth: 1, borderColor: theme.divider }]}>
               <Icon name="xmark" size={16} color={theme.secondaryText} weight="medium" />
             </Pressable>
             <Text style={[styles.detailTitle, { color: theme.primaryText }]}>Transaction Details</Text>
@@ -374,7 +362,7 @@ function DetailCard({ title, children }: { title: string; children: ReactNode })
   return (
     <View style={styles.detailCardWrap}>
       <Text style={[styles.detailCardTitle, { color: theme.secondaryText }]}>{title}</Text>
-      <View style={[styles.detailCard, { backgroundColor: theme.cardBackground }]}>{children}</View>
+      <View style={[styles.detailCard, theme.card]}>{children}</View>
     </View>
   );
 }
@@ -382,14 +370,14 @@ function DetailCard({ title, children }: { title: string; children: ReactNode })
 function AppointmentDetail({ appt }: { appt: Appointment }) {
   const theme = useAppTheme();
   const isPast = new Date(appt.endTime).getTime() < Date.now();
-  const status = isPast ? GREEN : BRAND_BLUE;
+  const status = isPast ? GREEN : theme.accent;
   return (
     <View style={styles.detailContent}>
       <View style={styles.amountHeader}>
         <View style={[styles.statusBadge, { backgroundColor: withOpacity(status, 0.1) }]}>
           <Text style={[styles.statusText, { color: status }]}>{isPast ? 'Paid' : 'Pending'}</Text>
         </View>
-        <Text style={[styles.bigAmount, { color: theme.primaryText }]}>{money0(appt.price)}</Text>
+        <Text style={theme.display(48, '500')}>{money0(appt.price)}</Text>
       </View>
       <View style={styles.typeLabel}>
         <Icon name="calendar" size={13} color={theme.secondaryText} />
@@ -429,19 +417,19 @@ function SaleDetail({ sale }: { sale: SaleTransaction }) {
         <View style={[styles.statusBadge, { backgroundColor: withOpacity(GREEN, 0.1) }]}>
           <Text style={[styles.statusText, { color: GREEN }]}>Paid</Text>
         </View>
-        <Text style={[styles.bigAmount, { color: theme.primaryText }]}>{money2(sale.totalAmount)}</Text>
+        <Text style={theme.display(48, '500')}>{money2(sale.totalAmount)}</Text>
       </View>
       <View style={styles.typeLabel}>
         <Icon name={sale.isKeypadSale ? 'number.square.fill' : 'bag.fill'} size={13} color={theme.secondaryText} />
         <Text style={[styles.typeText, { color: theme.secondaryText }]}>{sale.isKeypadSale ? 'Keypad Sale' : 'Service Sale'}</Text>
-        <Text style={[styles.typeText, { color: withOpacity(iOSColors.gray, 0.4) }]}>•</Text>
+        <Text style={[styles.typeText, { color: theme.tertiaryText }]}>•</Text>
         <Text style={[styles.typeText, { color: theme.secondaryText }]}>{sale.paymentMethod}</Text>
       </View>
       <DetailCard title="Client">
         {sale.clientName ? (
           <View style={styles.detailRow}>
-            <View style={[styles.detailAvatar, { backgroundColor: withOpacity(iOSColors.blue, 0.15) }]}>
-              <Text style={[styles.detailAvatarText, { color: iOSColors.blue }]}>{initials(sale.clientName)}</Text>
+            <View style={[styles.detailAvatar, { backgroundColor: theme.accentSoft }]}>
+              <Text style={[styles.detailAvatarText, { color: theme.accent }]}>{initials(sale.clientName)}</Text>
             </View>
             <Text style={[styles.detailName, { color: theme.primaryText }]}>{sale.clientName}</Text>
           </View>
@@ -465,13 +453,13 @@ function SaleDetail({ sale }: { sale: SaleTransaction }) {
       <DetailCard title="Notes">
         {sale.notes.length > 0 ? (
           <View style={styles.notesRow}>
-            <Icon name="note.text" size={16} color={iOSColors.orange} />
+            <Icon name="note.text" size={16} color={theme.accent} />
             <Text style={[styles.detailName, styles.flex, { color: theme.primaryText }]}>{sale.notes}</Text>
           </View>
         ) : (
           <View style={styles.notesRow}>
-            <Icon name="note.text" size={16} color={withOpacity(iOSColors.gray, 0.4)} />
-            <Text style={[styles.detailMeta, { color: withOpacity(iOSColors.gray, 0.5) }]}>No notes added</Text>
+            <Icon name="note.text" size={16} color={theme.tertiaryText} />
+            <Text style={[styles.detailMeta, { color: theme.tertiaryText }]}>No notes added</Text>
           </View>
         )}
       </DetailCard>
@@ -504,7 +492,7 @@ function SaleItemRow({ item }: { item: SaleItem }) {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   // Summary
-  summary: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, marginHorizontal: 16, marginTop: 16, borderRadius: 14 },
+  summary: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, marginHorizontal: 16, marginTop: 16 },
   summaryDiv: { width: 1, height: 44 },
   pill: { flex: 1, alignItems: 'center', gap: 4 },
   pillAmount: { fontSize: 18, fontWeight: '700' },
@@ -513,7 +501,7 @@ const styles = StyleSheet.create({
   pillCount: { fontSize: 11, fontWeight: '600' },
   // Tabs
   tabs: { gap: 6, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 8 },
-  tab: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20 },
+  tab: { paddingHorizontal: 14, paddingVertical: 8 },
   tabText: { fontSize: 13, fontWeight: '500' },
   // List
   listPad: { paddingBottom: 80 },
@@ -525,7 +513,7 @@ const styles = StyleSheet.create({
   sectionRule: { flex: 1, height: 1 },
   cards: { gap: 8, paddingHorizontal: 16 },
   // Card
-  card: { flexDirection: 'row', borderRadius: 12, overflow: 'hidden', ...elevation() },
+  card: { flexDirection: 'row', overflow: 'hidden' },
   accent: { width: 5, alignSelf: 'stretch', marginVertical: 6, borderRadius: 3 },
   cardBody: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 12, paddingVertical: 14 },
   cardAvatar: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
@@ -543,7 +531,6 @@ const styles = StyleSheet.create({
   priceStatus: { fontSize: 11, fontWeight: '500' },
   // Empty
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16, paddingHorizontal: 40 },
-  emptyCircle: { width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center' },
   emptyTitle: { fontSize: 18, fontWeight: '600' },
   emptySub: { fontSize: 14, textAlign: 'center' },
   // Detail
@@ -555,12 +542,11 @@ const styles = StyleSheet.create({
   amountHeader: { alignItems: 'center', gap: 6, paddingTop: 8 },
   statusBadge: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12 },
   statusText: { fontSize: 13, fontWeight: '600' },
-  bigAmount: { fontSize: 48, fontWeight: '700' },
   typeLabel: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
   typeText: { fontSize: 14, fontWeight: '500' },
   detailCardWrap: { gap: 10 },
   detailCardTitle: { fontSize: 13, fontWeight: '500', paddingHorizontal: 20 },
-  detailCard: { padding: 14, borderRadius: 12, marginHorizontal: 16, gap: 4 },
+  detailCard: { padding: 14, marginHorizontal: 16, gap: 4 },
   detailRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   detailAvatar: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   detailAvatarText: { fontSize: 15, fontWeight: '700' },
@@ -573,13 +559,3 @@ const styles = StyleSheet.create({
   saleItemAvatarText: { fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
   notesRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
 });
-
-function elevation() {
-  return {
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 2,
-  };
-}
