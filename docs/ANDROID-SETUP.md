@@ -19,23 +19,29 @@ Repos: app = `logangarriques43-a11y/toolbelt-react-native`, server = `davidperez
 
 ## 2. Firebase (link the app)
 
-The app uses the same Firebase project as iOS (`toolbelt-b2ef6`) through the Firebase JS SDK. The iOS
-app's API key works from Android too, so no new Firebase app registration is needed. (Registering a new
-web app from the CLI is blocked by Google for this project anyway.)
+The app has its own Firebase Android app, **ToolBelt Android** (`tools.toolbelt.app`, app ID
+`1:867777580265:android:92ce4ac42ac03db3cdb478`), in the same project as iOS (`toolbelt-b2ef6`), so both apps
+share the same users and data. Its config file, `google-services.json`, is committed at the repo root and
+wired in through `android.googleServicesFile` in `app.json`. Sign-in itself runs through the Firebase JS SDK
+using the values in `.env`.
 
 1. **Local `.env`** — copy `.env.example` to `.env` and fill in:
 
    ```
    EXPO_PUBLIC_API_BASE_URL=https://api.toolbelt.tools/api/v1
-   EXPO_PUBLIC_FIREBASE_API_KEY=<API_KEY from ToolBelt/Core/GoogleService-Info.plist in the iOS repo>
+   EXPO_PUBLIC_FIREBASE_API_KEY=<api_key.current_key from google-services.json>
    EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=toolbelt-b2ef6.firebaseapp.com
    EXPO_PUBLIC_FIREBASE_PROJECT_ID=toolbelt-b2ef6
    EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=toolbelt-b2ef6.firebasestorage.app
    EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=867777580265
+   EXPO_PUBLIC_FIREBASE_APP_ID=1:867777580265:android:92ce4ac42ac03db3cdb478
    EXPO_PUBLIC_REVENUECAT_ANDROID_KEY=<goog_… key from RevenueCat → API keys>
    ```
 
    (David's Mac already has this file, without the RevenueCat key.)
+   Optional: once you have the signing key's SHA-256 (§4), add it in Firebase console → Project settings →
+   ToolBelt Android → Add fingerprint. It isn't needed for email sign-in; it is for Google sign-in or App
+   Check later.
 2. **EAS builds** — `.env` is gitignored, so cloud builds don't see it. Add each line above as an EAS
    environment variable for `development`, `preview` and `production`:
 
