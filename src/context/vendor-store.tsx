@@ -11,8 +11,9 @@
  * reconcile the affected row on success (the wire isn't lossy).
  */
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Alert } from 'react-native';
 
 import {
@@ -29,6 +30,7 @@ import { uuid } from '@/lib/id';
 import { DEFAULT_VENDOR_CATEGORIES, type Vendor, type VendorProduct, type VendorReview, type VendorType } from '@/models/vendor';
 
 export const VENDORS_QUERY_KEY = ['vendors'] as const;
+const FAVORITES_KEY = 'vendors.favorites';
 export const VENDOR_PRODUCTS_QUERY_KEY = ['vendor-products', 'mine'] as const;
 
 export interface VendorStore {
@@ -67,6 +69,23 @@ export function VendorProvider({ children }: { children: ReactNode }) {
   const vendorsQuery = useQuery({ queryKey: VENDORS_QUERY_KEY, queryFn: listVendors });
   const productsQuery = useQuery({ queryKey: VENDOR_PRODUCTS_QUERY_KEY, queryFn: listMyVendorProducts });
   const [favorites, setFavorites] = useState<Set<string>>(() => new Set());
+
+  const [favoritesLoaded, setFavoritesLoaded] = useState(false);
+
+  // Favorites have no backend route; keep them on the device. Don't write
+  // until the saved set has loaded, or the empty initial set would clobber it.
+  useEffect(() => {
+    AsyncStorage.getItem(FAVORITES_KEY)
+      .then((v) => {
+        const ids = v ? JSON.parse(v) : null;
+        if (Array.isArray(ids)) setFavorites((prev) => new Set([...prev, ...ids]));
+      })
+      .catch(() => {})
+      .finally(() => setFavoritesLoaded(true));
+  }, []);
+  useEffect(() => {
+    if (favoritesLoaded) AsyncStorage.setItem(FAVORITES_KEY, JSON.stringify([...favorites])).catch(() => {});
+  }, [favorites, favoritesLoaded]);
 
   const vendors = vendorsQuery.data ?? [];
   const products = productsQuery.data ?? [];
