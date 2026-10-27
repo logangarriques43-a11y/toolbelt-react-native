@@ -3,8 +3,9 @@
  * A self-contained POS surface: custom header (close + clear-cart), a section
  * switcher (Checkout / Transactions / Features / More) along the bottom, and
  * — in Checkout — a Total/Charge bar over the cart. Cart state lives here and is
- * threaded into <Checkout>. Transactions/Features/More are placeholders until
- * 5d/5e; "Charge" opens the Review Sale sheet in 5c.
+ * threaded into <Checkout>. "Charge" opens the Review Sale sheet, which takes
+ * cash, card (Stripe PaymentSheet) or Tap to Pay — the whole screen sits inside
+ * PaymentsTerminalProvider so the sheet can drive Stripe Terminal.
  */
 
 import { useRouter } from 'expo-router';
@@ -21,6 +22,7 @@ import { ReviewSaleSheet } from '@/components/payments/review-sale-sheet';
 import { PaymentTransactions } from '@/components/payments/transactions';
 import { useProducts } from '@/context/products-store';
 import { useServices } from '@/context/services-store';
+import { PaymentsTerminalProvider } from '@/lib/stripe-terminal';
 import {
   cartItemCount,
   productsTotal,
@@ -42,7 +44,15 @@ const SECTIONS: { section: Section; icon: SFSymbol }[] = [
   { section: 'More', icon: 'ellipsis.circle.fill' },
 ];
 
-export default function Payments() {
+export default function PaymentsScreen() {
+  return (
+    <PaymentsTerminalProvider>
+      <Payments />
+    </PaymentsTerminalProvider>
+  );
+}
+
+function Payments() {
   const theme = useAppTheme();
   const router = useRouter();
   const servicesStore = useServices();

@@ -7,7 +7,11 @@
  *
  * Writes are OPTIMISTIC like the other stores: `addSale` returns the sale
  * immediately (so the checkout can show its receipt), then swaps in the saved
- * row; failures roll back and alert.
+ * row; failures roll back and alert. Card / Tap to Pay sales carry their
+ * Stripe PaymentIntent id (paymentTransactionId / paymentProviderRef /
+ * paymentStatus) through to `/transactions`; because the customer has already
+ * been charged, those saves retry once before rolling back, and the failure
+ * alert names the payment so it can be reconciled from Stripe.
  */
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -41,6 +45,19 @@ function alertFailure(action: string, err: unknown) {
   Alert.alert(`Couldn't ${action}`, message);
 }
 
+const PAID_RETRY_DELAY_MS = 2000;
+
+/** Save a sale; a sale that was already charged gets one retry. */
+async function saveSale(input: Omit<SaleTransaction, 'id'>): Promise<SaleTransaction> {
+  try {
+    return await createTransaction(input);
+  } catch (err) {
+    if (!input.paymentTransactionId) throw err;
+    await new Promise((r) => setTimeout(r, PAID_RETRY_DELAY_MS));
+    return createTransaction(input);
+  }
+}
+
 export function SalesProvider({ children }: { children: ReactNode }) {
   const qc = useQueryClient();
   const query = useQuery({ queryKey: SALES_QUERY_KEY, queryFn: listTransactions });
@@ -59,14 +76,22 @@ export function SalesProvider({ children }: { children: ReactNode }) {
       addSale: (input) => {
         const sale: SaleTransaction = { ...input, id: `optimistic-${uuid()}` };
         write([sale, ...read()]);
-        createTransaction(input)
+        saveSale(input)
           .then((saved) =>
             // Keep the local line items (and their ids); take the server id.
             write(read().map((s) => (s.id === sale.id ? { ...sale, id: saved.id } : s))),
           )
           .catch((err) => {
             write(read().filter((s) => s.id !== sale.id));
-            alertFailure('save sale', err);
+            if (input.paymentTransactionId) {
+              const message = err instanceof ApiError ? err.message : 'Please check your connection.';
+              Alert.alert(
+                "Payment taken, sale not saved",
+                `The card payment went through (Stripe payment ${input.paymentTransactionId}), but the sale couldn't be recorded: ${message}`,
+              );
+            } else {
+              alertFailure('save sale', err);
+            }
           });
         return sale;
       },

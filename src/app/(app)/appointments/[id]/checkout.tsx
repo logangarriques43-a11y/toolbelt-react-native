@@ -1,13 +1,16 @@
 /**
  * Checkout — port of CheckoutView.swift.
- * Service line + summary + discount sheet + payment-method sheet. Real payment
- * processing is Phase 5; "Take payment" records nothing and returns.
+ * Service line + summary + discount sheet + payment-method sheet. "Take
+ * payment" records the appointment as a sale: Cash records directly, Card
+ * charges through Stripe PaymentSheet and Tap to Pay through Stripe Terminal
+ * (the screen sits inside PaymentsTerminalProvider), recording the
+ * PaymentIntent id and card details on success.
  */
 
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { SFSymbol } from 'expo-symbols';
 import { useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DashboardGradient } from '@/components/dashboard-gradient';
@@ -16,12 +19,25 @@ import { KeyboardAwareForm } from '@/components/keyboard-aware-form';
 import { ThemedButton, ThemedIconTile } from '@/components/themed';
 import { withOpacity } from '@/lib/color';
 import { useAppointments } from '@/context/appointments-store';
+import { useSales } from '@/context/sales-store';
+import { uuid } from '@/lib/id';
+import { alertChargeError, saleFieldsFor, useCardCharge, type ChargeResult } from '@/lib/stripe-charge';
+import { PaymentsTerminalProvider, useTapToPay } from '@/lib/stripe-terminal';
+import type { PaymentMethod } from '@/models/sale';
 import { iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
 const GREEN = '#4CBF80';
 
-export default function Checkout() {
+export default function CheckoutScreen() {
+  return (
+    <PaymentsTerminalProvider>
+      <Checkout />
+    </PaymentsTerminalProvider>
+  );
+}
+
+function Checkout() {
   const theme = useAppTheme();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -36,6 +52,51 @@ export default function Checkout() {
   const total = Math.max(0, subtotal - discount);
   const serviceName = appt?.serviceName ?? 'Service';
   const serviceColor = appt?.serviceColor ?? iOSColors.blue;
+
+  const sales = useSales();
+  const chargeCard = useCardCharge();
+  const tapToPay = useTapToPay();
+  const [charging, setCharging] = useState<PaymentMethod | null>(null);
+
+  const recordSale = (method: PaymentMethod, payment?: ChargeResult) => {
+    sales.addSale({
+      date: new Date().toISOString(),
+      items: [{ id: uuid(), name: serviceName, colorHex: serviceColor, price: subtotal, quantity: 1 }],
+      totalAmount: total,
+      paymentMethod: method,
+      clientId: appt?.clientId,
+      clientName: appt?.clientName,
+      notes: discount > 0 ? `Discount -$${discount.toFixed(2)}` : '',
+      isKeypadSale: false,
+      ...(payment ? saleFieldsFor(payment) : {}),
+    });
+    setPaymentSheet(false);
+    router.back();
+  };
+
+  const takePayment = async (method: PaymentMethod) => {
+    if (charging) return;
+    if (method === 'Cash') {
+      recordSale(method);
+      return;
+    }
+    const description = `${serviceName}${appt?.clientName ? ` — ${appt.clientName}` : ''}`;
+    setCharging(method);
+    try {
+      const result =
+        method === 'Tap to Pay'
+          ? await tapToPay.charge({ amount: total, description })
+          : await chargeCard({ amount: total, description });
+      if (result) recordSale(method, result);
+    } catch (err) {
+      alertChargeError(err, () => {
+        setPaymentSheet(false);
+        router.push('/payout');
+      });
+    } finally {
+      setCharging(null);
+    }
+  };
 
   return (
     <DashboardGradient>
@@ -102,7 +163,14 @@ export default function Checkout() {
       </SafeAreaView>
 
       <DiscountSheet visible={discountSheet} maxDiscount={subtotal} onApply={setDiscount} onClose={() => setDiscountSheet(false)} />
-      <PaymentSheet visible={paymentSheet} amount={total} onClose={() => setPaymentSheet(false)} onComplete={() => { setPaymentSheet(false); router.back(); }} />
+      <PaymentSheet
+        visible={paymentSheet}
+        amount={total}
+        charging={charging}
+        status={tapToPay.status}
+        onClose={() => !charging && setPaymentSheet(false)}
+        onSelect={takePayment}
+      />
     </DashboardGradient>
   );
 }
@@ -170,13 +238,26 @@ function DiscountSheet({ visible, maxDiscount, onApply, onClose }: { visible: bo
   );
 }
 
-function PaymentSheet({ visible, amount, onClose, onComplete }: { visible: boolean; amount: number; onClose: () => void; onComplete: () => void }) {
+function PaymentSheet({
+  visible,
+  amount,
+  charging,
+  status,
+  onClose,
+  onSelect,
+}: {
+  visible: boolean;
+  amount: number;
+  charging: PaymentMethod | null;
+  status: string | null;
+  onClose: () => void;
+  onSelect: (method: PaymentMethod) => void;
+}) {
   const theme = useAppTheme();
-  const methods: { label: string; icon: SFSymbol }[] = [
+  const methods: { label: PaymentMethod; icon: SFSymbol }[] = [
     { label: 'Cash', icon: 'banknote.fill' },
     { label: 'Card', icon: 'creditcard.fill' },
-    { label: 'Apple Pay', icon: 'apple.logo' },
-    { label: 'Other', icon: 'ellipsis.circle.fill' },
+    { label: 'Tap to Pay', icon: 'wave.3.right' },
   ];
 
   return (
@@ -191,15 +272,23 @@ function PaymentSheet({ visible, amount, onClose, onComplete }: { visible: boole
 
           <View style={styles.paymentBody}>
             <Text style={[styles.paymentAmount, theme.display(48, '500'), { color: theme.accent }]}>${Math.round(amount)}</Text>
-            <Text style={[styles.paymentSub, { color: theme.secondaryText }]}>Select payment method</Text>
+            <Text style={[styles.paymentSub, { color: theme.secondaryText }]}>{status ?? 'Select payment method'}</Text>
 
             <View style={styles.methods}>
               {methods.map((m) => (
-                <Pressable key={m.label} onPress={onComplete} style={[styles.methodRow, theme.card]}>
+                <Pressable
+                  key={m.label}
+                  onPress={() => onSelect(m.label)}
+                  disabled={charging != null}
+                  style={[styles.methodRow, theme.card, charging != null && charging !== m.label && styles.dimmed]}>
                   <ThemedIconTile name={m.icon} size={44} />
                   <Text style={[styles.methodLabel, { color: theme.primaryText }]}>{m.label}</Text>
                   <View style={styles.flex} />
-                  <Icon name="chevron.right" size={14} color={theme.chevronTint} />
+                  {charging === m.label ? (
+                    <ActivityIndicator color={theme.accent} />
+                  ) : (
+                    <Icon name="chevron.right" size={14} color={theme.chevronTint} />
+                  )}
                 </Pressable>
               ))}
             </View>
@@ -246,4 +335,5 @@ const styles = StyleSheet.create({
   methodRow: { flexDirection: 'row', alignItems: 'center', gap: 16, padding: 16 },
   methodLabel: { fontSize: 18, fontWeight: '500' },
   flex: { flex: 1 },
+  dimmed: { opacity: 0.5 },
 });

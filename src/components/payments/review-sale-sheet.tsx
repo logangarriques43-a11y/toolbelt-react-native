@@ -2,13 +2,19 @@
  * Review Sale sheet — port of PaymentReviewSaleSheet.swift.
  * Confirms a checkout: optional client, per-item quantity editing, notes, a
  * 2×2 payment-method grid, and a local tax line, then writes a SaleTransaction
- * and decrements product stock. Real card capture (Stripe PaymentSheet / Tap to
- * Pay) is native and deferred to Phase 7 — every method finalizes locally here.
+ * and decrements product stock. Cash just records the sale. Card / Digital
+ * charge the grand total through Stripe PaymentSheet and Tap to Pay through
+ * Stripe Terminal (src/lib/stripe-charge.ts, src/lib/stripe-terminal.tsx — the
+ * sheet must render inside PaymentsTerminalProvider); on success the sale is
+ * recorded with the PaymentIntent id, status and card brand/last 4. A cancelled
+ * charge leaves the sheet open; errors alert, offering "Set Up Payouts" when the
+ * business has no charges-enabled Stripe account.
  * Tax is computed per-product from salesTaxEnabled/salesTaxRate (the Swift build
  * also has a backend Stripe-Tax path + a global manual rate, both deferred).
  */
 
 import type { Dispatch, ReactNode, SetStateAction } from 'react';
+import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -21,6 +27,8 @@ import { useClients } from '@/context/clients-store';
 import { useProducts } from '@/context/products-store';
 import { useSales } from '@/context/sales-store';
 import { uuid } from '@/lib/id';
+import { alertChargeError, saleFieldsFor, useCardCharge, type ChargeResult } from '@/lib/stripe-charge';
+import { useTapToPay } from '@/lib/stripe-terminal';
 import { withOpacity } from '@/lib/color';
 import { clientInitials, type Client } from '@/models/client';
 import {
@@ -49,6 +57,10 @@ export function ReviewSaleSheet(props: ReviewSaleSheetProps) {
   const theme = useAppTheme();
   const sales = useSales();
   const products = useProducts();
+  const router = useRouter();
+  const chargeCard = useCardCharge();
+  const tapToPay = useTapToPay();
+  const [charging, setCharging] = useState(false);
 
   const [client, setClient] = useState<Client | null>(null);
   const [notes, setNotes] = useState('');
@@ -63,6 +75,7 @@ export function ReviewSaleSheet(props: ReviewSaleSheetProps) {
       setNotes('');
       setMethod(null);
       setShowWarning(false);
+      setCharging(false);
     }
   }, [visible]);
 
@@ -84,7 +97,7 @@ export function ReviewSaleSheet(props: ReviewSaleSheetProps) {
 
   const isKeypadSale = customAmount != null && selectedServices.length === 0 && selectedProducts.length === 0;
   const hasKeypadAmount = custom > 0;
-  const canComplete = method != null && subtotal > 0;
+  const canComplete = method != null && subtotal > 0 && !charging;
 
   const sourceChips =
     (selectedServices.length > 0 || selectedProducts.length > 0) &&
@@ -106,7 +119,7 @@ export function ReviewSaleSheet(props: ReviewSaleSheetProps) {
       return copy;
     });
 
-  const finalize = () => {
+  const finalize = (payment?: ChargeResult) => {
     const items: SaleItem[] = [
       ...selectedServices.map((it) => ({
         id: uuid(),
@@ -135,25 +148,62 @@ export function ReviewSaleSheet(props: ReviewSaleSheetProps) {
       isKeypadSale,
       taxAmount: taxAmount > 0 ? taxAmount : undefined,
       taxRate: taxRate > 0 ? taxRate : undefined,
+      ...(payment ? saleFieldsFor(payment) : {}),
     });
     selectedProducts.forEach((it) => products.decrementStock(it.product.id, it.quantity));
     onComplete();
     onClose();
   };
 
+  /** Cash records straight away; card methods charge first, then record. */
+  const takePayment = async () => {
+    if (method == null || method === 'Cash') {
+      finalize();
+      return;
+    }
+    const description = client ? `ToolBelt sale — ${client.name}` : 'ToolBelt sale';
+    setCharging(true);
+    try {
+      const result =
+        method === 'Tap to Pay'
+          ? await tapToPay.charge({ amount: totalWithTax, description })
+          : await chargeCard({ amount: totalWithTax, description });
+      if (result) finalize(result);
+    } catch (err) {
+      alertChargeError(err, () => {
+        onClose();
+        router.push('/payout');
+      });
+    } finally {
+      setCharging(false);
+    }
+  };
+
+  // A charge in flight keeps the sheet open (closing it would drop the result).
+  const close = () => {
+    if (!charging) onClose();
+  };
+
   const completeSale = () => {
     if (!canComplete) return;
     if (!client) setShowWarning(true);
-    else finalize();
+    else takePayment();
   };
 
+  const completeTitle =
+    method === 'Card' || method === 'Digital'
+      ? `Charge $${totalWithTax.toFixed(2)}`
+      : method === 'Tap to Pay'
+        ? `Tap to Pay $${totalWithTax.toFixed(2)}`
+        : 'Complete Sale';
+
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
+    <Modal visible={visible} animationType="slide" onRequestClose={close}>
       <DashboardGradient>
         <SafeAreaView style={styles.flex} edges={['top', 'bottom']}>
           {/* Header */}
           <View style={[styles.header, { backgroundColor: theme.cardBackground }]}>
-            <Pressable onPress={onClose} style={[styles.roundBtn, { backgroundColor: theme.cardBackground, borderWidth: 1, borderColor: theme.divider }]}>
+            <Pressable onPress={close} disabled={charging} style={[styles.roundBtn, { backgroundColor: theme.cardBackground, borderWidth: 1, borderColor: theme.divider }]}>
               <Icon name="xmark" size={16} color={theme.secondaryText} weight="medium" />
             </Pressable>
             <Text style={[styles.headerTitle, { color: theme.primaryText }]}>Review Sale</Text>
@@ -310,11 +360,15 @@ export function ReviewSaleSheet(props: ReviewSaleSheetProps) {
 
           {/* Complete */}
           <View style={[styles.footer, { backgroundColor: theme.cardBackground, borderTopWidth: 1, borderTopColor: theme.divider }]}>
+            {tapToPay.status && (
+              <Text style={[styles.chargeStatus, { color: theme.secondaryText }]}>{tapToPay.status}</Text>
+            )}
             <ThemedButton
-              title="Complete Sale"
+              title={completeTitle}
               icon="checkmark.circle.fill"
               kind="accent"
               onPress={completeSale}
+              loading={charging}
               disabled={!canComplete}
             />
           </View>
@@ -339,7 +393,7 @@ export function ReviewSaleSheet(props: ReviewSaleSheetProps) {
         }}
         onContinue={() => {
           setShowWarning(false);
-          finalize();
+          takePayment();
         }}
         onDismiss={() => setShowWarning(false)}
       />
@@ -573,7 +627,8 @@ const styles = StyleSheet.create({
   method: { alignItems: 'center', gap: 10, paddingVertical: 24 },
   methodLabel: { fontSize: 14, fontWeight: '600' },
   // Footer
-  footer: { paddingHorizontal: 20, paddingVertical: 16 },
+  footer: { paddingHorizontal: 20, paddingVertical: 16, gap: 10 },
+  chargeStatus: { fontSize: 13, fontWeight: '500', textAlign: 'center' },
   // Client picker
   pickerBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.3)' },
   picker: { maxHeight: '60%', borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingBottom: 20 },

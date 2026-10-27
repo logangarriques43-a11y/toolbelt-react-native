@@ -4,7 +4,7 @@
  * feature-setup store; tapping a row opens a generic detail sheet that toggles
  * enablement. Each feature's bespoke setup flow (gift cards, reminders, promos, …)
  * is deferred — the sheet notes that. More: a settings list wired to existing
- * routes; payout/bank rows point at the Phase-7 payout flow.
+ * routes; Payment Settings / Bank Accounts open Payout Settings (/payout).
  */
 
 import { useRouter } from 'expo-router';
@@ -136,13 +136,12 @@ export function PaymentMore() {
   const theme = useAppTheme();
   const router = useRouter();
 
-  const soon = (title: string, msg: string) => Alert.alert(title, msg);
 
   const rows: { icon: SFSymbol; title: string; onPress: () => void; divider: boolean }[] = [
-    { icon: 'gearshape.fill', title: 'Payment Settings', divider: true, onPress: () => soon('Payment Settings', 'Payout & payment settings arrive with native onboarding (Phase 7).') },
-    { icon: 'building.columns.fill', title: 'Bank Accounts', divider: true, onPress: () => soon('Bank Accounts', 'Bank account setup arrives with native onboarding (Phase 7).') },
+    { icon: 'gearshape.fill', title: 'Payment Settings', divider: true, onPress: () => router.push('/payout') },
+    { icon: 'building.columns.fill', title: 'Bank Accounts', divider: true, onPress: () => router.push('/payout') },
     { icon: 'doc.text.fill', title: 'Tax Documents', divider: true, onPress: () => router.push('/accounting/tax') },
-    { icon: 'shield.checkered', title: 'Fraud Protection', divider: true, onPress: () => soon('Fraud Protection', 'Coming soon.') },
+    { icon: 'shield.checkered', title: 'Fraud Protection', divider: true, onPress: () => Alert.alert('Fraud Protection', 'Stripe screens every card payment for fraud automatically.') },
     { icon: 'questionmark.circle.fill', title: 'Help & Support', divider: true, onPress: () => router.push('/help') },
     { icon: 'doc.plaintext.fill', title: 'Terms of Service', divider: false, onPress: () => WebBrowser.openBrowserAsync(`${BASE}/terms`) },
   ];

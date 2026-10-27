@@ -33,6 +33,9 @@ interface SaleTransactionDTO {
   taxJurisdiction?: string | null;
   cardBrand?: string | null;
   cardLast4?: string | null;
+  paymentTransactionId?: string | null;
+  paymentProviderRef?: string | null;
+  paymentStatus?: string | null;
 }
 
 function fromDTO(d: SaleTransactionDTO): SaleTransaction {
@@ -57,6 +60,9 @@ function fromDTO(d: SaleTransactionDTO): SaleTransaction {
     taxJurisdiction: d.taxJurisdiction ?? undefined,
     cardBrand: d.cardBrand ?? undefined,
     cardLast4: d.cardLast4 ?? undefined,
+    paymentTransactionId: d.paymentTransactionId ?? undefined,
+    paymentProviderRef: d.paymentProviderRef ?? undefined,
+    paymentStatus: d.paymentStatus ?? undefined,
   };
 }
 
@@ -80,6 +86,9 @@ function toDTO(s: Omit<SaleTransaction, 'id'>): SaleTransactionDTO {
     taxJurisdiction: s.taxJurisdiction,
     cardBrand: s.cardBrand,
     cardLast4: s.cardLast4,
+    paymentTransactionId: s.paymentTransactionId,
+    paymentProviderRef: s.paymentProviderRef,
+    paymentStatus: s.paymentStatus,
   };
 }
 
