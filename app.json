@@ -37,7 +37,55 @@
           }
         }
       ],
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "@stripe/stripe-react-native",
+        {
+          "merchantIdentifier": "",
+          "enableGooglePay": true
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "ToolBelt uses the camera to scan product barcodes and package labels into your inventory.",
+          "recordAudioAndroid": false
+        }
+      ],
+      [
+        "expo-contacts",
+        {
+          "contactsPermission": "ToolBelt imports the contacts you choose as clients or staff."
+        }
+      ],
+      [
+        "expo-calendar",
+        {
+          "calendarPermission": "ToolBelt imports appointments from your calendar."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "ToolBelt attaches the photos you choose to clients, staff and appointments.",
+          "cameraPermission": "ToolBelt uses the camera to take client, staff and appointment photos."
+        }
+      ],
+      [
+        "@stripe/stripe-terminal-react-native",
+        {
+          "bluetoothBackgroundMode": false,
+          "locationWhenInUsePermission": "ToolBelt uses your location to accept in-person card payments with Tap to Pay.",
+          "bluetoothPeripheralPermission": "ToolBelt uses Bluetooth to connect to card readers.",
+          "bluetoothAlwaysUsagePermission": "ToolBelt uses Bluetooth to connect to card readers."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "ToolBelt uses your location to find vendors near you and to accept Tap to Pay payments."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
