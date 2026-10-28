@@ -10,6 +10,7 @@
     "@stripe/stripe-terminal-react-native": "^0.0.1-beta.33",
     "@tanstack/react-query": "^5.101.4",
     "expo": "~54.0.36",
+    "expo-build-properties": "~1.0.10",
     "expo-calendar": "~15.0.8",
     "expo-camera": "~17.0.10",
     "expo-clipboard": "~8.0.8",

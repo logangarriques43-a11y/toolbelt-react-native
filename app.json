@@ -86,6 +86,14 @@
         {
           "locationWhenInUsePermission": "ToolBelt uses your location to find vendors near you and to accept Tap to Pay payments."
         }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 26
+          }
+        }
       ]
     ],
     "experiments": {
