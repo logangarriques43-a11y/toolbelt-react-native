@@ -43,9 +43,10 @@ import { useBusinessSettings } from '@/context/business-settings-store';
 import { useSession } from '@/context/session';
 import { uuid } from '@/lib/id';
 import { assertChargeable, toCents, type ChargeRequest, type ChargeResult } from '@/lib/stripe-charge';
+import { USER_DATA_KEYS } from '@/lib/user-data-keys';
 import type { BusinessAddress } from '@/models/business-settings';
 
-const LOCATION_CACHE_KEY = 'stripe.terminal.locationId';
+const LOCATION_CACHE_KEY = USER_DATA_KEYS.terminalLocation;
 const DISCOVERY_TIMEOUT_MS = 30_000;
 
 export function PaymentsTerminalProvider({ children }: { children: ReactElement | ReactElement[] }) {

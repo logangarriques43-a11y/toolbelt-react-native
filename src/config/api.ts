@@ -12,3 +12,10 @@
  */
 export const API_BASE_URL =
   process.env.EXPO_PUBLIC_API_BASE_URL ?? 'https://toolbelt-backend-dtvy.onrender.com/api/v1';
+
+/**
+ * The backend's origin without the `/api/v1` path, for the public web pages it
+ * serves (`/terms`, `/privacy`, …). Derived from API_BASE_URL so an
+ * EXPO_PUBLIC_API_BASE_URL override moves these links too.
+ */
+export const BACKEND_ORIGIN = API_BASE_URL.replace(/\/api(\/v\d+)?\/?$/, '');

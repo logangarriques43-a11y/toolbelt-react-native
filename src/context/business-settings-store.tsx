@@ -17,6 +17,7 @@ import { createContext, useContext, useEffect, useMemo, useRef, useState, type R
 import { loadAppSettings, saveAppSettings, type AppSettingsBlob } from '@/api/app-settings';
 import { api } from '@/lib/api-client';
 import { setDefaultReminderMinutes } from '@/lib/appointment-defaults';
+import { USER_DATA_KEYS } from '@/lib/user-data-keys';
 import { EMPTY_ADDRESS, type BusinessAddress } from '@/models/business-settings';
 
 export interface BusinessSettingsState {
@@ -41,7 +42,7 @@ const INITIAL: BusinessSettingsState = {
   address: EMPTY_ADDRESS,
 };
 
-const PUSH_KEY = 'notif.push';
+const PUSH_KEY = USER_DATA_KEYS.pushEnabled;
 const SAVE_DELAY_MS = 800;
 
 function fromBlob(prev: BusinessSettingsState, b: AppSettingsBlob): BusinessSettingsState {

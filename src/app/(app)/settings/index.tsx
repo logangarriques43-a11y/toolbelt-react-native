@@ -19,6 +19,7 @@ import { deleteAccount as deleteAccountApi } from '@/api/account';
 import { Icon } from '@/components/icon';
 import { ScreenHeader } from '@/components/screen-header';
 import { ThemedIconTile, ThemedSectionHeader } from '@/components/themed';
+import { BACKEND_ORIGIN } from '@/config/api';
 import { useBusinessSettings } from '@/context/business-settings-store';
 import { useSession } from '@/context/session';
 import { ApiError } from '@/lib/api-client';
@@ -26,7 +27,6 @@ import { reminderTimingLabel } from '@/models/business-settings';
 import { LOOK_SWATCHES, PALETTES, iOSColors, type LookId, type ThemeMode } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
-const BASE = 'https://toolbelt-backend-dtvy.onrender.com';
 const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
 
 export default function Settings() {
@@ -36,7 +36,7 @@ export default function Settings() {
   const s = useBusinessSettings();
   const [deleting, setDeleting] = useState(false);
 
-  const open = (path: string) => WebBrowser.openBrowserAsync(`${BASE}/${path}`);
+  const open = (path: string) => WebBrowser.openBrowserAsync(`${BACKEND_ORIGIN}/${path}`);
 
   // Store-required in-app account deletion: confirm, call the backend purge
   // route, then sign out on success (which unmounts this screen via the auth
