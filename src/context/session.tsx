@@ -27,6 +27,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   createUserWithEmailAndPassword,
   EmailAuthProvider,
@@ -57,6 +58,7 @@ import { fetchBookingBusinessName, updateBusinessName } from '@/api/account';
 import { fetchStaffMe, markStaffPasswordChanged } from '@/api/staff';
 import { ApiError } from '@/lib/api-client';
 import { auth } from '@/lib/firebase';
+import { USER_DATA_KEYS } from '@/lib/user-data-keys';
 import type { StaffMember } from '@/models/staff';
 
 export interface Account {
@@ -216,10 +218,17 @@ async function detectRole(user: User): Promise<SessionRole> {
     AsyncStorage.setItem(roleKey(user.uid), role).catch(() => {});
     return role;
   } catch {
-    // Offline with an expired token — fall back to the last known role.
-    const cached = await AsyncStorage.getItem(roleKey(user.uid)).catch(() => null);
-    return cached === 'staff' ? 'staff' : 'owner';
+    // Offline with an expired token — fall back to the last known role. With
+    // none cached there's nothing safe to assume: never default to owner.
+    const cached = await cachedRole(user.uid);
+    if (cached) return cached;
+    throw new SignInError("Couldn't reach ToolBelt to check your account. Check your connection and try again.");
   }
+}
+
+async function cachedRole(uid: string): Promise<SessionRole | null> {
+  const cached = await AsyncStorage.getItem(roleKey(uid)).catch(() => null);
+  return cached === 'staff' || cached === 'owner' ? cached : null;
 }
 
 function staffErrorMessage(e: unknown): string {
@@ -341,8 +350,20 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     [backfillBusinessName],
   );
 
+  // Wipe one account's cached data when that account leaves, so the next
+  // person on this phone never sees it (query cache + USER_DATA_KEYS).
+  const queryClient = useQueryClient();
+  const lastUid = useRef<string | null>(null);
+
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (user) => {
+      const uid = user?.uid ?? null;
+      if (lastUid.current && lastUid.current !== uid) {
+        queryClient.clear();
+        void AsyncStorage.multiRemove(Object.values(USER_DATA_KEYS)).catch(() => {});
+      }
+      lastUid.current = uid;
+
       if (!user) {
         setState(INITIAL);
         setInitializing(false);
@@ -356,20 +377,28 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         .then((next) => {
           if (auth.currentUser?.uid === user.uid) apply(next);
         })
-        .catch(() => {
-          // Hydration is defensive; if it still fails, open as a plain owner.
-          apply({
-            ...INITIAL,
-            ...OPEN_GATES,
-            uid: user.uid,
-            role: 'owner',
-            account: { name: user.displayName || user.email || 'Business Owner', email: user.email ?? undefined, isBusinessOwner: true },
-          });
+        .catch(async () => {
+          // Hydration is defensive; if it still fails, reopen as a plain owner
+          // only when this device has seen this user as an owner before.
+          // Otherwise sign out: a failed check must never grant the owner role.
+          const role = await cachedRole(user.uid);
+          if (auth.currentUser?.uid !== user.uid) return;
+          if (role === 'owner') {
+            apply({
+              ...INITIAL,
+              ...OPEN_GATES,
+              uid: user.uid,
+              role: 'owner',
+              account: { name: user.displayName || user.email || 'Business Owner', email: user.email ?? undefined, isBusinessOwner: true },
+            });
+          } else {
+            await firebaseSignOut(auth).catch(() => {});
+          }
         })
         .finally(() => setInitializing(false));
     });
     return unsub;
-  }, [apply]);
+  }, [apply, queryClient]);
 
   /**
    * Run a sign-in flow that hydrates the session itself. A SignInError signs

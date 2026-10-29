@@ -17,13 +17,13 @@ import * as WebBrowser from 'expo-web-browser';
 import { DashboardGradient } from '@/components/dashboard-gradient';
 import { Icon } from '@/components/icon';
 import { LivePill, ThemedButton, ThemedIconTile } from '@/components/themed';
+import { BACKEND_ORIGIN } from '@/config/api';
 import { useFeatureSetup } from '@/context/feature-setup-store';
 import { withOpacity } from '@/lib/color';
 import { FEATURE_CATEGORIES, type PaymentFeature } from '@/models/payment-feature';
 import { iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
-const BASE = 'https://toolbelt-backend-dtvy.onrender.com';
 
 // ── Features grid ─────────────────────────────────────────────────────
 
@@ -143,7 +143,7 @@ export function PaymentMore() {
     { icon: 'doc.text.fill', title: 'Tax Documents', divider: true, onPress: () => router.push('/accounting/tax') },
     { icon: 'shield.checkered', title: 'Fraud Protection', divider: true, onPress: () => Alert.alert('Fraud Protection', 'Stripe screens every card payment for fraud automatically.') },
     { icon: 'questionmark.circle.fill', title: 'Help & Support', divider: true, onPress: () => router.push('/help') },
-    { icon: 'doc.plaintext.fill', title: 'Terms of Service', divider: false, onPress: () => WebBrowser.openBrowserAsync(`${BASE}/terms`) },
+    { icon: 'doc.plaintext.fill', title: 'Terms of Service', divider: false, onPress: () => WebBrowser.openBrowserAsync(`${BACKEND_ORIGIN}/terms`) },
   ];
 
   return (

@@ -8,9 +8,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
+import { USER_DATA_KEYS } from '@/lib/user-data-keys';
 import type { PaymentFeatureId } from '@/models/payment-feature';
 
-const STORAGE_KEY = 'paymentFeatures.enabled';
+const STORAGE_KEY = USER_DATA_KEYS.paymentFeatures;
 
 export interface FeatureSetupStore {
   isEnabled: (id: PaymentFeatureId) => boolean;

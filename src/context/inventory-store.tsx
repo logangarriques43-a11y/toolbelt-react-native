@@ -24,6 +24,7 @@ import {
 } from '@/api/inventory';
 import { ApiError } from '@/lib/api-client';
 import { uuid } from '@/lib/id';
+import { USER_DATA_KEYS } from '@/lib/user-data-keys';
 import {
   DEFAULT_INVENTORY_CATEGORIES,
   stockStatus,
@@ -33,7 +34,7 @@ import {
 } from '@/models/inventory';
 
 export const INVENTORY_QUERY_KEY = ['inventory', 'items'] as const;
-const ACTIVITY_KEY = 'inventory.activityHistory';
+const ACTIVITY_KEY = USER_DATA_KEYS.inventoryActivity;
 
 export interface NewInventoryItem {
   name: string;

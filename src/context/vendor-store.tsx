@@ -27,10 +27,11 @@ import {
 } from '@/api/vendors';
 import { ApiError } from '@/lib/api-client';
 import { uuid } from '@/lib/id';
+import { USER_DATA_KEYS } from '@/lib/user-data-keys';
 import { DEFAULT_VENDOR_CATEGORIES, type Vendor, type VendorProduct, type VendorReview, type VendorType } from '@/models/vendor';
 
 export const VENDORS_QUERY_KEY = ['vendors'] as const;
-const FAVORITES_KEY = 'vendors.favorites';
+const FAVORITES_KEY = USER_DATA_KEYS.vendorFavorites;
 export const VENDOR_PRODUCTS_QUERY_KEY = ['vendor-products', 'mine'] as const;
 
 export interface VendorStore {
