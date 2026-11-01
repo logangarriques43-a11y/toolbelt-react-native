@@ -11,6 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { DashboardGradient } from '@/components/dashboard-gradient';
 import { Icon } from '@/components/icon';
 import { KeyboardAwareForm } from '@/components/keyboard-aware-form';
+import { RequirePermission } from '@/components/require-permission';
 import { ScreenHeader } from '@/components/screen-header';
 import { ThemedButton } from '@/components/themed';
 import { DatePickerSheet } from '@/components/sheets/date-picker-sheet';
@@ -56,6 +57,7 @@ export default function RecordExpense() {
   };
 
   return (
+    <RequirePermission permission="manageTaxAndExpenses">
     <DashboardGradient>
       <SafeAreaView style={styles.safe} edges={['top']}>
         <ScreenHeader title="Record Expense" />
@@ -142,6 +144,7 @@ export default function RecordExpense() {
 
       <DatePickerSheet visible={dateSheet} date={date} onChange={setDate} onClose={() => setDateSheet(false)} />
     </DashboardGradient>
+    </RequirePermission>
   );
 }
 

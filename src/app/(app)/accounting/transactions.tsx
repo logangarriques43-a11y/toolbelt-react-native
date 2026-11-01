@@ -9,6 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { TransactionRow } from '@/components/accounting/transaction-row';
 import { DashboardGradient } from '@/components/dashboard-gradient';
 import { Icon } from '@/components/icon';
+import { RequirePermission } from '@/components/require-permission';
 import { ScreenHeader } from '@/components/screen-header';
 import { SwipeToDelete } from '@/components/swipe-to-delete';
 import { useAccounting } from '@/context/accounting-store';
@@ -26,6 +27,7 @@ export default function Transactions() {
     ]);
 
   return (
+    <RequirePermission permission="viewPayments">
     <DashboardGradient>
       <SafeAreaView style={styles.safe} edges={['top']}>
         <ScreenHeader title="All Transactions" />
@@ -45,6 +47,7 @@ export default function Transactions() {
         )}
       </SafeAreaView>
     </DashboardGradient>
+    </RequirePermission>
   );
 }
 

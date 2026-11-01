@@ -13,11 +13,13 @@ import { DashboardGradient } from '@/components/dashboard-gradient';
 import { Icon } from '@/components/icon';
 import { ScreenHeader } from '@/components/screen-header';
 import { ThemedIconTile } from '@/components/themed';
+import { usePermissions } from '@/context/permissions-store';
 import { useTattooEntry } from '@/hooks/use-tattoo';
 import { useAppTheme } from '@/theme/theme-context';
 
 export default function SpecialFeatures() {
   const router = useRouter();
+  const { can } = usePermissions();
   const tattoo = useTattooEntry();
 
   return (
@@ -39,12 +41,16 @@ export default function SpecialFeatures() {
               description="Take reference photos by text, keep artist portfolios, and match each request to the right artist."
               onPress={() => router.push('/tattoo')} />
           ) : null}
-          <Card icon="creditcard.fill" title="Integrated Payments"
-            description="Accept payments, send invoices, and track your finances — all connected to your appointments."
-            onPress={() => router.push('/payments')} />
-          <Card icon="shippingbox.fill" title="Inventory Tracking"
-            description="Track products, monitor stock levels, scan labels, and get automatic reorder alerts."
-            onPress={() => router.push('/inventory')} />
+          {can('viewPayments') ? (
+            <Card icon="creditcard.fill" title="Integrated Payments"
+              description="Accept payments, send invoices, and track your finances — all connected to your appointments."
+              onPress={() => router.push('/payments')} />
+          ) : null}
+          {can('viewInventory') ? (
+            <Card icon="shippingbox.fill" title="Inventory Tracking"
+              description="Track products, monitor stock levels, scan labels, and get automatic reorder alerts."
+              onPress={() => router.push('/inventory')} />
+          ) : null}
           <Card icon="paintbrush.fill" title="Custom Website Design"
             description="Get a professionally designed website for your business, built and managed by our team."
             onPress={() => router.push('/custom-website')} />

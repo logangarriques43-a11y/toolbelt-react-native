@@ -16,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { DashboardGradient } from '@/components/dashboard-gradient';
 import { Icon } from '@/components/icon';
 import { KeyboardAwareForm } from '@/components/keyboard-aware-form';
+import { RequirePermission } from '@/components/require-permission';
 import { ThemedButton, ThemedIconTile } from '@/components/themed';
 import { withOpacity } from '@/lib/color';
 import { useAppointments } from '@/context/appointments-store';
@@ -31,9 +32,11 @@ const GREEN = '#4CBF80';
 
 export default function CheckoutScreen() {
   return (
-    <PaymentsTerminalProvider>
-      <Checkout />
-    </PaymentsTerminalProvider>
+    <RequirePermission permission="processPayments">
+      <PaymentsTerminalProvider>
+        <Checkout />
+      </PaymentsTerminalProvider>
+    </RequirePermission>
   );
 }
 

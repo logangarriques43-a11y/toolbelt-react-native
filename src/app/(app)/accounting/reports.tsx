@@ -6,12 +6,14 @@ import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DashboardGradient } from '@/components/dashboard-gradient';
+import { RequirePermission } from '@/components/require-permission';
 import { ScreenHeader } from '@/components/screen-header';
 import { useAppTheme } from '@/theme/theme-context';
 
 export default function Reports() {
   const theme = useAppTheme();
   return (
+    <RequirePermission permission="viewReports">
     <DashboardGradient>
       <SafeAreaView style={styles.safe} edges={['top']}>
         <ScreenHeader title="Reports" />
@@ -20,6 +22,7 @@ export default function Reports() {
         </View>
       </SafeAreaView>
     </DashboardGradient>
+    </RequirePermission>
   );
 }
 

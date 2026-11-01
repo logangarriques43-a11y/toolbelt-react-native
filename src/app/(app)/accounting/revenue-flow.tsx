@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { SankeyDiagram } from '@/components/accounting/sankey-diagram';
 import { DashboardGradient } from '@/components/dashboard-gradient';
 import { Icon } from '@/components/icon';
+import { RequirePermission } from '@/components/require-permission';
 import { ScreenHeader } from '@/components/screen-header';
 import { useAccounting } from '@/context/accounting-store';
 import { useExpenses } from '@/context/expenses-store';
@@ -53,6 +54,7 @@ export default function RevenueFlow() {
   );
 
   return (
+    <RequirePermission permission="viewReports">
     <DashboardGradient>
       <SafeAreaView style={styles.safe} edges={['top']}>
         <ScreenHeader title="Revenue Flow" />
@@ -92,6 +94,7 @@ export default function RevenueFlow() {
 
       <ExpandedSankey visible={expanded} onClose={() => setExpanded(false)} initialPeriod={period} />
     </DashboardGradient>
+    </RequirePermission>
   );
 }
 
