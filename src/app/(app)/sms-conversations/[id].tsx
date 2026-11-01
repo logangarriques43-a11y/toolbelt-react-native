@@ -12,7 +12,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DashboardGradient } from '@/components/dashboard-gradient';
 import { Icon } from '@/components/icon';
+import { SignedPhoto } from '@/components/signed-photo';
 import { useConversationMessages, useSMS } from '@/context/sms-store';
+import { visibleMessageBody } from '@/lib/tattoo';
 import { conversationDisplayName, formatPhone, type SMSMessage } from '@/models/sms';
 import { iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
@@ -126,16 +128,21 @@ export default function SMSConversationDetail() {
 function Bubble({ message }: { message: SMSMessage }) {
   const theme = useAppTheme();
   const inbound = message.direction === 'inbound';
+  const media = message.media ?? [];
+  const body = visibleMessageBody(message.body, media);
+  const photos = media.map((m) => <SignedPhoto key={m.id} url={m.url} style={styles.bubblePhoto} />);
   return (
     <View style={[styles.bubbleRow, { justifyContent: inbound ? 'flex-start' : 'flex-end' }]}>
       <View style={[styles.bubbleCol, { alignItems: inbound ? 'flex-start' : 'flex-end' }]}>
         {inbound ? (
           <View style={[styles.bubble, styles.inboundBubble, { backgroundColor: theme.cardBackground, borderColor: theme.divider }]}>
-            <Text style={[styles.bubbleText, { color: theme.primaryText }]}>{message.body}</Text>
+            {photos}
+            {body !== null ? <Text style={[styles.bubbleText, { color: theme.primaryText }]}>{body}</Text> : null}
           </View>
         ) : (
           <View style={[styles.bubble, { backgroundColor: theme.accent }]}>
-            <Text style={[styles.bubbleText, { color: theme.onAccent }]}>{message.body}</Text>
+            {photos}
+            {body !== null ? <Text style={[styles.bubbleText, { color: theme.onAccent }]}>{body}</Text> : null}
           </View>
         )}
         <View style={styles.bubbleMeta}>
@@ -174,7 +181,8 @@ const styles = StyleSheet.create({
   messages: { padding: 16, gap: 8 },
   bubbleRow: { flexDirection: 'row' },
   bubbleCol: { maxWidth: '80%', gap: 4 },
-  bubble: { padding: 12, borderRadius: 18 },
+  bubble: { padding: 12, borderRadius: 18, gap: 8 },
+  bubblePhoto: { width: 200, height: 200, borderRadius: 12 },
   inboundBubble: { borderWidth: 1 },
   bubbleText: { fontSize: 16 },
   bubbleMeta: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 4 },

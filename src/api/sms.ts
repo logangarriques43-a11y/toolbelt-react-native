@@ -15,7 +15,7 @@
  */
 
 import { api } from '@/lib/api-client';
-import type { SMSConversation, SMSMessage, SMSPhoneNumber, SMSStatus } from '@/models/sms';
+import type { SMSConversation, SMSMedia, SMSMessage, SMSPhoneNumber, SMSStatus } from '@/models/sms';
 
 interface ConversationDTO {
   id: string;
@@ -35,6 +35,7 @@ interface MessageDTO {
   id: string;
   direction: string;
   body: string;
+  media?: SMSMedia[] | null;
   ai_intent_detected?: string | null;
   ai_confidence?: number | null;
   status: string;
@@ -74,6 +75,7 @@ function fromMessage(d: MessageDTO): SMSMessage {
     id: d.id,
     direction: d.direction === 'inbound' ? 'inbound' : 'outbound',
     body: d.body,
+    media: d.media ?? [],
     aiIntentDetected: d.ai_intent_detected ?? undefined,
     aiConfidence: d.ai_confidence ?? undefined,
     status: d.status,

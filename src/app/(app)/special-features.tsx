@@ -13,10 +13,12 @@ import { DashboardGradient } from '@/components/dashboard-gradient';
 import { Icon } from '@/components/icon';
 import { ScreenHeader } from '@/components/screen-header';
 import { ThemedIconTile } from '@/components/themed';
+import { useTattooEntry } from '@/hooks/use-tattoo';
 import { useAppTheme } from '@/theme/theme-context';
 
 export default function SpecialFeatures() {
   const router = useRouter();
+  const tattoo = useTattooEntry();
 
   return (
     <DashboardGradient>
@@ -32,6 +34,11 @@ export default function SpecialFeatures() {
           <Card icon="globe" title="Online Booking Page"
             description="Give your customers a professional booking page where they can self-schedule appointments anytime."
             onPress={() => router.push('/online-booking')} />
+          {tattoo.visible ? (
+            <Card icon="paintbrush.fill" title="Tattoo Studio"
+              description="Take reference photos by text, keep artist portfolios, and match each request to the right artist."
+              onPress={() => router.push('/tattoo')} />
+          ) : null}
           <Card icon="creditcard.fill" title="Integrated Payments"
             description="Accept payments, send invoices, and track your finances — all connected to your appointments."
             onPress={() => router.push('/payments')} />

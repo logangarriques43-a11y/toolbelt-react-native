@@ -29,6 +29,7 @@ import { useServices } from '@/context/services-store';
 import { useSession } from '@/context/session';
 import { useSMS } from '@/context/sms-store';
 import { useStaff } from '@/context/staff-store';
+import { useTattooEntry } from '@/hooks/use-tattoo';
 import { HELPER_DESTINATIONS, unavailableScreens } from '@/lib/helper-destinations';
 import { displayNameFromEmail } from '@/lib/name';
 import type { Appointment } from '@/models/appointment';
@@ -70,6 +71,7 @@ export default function Dashboard() {
   const { role, can } = usePermissions();
   const chat = useHelperChat();
   const bookingPage = useQuery({ queryKey: ['booking-page'], queryFn: getBookingPage });
+  const tattoo = useTattooEntry();
   const bookingLive = bookingPage.data?.isEnabled === true && !!bookingPage.data?.slug;
 
   const [now, setNow] = useState(() => new Date());
@@ -203,6 +205,18 @@ export default function Dashboard() {
                 trailing={<LivePill live={smsActive} />}
                 onPress={() => router.push('/sms-setup')}
               />
+              {tattoo.visible ? (
+                <>
+                  <Hairline inset />
+                  <ListRow
+                    icon="paintbrush.fill"
+                    title="Tattoo Studio"
+                    subtitle={tattoo.enabled ? 'Requests and portfolios' : 'Take tattoo requests by text'}
+                    trailing={<LivePill live={tattoo.enabled} />}
+                    onPress={() => router.push('/tattoo')}
+                  />
+                </>
+              ) : null}
             </View>
           </View>
 

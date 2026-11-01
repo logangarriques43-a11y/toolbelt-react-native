@@ -26,6 +26,7 @@ import {
 } from '@/api/sms';
 import { ApiError } from '@/lib/api-client';
 import { uuid } from '@/lib/id';
+import { SIGNED_URL_REFRESH_MS } from '@/lib/tattoo';
 import type { SMSConversation, SMSMessage, SMSPhoneNumber } from '@/models/sms';
 
 const CONVERSATIONS_KEY = ['sms', 'conversations'] as const;
@@ -166,6 +167,8 @@ export function useConversationMessages(conversationId: string): {
     queryKey: messagesKey(conversationId),
     queryFn: () => listMessages(conversationId),
     enabled: !!conversationId,
+    // Photo links expire, so a thread with photos renews them while it's open.
+    refetchInterval: (q) => (q.state.data?.some((m) => m.media?.length) ? SIGNED_URL_REFRESH_MS : false),
   });
   return { messages: query.data ?? [], isLoading: query.isLoading };
 }
