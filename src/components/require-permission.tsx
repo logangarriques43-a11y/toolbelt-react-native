@@ -22,7 +22,12 @@ export function RequirePermission({
   permission: Permission;
   children: ReactNode;
 }) {
-  const { can } = usePermissions();
+  const { role, can } = usePermissions();
+  // Permissions are configured in a useEffect in (app)/_layout, so on the first
+  // render after a deep link / relaunch the role is still 'unconfigured' and
+  // can() denies everything. Render nothing until the role resolves, so a
+  // permitted screen isn't bounced home before its role loads.
+  if (role === 'unconfigured') return null;
   if (!can(permission)) return <Redirect href="/" />;
   return <>{children}</>;
 }

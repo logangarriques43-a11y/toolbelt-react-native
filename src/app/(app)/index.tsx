@@ -46,6 +46,9 @@ interface WorkspaceItem {
 /** Every destination the old tile grid and Quick Actions list had. */
 const WORKSPACE: WorkspaceItem[] = [
   { icon: 'calendar', title: 'Calendar', route: '/appointments', permission: 'viewAppointments' },
+  // Invoices ship in v1. Give them a direct tile so they aren't only reachable
+  // via Finances, which is gated behind viewReports (off for this build).
+  { icon: 'doc.text.magnifyingglass', title: 'Invoices', route: '/accounting/invoices', permission: 'viewInvoices' },
   { icon: 'creditcard.fill', title: 'Payments', route: '/payments', permission: 'viewPayments' },
   { icon: 'dollarsign.circle.fill', title: 'Finances', route: '/accounting', permission: 'viewReports' },
   { icon: 'shippingbox.fill', title: 'Inventory', route: '/inventory', permission: 'viewInventory' },
