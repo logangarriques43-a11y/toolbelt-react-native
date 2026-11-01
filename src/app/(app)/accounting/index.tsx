@@ -16,6 +16,7 @@ import { RecordTransactionSheet } from '@/components/accounting/record-transacti
 import { TransactionRow } from '@/components/accounting/transaction-row';
 import { DashboardGradient } from '@/components/dashboard-gradient';
 import { Icon } from '@/components/icon';
+import { RequirePermission } from '@/components/require-permission';
 import { ScreenHeader } from '@/components/screen-header';
 import { ThemedIconTile } from '@/components/themed';
 import { useAccounting } from '@/context/accounting-store';
@@ -54,6 +55,7 @@ export default function Accounting() {
   };
 
   return (
+    <RequirePermission permission="viewReports">
     <DashboardGradient>
       <SafeAreaView style={styles.safe} edges={['top']}>
         <ScreenHeader
@@ -125,6 +127,7 @@ export default function Accounting() {
         <RecordTransactionSheet visible={recordOpen} onClose={() => setRecordOpen(false)} />
       </SafeAreaView>
     </DashboardGradient>
+    </RequirePermission>
   );
 }
 

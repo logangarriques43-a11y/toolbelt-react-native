@@ -23,6 +23,7 @@ import { InventoryReportSheet } from '@/components/inventory/inventory-report-sh
 import { ItemDetailSheet } from '@/components/inventory/item-detail-sheet';
 import { ManualReorderSheet } from '@/components/inventory/manual-reorder-sheet';
 import { ReorderAlertsSheet } from '@/components/inventory/reorder-alerts-sheet';
+import { RequirePermission } from '@/components/require-permission';
 import { ThemedIconTile } from '@/components/themed';
 import { useInventory } from '@/context/inventory-store';
 import { withOpacity } from '@/lib/color';
@@ -82,7 +83,8 @@ export default function Inventory() {
     : base;
 
   return (
-    <DashboardGradient>
+    <RequirePermission permission="viewInventory">
+      <DashboardGradient>
       <SafeAreaView style={styles.safe} edges={['top']}>
         {/* Header */}
         <View style={[styles.header, { backgroundColor: withOpacity(theme.cardBackground, 0.7) }]}>
@@ -231,7 +233,8 @@ export default function Inventory() {
       <ManualReorderSheet visible={showReorder} onClose={() => setShowReorder(false)} />
       <InventoryReportSheet visible={showReport} onClose={() => setShowReport(false)} />
       <ActivityHistorySheet visible={showActivity} onClose={() => setShowActivity(false)} />
-    </DashboardGradient>
+      </DashboardGradient>
+    </RequirePermission>
   );
 }
 

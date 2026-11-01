@@ -8,6 +8,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DashboardGradient } from '@/components/dashboard-gradient';
+import { RequirePermission } from '@/components/require-permission';
 import { ScreenHeader } from '@/components/screen-header';
 import { ThemedIconTile } from '@/components/themed';
 import { useAppTheme } from '@/theme/theme-context';
@@ -23,7 +24,8 @@ export default function Marketing() {
   const theme = useAppTheme();
 
   return (
-    <DashboardGradient>
+    <RequirePermission permission="viewMarketing">
+      <DashboardGradient>
       <SafeAreaView style={styles.safe} edges={['top']}>
         <ScreenHeader title="Marketing" />
         <ScrollView contentContainerStyle={styles.body}>
@@ -47,7 +49,8 @@ export default function Marketing() {
           </View>
         </ScrollView>
       </SafeAreaView>
-    </DashboardGradient>
+      </DashboardGradient>
+    </RequirePermission>
   );
 }
 

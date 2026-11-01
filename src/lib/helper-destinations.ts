@@ -25,7 +25,7 @@ export const HELPER_DESTINATIONS: Record<string, Destination> = {
   addClient: { route: '/clients/new', permission: 'editClients' },
   createAppointment: { route: '/appointments/create', permission: 'editAppointments' },
   payments: { route: '/payments', permission: 'viewPayments' },
-  payoutStatus: { route: '/payout', permission: 'manageSettings' },
+  payoutStatus: { route: '/payout', permission: 'viewPayments' },
   securitySettings: { route: '/security' },
   accounting: { route: '/accounting', permission: 'viewReports' },
   timeOff: { route: '/time-off', permission: 'viewTimeOff' },

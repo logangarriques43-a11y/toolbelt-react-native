@@ -86,7 +86,11 @@ export default function Dashboard() {
   const firstName = displayName.split(' ')[0];
   const smsActive = phoneNumber?.isActive === true;
   // Owners see every module the old grid showed; staff are filtered by permission.
-  const allowed = (p?: Permission) => !p || role === 'owner' || can(p);
+  // Owners still see everything that isn't gated, because can() returns true
+  // for owners on ungated permissions — but gated-off modules (feature-flags)
+  // are hidden from owners too, so a Play reviewer signing in as owner doesn't
+  // see tiles for modules that aren't set up yet.
+  const allowed = (p?: Permission) => !p || can(p);
 
   const today = useMemo(
     () =>
@@ -253,10 +257,12 @@ export default function Dashboard() {
         onClose={() => setMenuOpen(false)}
         items={[
           ...(allowed('manageSettings')
-            ? [
-                { icon: 'gearshape.fill' as SFSymbol, title: 'Settings', onPress: () => router.push('/settings') },
-                { icon: 'building.2.fill' as SFSymbol, title: 'Payout setup', onPress: () => router.push('/payout') },
-              ]
+            ? [{ icon: 'gearshape.fill' as SFSymbol, title: 'Settings', onPress: () => router.push('/settings') }]
+            : []),
+          // Payout setup opens the Payments module, so hide it when payments is
+          // gated off (reviewer/owner won't see a not-set-up payout screen).
+          ...(allowed('viewPayments')
+            ? [{ icon: 'building.2.fill' as SFSymbol, title: 'Payout setup', onPress: () => router.push('/payout') }]
             : []),
           { icon: 'rectangle.portrait.and.arrow.right' as SFSymbol, title: 'Sign out', onPress: signOut, destructive: true },
         ]}

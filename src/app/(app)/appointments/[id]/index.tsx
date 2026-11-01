@@ -328,12 +328,16 @@ export default function AppointmentDetail() {
 
             {/* Actions */}
             <View style={styles.actions}>
-              <ThemedButton
-                title="Checkout"
-                icon="creditcard.fill"
-                kind="inverse"
-                onPress={() => router.push(`/appointments/${appt.id}/checkout`)}
-              />
+              {/* Checkout takes a card payment (Stripe) — hidden while the
+                  Payments module is gated off for this build. */}
+              {can('processPayments') ? (
+                <ThemedButton
+                  title="Checkout"
+                  icon="creditcard.fill"
+                  kind="inverse"
+                  onPress={() => router.push(`/appointments/${appt.id}/checkout`)}
+                />
+              ) : null}
 
               <OutlineBtn icon="calendar.badge.clock" label="Reschedule" onPress={() => router.push(`/appointments/${appt.id}/edit`)} />
               <ThemedButton
