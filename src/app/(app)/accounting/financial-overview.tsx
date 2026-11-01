@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DashboardGradient } from '@/components/dashboard-gradient';
 import { Icon } from '@/components/icon';
+import { RequirePermission } from '@/components/require-permission';
 import { ScreenHeader } from '@/components/screen-header';
 import { ThemedIconTile } from '@/components/themed';
 import { useAccounting } from '@/context/accounting-store';
@@ -41,6 +42,7 @@ export default function FinancialOverview() {
   const REVENUE = theme.accent;
 
   return (
+    <RequirePermission permission="viewReports">
     <DashboardGradient>
       <SafeAreaView style={styles.safe} edges={['top']}>
         <ScreenHeader title="Financial Overview" />
@@ -102,6 +104,7 @@ export default function FinancialOverview() {
         </ScrollView>
       </SafeAreaView>
     </DashboardGradient>
+    </RequirePermission>
   );
 }
 

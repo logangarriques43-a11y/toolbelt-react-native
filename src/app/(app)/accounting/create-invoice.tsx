@@ -19,6 +19,7 @@ import { ThemedButton } from '@/components/themed';
 import { DatePickerSheet } from '@/components/sheets/date-picker-sheet';
 import { useClients } from '@/context/clients-store';
 import { useInvoices } from '@/context/invoices-store';
+import { usePermissions } from '@/context/permissions-store';
 import { useServices } from '@/context/services-store';
 import { useSession } from '@/context/session';
 import { ApiError } from '@/lib/api-client';
@@ -48,6 +49,7 @@ export default function CreateInvoice() {
   const { nextInvoiceNumber, addInvoice, createInvoiceAsync, sendInvoice } = useInvoices();
   const { clients } = useClients();
   const { account } = useSession();
+  const { can } = usePermissions();
   const [sending, setSending] = useState(false);
 
   const [invoiceName, setInvoiceName] = useState('');
@@ -131,7 +133,11 @@ export default function CreateInvoice() {
           `Emailed to ${result.recipient ?? to}, but without a Pay Now button. Set up payouts so clients can pay online and the money goes to your bank account.`,
           [
             { text: 'Not Now', style: 'cancel' },
-            { text: 'Set Up Payouts', onPress: () => router.push('/payout') },
+            // /payout is in the gated-off Payments module; only offer it when
+            // payments is enabled for this build/viewer.
+            ...(can('viewPayments')
+              ? [{ text: 'Set Up Payouts', onPress: () => router.push('/payout') }]
+              : []),
           ],
         );
       } else {

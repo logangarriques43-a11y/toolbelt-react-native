@@ -20,6 +20,7 @@ import { Checkout, type CheckoutTab } from '@/components/payments/checkout';
 import { PaymentFeatures, PaymentMore } from '@/components/payments/features';
 import { ReviewSaleSheet } from '@/components/payments/review-sale-sheet';
 import { PaymentTransactions } from '@/components/payments/transactions';
+import { RequirePermission } from '@/components/require-permission';
 import { useProducts } from '@/context/products-store';
 import { useServices } from '@/context/services-store';
 import { PaymentsTerminalProvider } from '@/lib/stripe-terminal';
@@ -46,9 +47,11 @@ const SECTIONS: { section: Section; icon: SFSymbol }[] = [
 
 export default function PaymentsScreen() {
   return (
-    <PaymentsTerminalProvider>
-      <Payments />
-    </PaymentsTerminalProvider>
+    <RequirePermission permission="viewPayments">
+      <PaymentsTerminalProvider>
+        <Payments />
+      </PaymentsTerminalProvider>
+    </RequirePermission>
   );
 }
 

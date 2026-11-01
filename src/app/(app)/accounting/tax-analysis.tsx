@@ -19,6 +19,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { getTaxAIAnalysis, summarizeExpenses, summarizeSales, type TaxAIAnalysis } from '@/api/tax';
 import { DashboardGradient } from '@/components/dashboard-gradient';
 import { Icon, type SFSymbol } from '@/components/icon';
+import { RequirePermission } from '@/components/require-permission';
 import { ScreenHeader } from '@/components/screen-header';
 import { ThemedButton, ThemedIconTile } from '@/components/themed';
 import { useExpenses } from '@/context/expenses-store';
@@ -82,6 +83,7 @@ export default function TaxAnalysis() {
   };
 
   return (
+    <RequirePermission permission="viewTaxAndExpenses">
     <DashboardGradient>
       <SafeAreaView style={styles.safe} edges={['top']}>
         <ScreenHeader title="AI Tax Analysis" />
@@ -145,6 +147,7 @@ export default function TaxAnalysis() {
         </ScrollView>
       </SafeAreaView>
     </DashboardGradient>
+    </RequirePermission>
   );
 }
 

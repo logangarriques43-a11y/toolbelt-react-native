@@ -21,6 +21,7 @@ import { ScreenHeader } from '@/components/screen-header';
 import { ThemedIconTile, ThemedSectionHeader } from '@/components/themed';
 import { BACKEND_ORIGIN } from '@/config/api';
 import { useBusinessSettings } from '@/context/business-settings-store';
+import { usePermissions } from '@/context/permissions-store';
 import { useSession } from '@/context/session';
 import { ApiError } from '@/lib/api-client';
 import { reminderTimingLabel } from '@/models/business-settings';
@@ -33,6 +34,7 @@ export default function Settings() {
   const theme = useAppTheme();
   const router = useRouter();
   const { signOut } = useSession();
+  const { can } = usePermissions();
   const s = useBusinessSettings();
   const [deleting, setDeleting] = useState(false);
 
@@ -152,10 +154,15 @@ export default function Settings() {
 
           {/* Payments & Billing */}
           <Section title="Payments & Billing">
-            <Row icon="creditcard.fill" title="Payment Methods" onPress={() => router.push('/payout')} />
-            <Divider />
-            <Row icon="banknote.fill" title="Payout Settings" onPress={() => router.push('/payout')} />
-            <Divider />
+            {/* Payout opens the Payments module — hidden while payments is gated off. */}
+            {can('viewPayments') ? (
+              <>
+                <Row icon="creditcard.fill" title="Payment Methods" onPress={() => router.push('/payout')} />
+                <Divider />
+                <Row icon="banknote.fill" title="Payout Settings" onPress={() => router.push('/payout')} />
+                <Divider />
+              </>
+            ) : null}
             <Row icon="doc.text.fill" title="Invoice Settings" subtitle="Default tax rate, terms, notes" onPress={() => router.push('/settings/invoice-settings')} />
             <Divider />
             <Row icon="star.circle.fill" title="Plan & Features" subtitle="What's included" onPress={() => router.push('/settings/subscription')} />

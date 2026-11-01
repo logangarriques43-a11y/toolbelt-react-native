@@ -17,6 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { DashboardGradient } from '@/components/dashboard-gradient';
 import { Icon } from '@/components/icon';
 import { KeyboardAwareForm } from '@/components/keyboard-aware-form';
+import { RequirePermission } from '@/components/require-permission';
 import { ScreenHeader } from '@/components/screen-header';
 import { ThemedButton, ThemedIconTile } from '@/components/themed';
 import { useAccounting } from '@/context/accounting-store';
@@ -112,6 +113,7 @@ export default function TaxDashboard() {
   };
 
   return (
+    <RequirePermission permission="viewTaxAndExpenses">
     <DashboardGradient>
       <SafeAreaView style={styles.safe} edges={['top']}>
         <ScreenHeader title="Tax Dashboard" />
@@ -200,6 +202,7 @@ export default function TaxDashboard() {
         </KeyboardAwareForm>
       </SafeAreaView>
     </DashboardGradient>
+    </RequirePermission>
   );
 }
 

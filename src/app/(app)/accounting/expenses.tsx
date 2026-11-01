@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ExpenseRow } from '@/components/accounting/expense-row';
 import { DashboardGradient } from '@/components/dashboard-gradient';
 import { Icon } from '@/components/icon';
+import { RequirePermission } from '@/components/require-permission';
 import { ScreenHeader } from '@/components/screen-header';
 import { SwipeToDelete } from '@/components/swipe-to-delete';
 import { ThemedButton } from '@/components/themed';
@@ -41,6 +42,7 @@ export default function Expenses() {
   const total = filtered.reduce((s, e) => s + e.amount, 0);
 
   return (
+    <RequirePermission permission="viewTaxAndExpenses">
     <DashboardGradient>
       <SafeAreaView style={styles.safe} edges={['top']}>
         <ScreenHeader
@@ -90,6 +92,7 @@ export default function Expenses() {
         )}
       </SafeAreaView>
     </DashboardGradient>
+    </RequirePermission>
   );
 }
 

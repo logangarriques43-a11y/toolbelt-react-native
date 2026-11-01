@@ -42,6 +42,7 @@ import {
   type PayoutBalance,
 } from '@/api/stripe';
 import { Icon } from '@/components/icon';
+import { RequirePermission } from '@/components/require-permission';
 import { ScreenHeader } from '@/components/screen-header';
 import { LivePill, ThemedButton, ThemedIconTile } from '@/components/themed';
 import { useSession } from '@/context/session';
@@ -298,16 +299,18 @@ export default function PayoutSettings() {
   }
 
   return (
-    <View style={[styles.root, { backgroundColor: theme.background }]}>
-      <SafeAreaView style={styles.flex} edges={['top']}>
-        <ScreenHeader title="Payout Settings" />
-        <ScrollView
-          contentContainerStyle={styles.scroll}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={theme.accent} />}>
-          {content}
-        </ScrollView>
-      </SafeAreaView>
-    </View>
+    <RequirePermission permission="viewPayments">
+      <View style={[styles.root, { backgroundColor: theme.background }]}>
+        <SafeAreaView style={styles.flex} edges={['top']}>
+          <ScreenHeader title="Payout Settings" />
+          <ScrollView
+            contentContainerStyle={styles.scroll}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={theme.accent} />}>
+            {content}
+          </ScrollView>
+        </SafeAreaView>
+      </View>
+    </RequirePermission>
   );
 }
 
