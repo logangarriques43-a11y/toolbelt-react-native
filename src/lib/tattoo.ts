@@ -5,6 +5,7 @@
 
 import type {
   TattooDepositStatus,
+  TattooIntake,
   TattooIntakeStatus,
   TattooReviewReason,
   TattooStyle,
@@ -19,6 +20,21 @@ export const MAX_PORTFOLIO_IMAGE_BYTES = 3_932_160;
 
 /** Signed links last 15 minutes, so an open screen renews them before that. */
 export const SIGNED_URL_REFRESH_MS = 10 * 60 * 1000;
+
+/** Declining a booked request would leave its appointment behind. */
+export function canDecline(intake: TattooIntake): boolean {
+  return intake.status !== 'declined' && intake.status !== 'booked' && !intake.appointmentId;
+}
+
+/** Declining doesn't lift a review, so a declined client can still be cleared. */
+export function canMarkReviewed(intake: TattooIntake): boolean {
+  return intake.status === 'needs_review' || (intake.status === 'declined' && !!intake.reviewReason);
+}
+
+export function declineWarning(intake: TattooIntake): string {
+  const base = 'The client is not told. You can still text them from the conversation.';
+  return intake.reviewReason ? `${base} They stay blocked from booking until you mark them reviewed.` : base;
+}
 
 /** The body the backend stores for a message that is only a photo. */
 export const PHOTO_ONLY_BODY = '[Photo]';

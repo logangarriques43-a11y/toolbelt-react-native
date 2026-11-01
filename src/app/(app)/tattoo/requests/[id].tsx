@@ -25,7 +25,7 @@ import { useStaff } from '@/context/staff-store';
 import { SIGNED_LINK_QUERY, tattooKeys, useTattooSettings } from '@/hooks/use-tattoo';
 import { errorMessage } from '@/lib/api-client';
 import { withOpacity } from '@/lib/color';
-import { depositStatusLabel, reviewReasonText, styleLabel } from '@/lib/tattoo';
+import { canDecline, canMarkReviewed, declineWarning, depositStatusLabel, reviewReasonText, styleLabel } from '@/lib/tattoo';
 import { conversationDisplayName, formatPhone } from '@/models/sms';
 import type { TattooIntake, TattooIntakePhoto, TattooIntakeUpdate } from '@/models/tattoo';
 import { iOSColors } from '@/theme/tokens';
@@ -81,6 +81,9 @@ function RequestContent({ intake }: { intake: TattooIntake }) {
   const artist = intake.suggestedStaffId ? staff.find((s) => s.id === intake.suggestedStaffId) : undefined;
   const artistName = !intake.suggestedStaffId ? 'None yet' : (artist?.name ?? 'Unknown artist');
   const artistOptions = staff.filter((s) => s.isActive).map((s) => ({ label: s.name, value: s.id }));
+  // The conversation list only holds recent threads, so the request's own name
+  // comes next. Its phone number is the one the server limits to owners.
+  const clientName = conversation ? conversationDisplayName(conversation) : (intake.customerName ?? 'Text request');
 
   const update = async (changes: TattooIntakeUpdate, failureTitle: string) => {
     setBusy(true);
@@ -96,7 +99,7 @@ function RequestContent({ intake }: { intake: TattooIntake }) {
   };
 
   const confirmDecline = () =>
-    Alert.alert('Mark as declined?', 'The client is not told. You can still text them from the conversation.', [
+    Alert.alert('Mark as declined?', declineWarning(intake), [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Mark declined',
@@ -111,10 +114,10 @@ function RequestContent({ intake }: { intake: TattooIntake }) {
         <View style={styles.titleRow}>
           <View style={styles.flex}>
             <Text style={[styles.name, { color: theme.primaryText }]} numberOfLines={1}>
-              {conversation ? conversationDisplayName(conversation) : 'Text request'}
+              {clientName}
             </Text>
-            {conversation ? (
-              <Text style={[styles.sub, { color: theme.secondaryText }]}>{formatPhone(conversation.customerPhone)}</Text>
+            {intake.customerPhone ? (
+              <Text style={[styles.sub, { color: theme.secondaryText }]}>{formatPhone(intake.customerPhone)}</Text>
             ) : null}
           </View>
           <IntakeStatusPill status={intake.status} />
@@ -167,7 +170,7 @@ function RequestContent({ intake }: { intake: TattooIntake }) {
         <Detail label="Deposit" value={depositStatusLabel(intake.depositStatus)} />
       </View>
 
-      {isOwner && intake.status === 'needs_review' ? (
+      {isOwner && canMarkReviewed(intake) ? (
         <ThemedButton
           title="Mark reviewed"
           loading={busy}
@@ -175,7 +178,7 @@ function RequestContent({ intake }: { intake: TattooIntake }) {
         />
       ) : null}
 
-      {isOwner && intake.status !== 'declined' && intake.status !== 'booked' ? (
+      {isOwner && canDecline(intake) ? (
         <ThemedButton title="Mark declined" kind="quiet" loading={busy} onPress={confirmDecline} />
       ) : null}
 

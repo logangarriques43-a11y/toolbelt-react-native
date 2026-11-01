@@ -372,7 +372,7 @@ function ManageView({
   };
 
   const apply = async () => {
-    if (flatError) {
+    if (draft.requireDeposit && flatError) {
       showToast(flatError, true);
       return;
     }

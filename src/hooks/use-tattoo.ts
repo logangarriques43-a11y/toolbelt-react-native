@@ -35,9 +35,9 @@ export function useTattooSettings() {
   });
 }
 
-/** Whether to show the Tattoo Studio rows. An error hides them. */
+/** Whether to show the Tattoo Studio rows. No answer yet hides them. */
 export function useTattooEntry(): { visible: boolean; enabled: boolean } {
-  const { data, isError } = useTattooSettings();
-  const visible = !isError && data?.available === true;
+  const { data } = useTattooSettings();
+  const visible = data?.available === true;
   return { visible, enabled: visible && data?.enabled === true };
 }

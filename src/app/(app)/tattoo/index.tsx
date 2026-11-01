@@ -40,7 +40,7 @@ export default function TattooStudio() {
           <View style={styles.center}>
             <ActivityIndicator color={theme.accent} />
           </View>
-        ) : error || !settings ? (
+        ) : !settings ? (
           <View style={styles.center}>
             <Text style={[styles.message, { color: theme.secondaryText }]}>
               {errorMessage(error, "Couldn't load Tattoo Studio.")}

@@ -1,6 +1,6 @@
 /**
- * Tattoo requests — newest first. The API has no client name on a request, so
- * it comes from the SMS conversation with the same id.
+ * Tattoo requests — newest first. The conversation's name is the best one, but
+ * the app only holds recent threads, so the request's own name backs it up.
  */
 
 import { useQuery } from '@tanstack/react-query';
@@ -43,27 +43,27 @@ export default function TattooRequests() {
           <View style={styles.center}>
             <ActivityIndicator color={theme.accent} />
           </View>
-        ) : error || !data ? (
+        ) : !data ? (
           <View style={styles.center}>
             <Text style={[styles.message, { color: theme.secondaryText }]}>
               {errorMessage(error, "Couldn't load requests.")}
             </Text>
             <ThemedButton title="Try again" kind="quiet" onPress={() => refetch()} />
           </View>
-        ) : data.length === 0 ? (
-          <View style={styles.center}>
-            <Text style={theme.display(22)}>No requests yet</Text>
-            <Text style={[styles.message, { color: theme.secondaryText }]}>
-              Requests show up here when a client texts a photo.
-            </Text>
-          </View>
         ) : (
           <ScrollView
-            contentContainerStyle={styles.list}
+            contentContainerStyle={data.length === 0 ? styles.empty : styles.list}
             refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={theme.accent} />}>
-            {data.map((intake) => (
-              <RequestRow key={intake.id} intake={intake} />
-            ))}
+            {data.length === 0 ? (
+              <>
+                <Text style={theme.display(22)}>No requests yet</Text>
+                <Text style={[styles.message, { color: theme.secondaryText }]}>
+                  Requests show up here when a client texts a photo.
+                </Text>
+              </>
+            ) : (
+              data.map((intake) => <RequestRow key={intake.id} intake={intake} />)
+            )}
           </ScrollView>
         )}
       </SafeAreaView>
@@ -83,7 +83,7 @@ function RequestRow({ intake }: { intake: TattooIntake }) {
     <Pressable onPress={() => router.push(`/tattoo/requests/${intake.id}`)} style={[styles.row, theme.card]}>
       <View style={styles.rowTop}>
         <Text style={[styles.name, { color: theme.primaryText }]} numberOfLines={1}>
-          {conversation ? conversationDisplayName(conversation) : 'Text request'}
+          {conversation ? conversationDisplayName(conversation) : (intake.customerName ?? 'Text request')}
         </Text>
         <IntakeStatusPill status={intake.status} />
         <Icon name="chevron.right" size={12} color={theme.chevronTint} />
@@ -101,6 +101,7 @@ function RequestRow({ intake }: { intake: TattooIntake }) {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 24 },
+  empty: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 24 },
   message: { fontSize: 15, textAlign: 'center' },
   list: { padding: 16, gap: 10, paddingBottom: 40 },
   row: { padding: 14, gap: 6 },

@@ -8,13 +8,14 @@ import { DashboardGradient } from '@/components/dashboard-gradient';
 import { Icon } from '@/components/icon';
 import { ScreenHeader } from '@/components/screen-header';
 import { useStaff } from '@/context/staff-store';
+import { errorMessage } from '@/lib/api-client';
 import { staffInitials } from '@/models/staff';
 import { useAppTheme } from '@/theme/theme-context';
 
 export default function TattooPortfolios() {
   const theme = useAppTheme();
   const router = useRouter();
-  const { staff, isLoading } = useStaff();
+  const { staff, isLoading, error } = useStaff();
   const artists = staff.filter((s) => s.isActive);
 
   return (
@@ -24,6 +25,12 @@ export default function TattooPortfolios() {
         {isLoading ? (
           <View style={styles.center}>
             <ActivityIndicator color={theme.accent} />
+          </View>
+        ) : error && artists.length === 0 ? (
+          <View style={styles.center}>
+            <Text style={[styles.message, { color: theme.secondaryText }]}>
+              {errorMessage(error, "Couldn't load your team.")}
+            </Text>
           </View>
         ) : artists.length === 0 ? (
           <View style={styles.center}>
