@@ -262,9 +262,7 @@ export default function Dashboard() {
           ...(allowed('manageSettings')
             ? [{ icon: 'gearshape.fill' as SFSymbol, title: 'Settings', onPress: () => router.push('/settings') }]
             : []),
-          // Payout setup opens the Payments module, so hide it when payments is
-          // gated off (reviewer/owner won't see a not-set-up payout screen).
-          ...(allowed('viewPayments')
+          ...(allowed('manageSettings')
             ? [{ icon: 'building.2.fill' as SFSymbol, title: 'Payout setup', onPress: () => router.push('/payout') }]
             : []),
           { icon: 'rectangle.portrait.and.arrow.right' as SFSymbol, title: 'Sign out', onPress: signOut, destructive: true },

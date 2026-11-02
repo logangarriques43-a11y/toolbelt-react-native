@@ -13,6 +13,10 @@
  * Status is re-fetched whenever the browser closes, the app returns to the
  * foreground, or the user pulls to refresh. Once approved the session's
  * payoutComplete flag is set.
+ *
+ * This isn't part of the gated-off Payments module: invoice Pay Now links and
+ * booking deposits both need Stripe Connect. It follows manageSettings, like
+ * iOS.
  */
 
 import * as WebBrowser from 'expo-web-browser';
@@ -299,7 +303,7 @@ export default function PayoutSettings() {
   }
 
   return (
-    <RequirePermission permission="viewPayments">
+    <RequirePermission permission="manageSettings">
       <View style={[styles.root, { backgroundColor: theme.background }]}>
         <SafeAreaView style={styles.flex} edges={['top']}>
           <ScreenHeader title="Payout Settings" />

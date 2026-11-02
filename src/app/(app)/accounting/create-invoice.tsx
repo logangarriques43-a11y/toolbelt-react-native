@@ -133,9 +133,7 @@ export default function CreateInvoice() {
           `Emailed to ${result.recipient ?? to}, but without a Pay Now button. Set up payouts so clients can pay online and the money goes to your bank account.`,
           [
             { text: 'Not Now', style: 'cancel' },
-            // /payout is in the gated-off Payments module; only offer it when
-            // payments is enabled for this build/viewer.
-            ...(can('viewPayments')
+            ...(can('manageSettings')
               ? [{ text: 'Set Up Payouts', onPress: () => router.push('/payout') }]
               : []),
           ],

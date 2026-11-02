@@ -53,6 +53,7 @@ import { ScreenHeader } from '@/components/screen-header';
 import { OptionSheet } from '@/components/sheets/option-sheet';
 import { ConsentQRCard } from '@/components/sms/consent-qr-card';
 import { ThemedButton, ThemedIconTile, ThemedSectionHeader } from '@/components/themed';
+import { usePermissions } from '@/context/permissions-store';
 import { useServices } from '@/context/services-store';
 import { useSession } from '@/context/session';
 import { useStaff } from '@/context/staff-store';
@@ -308,6 +309,7 @@ function ManageView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [servicesReady]);
 
+  const { can } = usePermissions();
   const payouts = useQuery({
     queryKey: ['stripe-connect', 'payouts-approved'],
     queryFn: payoutsApproved,
@@ -607,7 +609,7 @@ function ManageView({
                   {approved === undefined ? 'Checking your payout status…' : 'Set up Stripe payouts first to collect deposits.'}
                 </Text>
               </View>
-              {approved === false ? (
+              {approved === false && can('manageSettings') ? (
                 <ThemedButton title="Set Up Payouts" kind="accent" icon="creditcard.fill" onPress={() => router.push('/payout')} />
               ) : null}
             </>
