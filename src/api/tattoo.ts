@@ -24,6 +24,7 @@ export async function getTattooSettings(): Promise<TattooSettings> {
     depositCents: d.depositCents ?? 0,
     consultationServiceId: d.consultationServiceId ?? null,
     styles: d.styles ?? [],
+    bookingPageHiddenStaffIds: d.bookingPageHiddenStaffIds ?? [],
   };
 }
 
@@ -44,22 +45,27 @@ export function updateTattooIntake(id: string, body: TattooIntakeUpdate): Promis
   return api.patch<TattooIntake>(`/tattoo/intakes/${encodeURIComponent(id)}`, body);
 }
 
+/** Older items have no `showOnBookingPage`; missing means not picked. */
+function toPortfolioItem(raw: TattooPortfolioItem): TattooPortfolioItem {
+  return { ...raw, showOnBookingPage: raw.showOnBookingPage === true };
+}
+
 /** Omit `staffId` for the whole shop. */
 export async function listTattooPortfolio(staffId?: string): Promise<TattooPortfolioItem[]> {
   const res = await api.get<{ items?: TattooPortfolioItem[] }>('/tattoo/portfolio', { staffId });
-  return res.items ?? [];
+  return (res.items ?? []).map(toPortfolioItem);
 }
 
-export function addTattooPortfolioItem(body: {
+export async function addTattooPortfolioItem(body: {
   staffId: string;
   imageBase64: string;
   caption?: string;
 }): Promise<TattooPortfolioItem> {
-  return api.post<TattooPortfolioItem>('/tattoo/portfolio', body);
+  return toPortfolioItem(await api.post<TattooPortfolioItem>('/tattoo/portfolio', body));
 }
 
-export function updateTattooPortfolioItem(id: string, body: TattooPortfolioUpdate): Promise<TattooPortfolioItem> {
-  return api.patch<TattooPortfolioItem>(`/tattoo/portfolio/${encodeURIComponent(id)}`, body);
+export async function updateTattooPortfolioItem(id: string, body: TattooPortfolioUpdate): Promise<TattooPortfolioItem> {
+  return toPortfolioItem(await api.patch<TattooPortfolioItem>(`/tattoo/portfolio/${encodeURIComponent(id)}`, body));
 }
 
 export function deleteTattooPortfolioItem(id: string): Promise<void> {

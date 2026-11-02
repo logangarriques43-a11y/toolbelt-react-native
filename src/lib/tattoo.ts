@@ -127,6 +127,15 @@ export function base64ByteLength(base64: string): number {
   return Math.floor((base64.length * 3) / 4) - padding;
 }
 
+/** Most photos one artist can have picked for the public booking page. */
+export const MAX_BOOKING_PAGE_PHOTOS = 9;
+
+/** The booking page's hidden-artist list after showing or hiding one artist. */
+export function withArtistOnBookingPage(hiddenStaffIds: readonly string[], staffId: string, shown: boolean): string[] {
+  const rest = hiddenStaffIds.filter((id) => id !== staffId);
+  return shown ? rest : [...rest, staffId];
+}
+
 /** Newest first. Records with no date go last. */
 export function newestFirst<T extends { createdAt: string | null }>(items: readonly T[]): T[] {
   const time = (item: T) => (item.createdAt ? new Date(item.createdAt).getTime() : 0);
