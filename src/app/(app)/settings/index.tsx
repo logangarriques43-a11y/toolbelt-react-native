@@ -154,11 +154,16 @@ export default function Settings() {
 
           {/* Payments & Billing */}
           <Section title="Payments & Billing">
-            {/* Payout opens the Payments module — hidden while payments is gated off. */}
+            {/* Payment Methods belongs to the Payments module. Payout Settings stays:
+                invoice Pay Now links and deposits need Stripe Connect. */}
             {can('viewPayments') ? (
               <>
                 <Row icon="creditcard.fill" title="Payment Methods" onPress={() => router.push('/payout')} />
                 <Divider />
+              </>
+            ) : null}
+            {can('manageSettings') ? (
+              <>
                 <Row icon="banknote.fill" title="Payout Settings" onPress={() => router.push('/payout')} />
                 <Divider />
               </>
