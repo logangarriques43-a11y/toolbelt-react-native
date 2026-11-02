@@ -10,7 +10,8 @@
  * Once set up it's the management screen: live toggle, booking link (copy /
  * Edit URL), Website Appearance (name, welcome, brand colours, logo, font,
  * advance booking, minimum notice), Bookable Services, Require Deposit (only
- * once Stripe payouts are approved), the SMS-consent QR, and copy / share /
+ * once Stripe payouts are approved; a percent, or a flat amount that replaces
+ * it), the SMS-consent QR, and copy / share /
  * preview actions. Appearance and service edits collect in a local draft;
  * the sticky "Apply Changes to Site" bar pushes them (config + services +
  * staff + timezone) in one POST. The live toggle, URL and logo apply
@@ -57,8 +58,11 @@ import { usePermissions } from '@/context/permissions-store';
 import { useServices } from '@/context/services-store';
 import { useSession } from '@/context/session';
 import { useStaff } from '@/context/staff-store';
-import { ApiError } from '@/lib/api-client';
+import { ApiError, errorMessage } from '@/lib/api-client';
+import { fullMoney } from '@/lib/compact-money';
+import { centsToDollarInput, parseDepositDollars } from '@/lib/tattoo';
 import { priceDisplay } from '@/models/service';
+import { iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
 const QUERY_KEY = ['booking-page'] as const;
@@ -67,8 +71,6 @@ const NOTICE_OPTIONS = [1, 2, 4, 12, 24, 48].map((h) => ({ label: `${h} hour${h 
 const DEPOSIT_OPTIONS = [25, 50, 75, 100];
 const MAX_LOGO_BYTES = 5 * 1024 * 1024;
 
-const errMsg = (e: unknown, fallback: string) =>
-  e instanceof ApiError ? e.message : e instanceof Error ? e.message : fallback;
 
 export default function OnlineBooking() {
   const theme = useAppTheme();
@@ -90,7 +92,7 @@ export default function OnlineBooking() {
         ) : error || !saved ? (
           <View style={styles.center}>
             <Text style={[styles.errorText, { color: theme.secondaryText }]}>
-              {errMsg(error, "Couldn't load your booking page.")}
+              {errorMessage(error, "Couldn't load your booking page.")}
             </Text>
             <ThemedButton title="Try Again" kind="quiet" onPress={() => refetch()} />
           </View>
@@ -180,7 +182,7 @@ function SetupWizard({
       setSaved(result);
     } catch (e) {
       const conflict = e instanceof ApiError && e.status === 409;
-      Alert.alert(conflict ? 'URL Taken' : "Couldn't Create Website", errMsg(e, 'Please try again.'), [
+      Alert.alert(conflict ? 'URL Taken' : "Couldn't Create Website", errorMessage(e, 'Please try again.'), [
         ...(conflict ? [{ text: 'Edit URL', onPress: () => setEditSlug(true) }] : []),
         { text: 'OK' },
       ]);
@@ -292,6 +294,7 @@ function ManageView({
   const [togglingLive, setTogglingLive] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [toast, setToast] = useState<{ message: string; error?: boolean } | null>(null);
+  const [flatDeposit, setFlatDeposit] = useState(centsToDollarInput(saved.depositCents ?? 0));
   const [sheet, setSheet] = useState<'slug' | 'services' | 'advance' | 'notice' | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -333,7 +336,13 @@ function ManageView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [servicesReady]);
 
-  const dirty = JSON.stringify(draft) !== JSON.stringify(saved);
+  // depositCents is compared apart: it's undefined until the owner edits it
+  // when the server's GET doesn't report it, and that isn't a pending change.
+  const withoutFlat = (c: BookingPageConfig) => JSON.stringify({ ...c, depositCents: undefined });
+  const flatEdited = draft.depositCents !== undefined && draft.depositCents !== saved.depositCents;
+  const dirty = flatEdited || withoutFlat(draft) !== withoutFlat(saved);
+  const flatParsed = parseDepositDollars(flatDeposit);
+  const flatError = flatParsed.ok ? null : flatParsed.error;
   const link = bookingURL(saved.slug);
   const shown = bookableServices(services, draft.enabledServiceIds);
   const set = <K extends keyof BookingPageConfig>(key: K, value: BookingPageConfig[K]) =>
@@ -355,7 +364,20 @@ function ManageView({
     setDraft((d) => ({ ...d, ...patch }));
   };
 
+  const changeFlatDeposit = (text: string) => {
+    setFlatDeposit(text);
+    const parsed = parseDepositDollars(text);
+    if (!parsed.ok) return;
+    // Blank with nothing reported stays unset, so the stored amount is kept.
+    const untouched = text.trim() === '' && saved.depositCents === undefined;
+    set('depositCents', untouched ? undefined : parsed.cents);
+  };
+
   const apply = async () => {
+    if (draft.requireDeposit && flatError) {
+      showToast(flatError, true);
+      return;
+    }
     setApplying(true);
     try {
       const result = await fullPush(draft);
@@ -363,7 +385,7 @@ function ManageView({
       setDraft(result);
       showToast('Site updated!');
     } catch (e) {
-      showToast(errMsg(e, "Couldn't update — check your connection"), true);
+      showToast(errorMessage(e, "Couldn't update — check your connection"), true);
     } finally {
       setApplying(false);
     }
@@ -374,7 +396,7 @@ function ManageView({
     try {
       await quickPush({ isEnabled: on });
     } catch (e) {
-      Alert.alert("Couldn't Update", errMsg(e, 'Please try again.'));
+      Alert.alert("Couldn't Update", errorMessage(e, 'Please try again.'));
     } finally {
       setTogglingLive(false);
     }
@@ -412,7 +434,7 @@ function ManageView({
       await quickPush({ logoURL: url });
       showToast('Logo updated!');
     } catch (e) {
-      Alert.alert("Couldn't Upload Logo", errMsg(e, 'Please try again.'));
+      Alert.alert("Couldn't Upload Logo", errorMessage(e, 'Please try again.'));
     } finally {
       setUploading(false);
     }
@@ -429,7 +451,7 @@ function ManageView({
           try {
             await quickPush({ logoURL: null });
           } catch (e) {
-            Alert.alert("Couldn't Remove Logo", errMsg(e, 'Please try again.'));
+            Alert.alert("Couldn't Remove Logo", errorMessage(e, 'Please try again.'));
           } finally {
             setUploading(false);
           }
@@ -633,9 +655,27 @@ function ManageView({
                 })}
               </View>
               <Text style={[styles.sub, { color: theme.secondaryText }]}>
-                {draft.depositPercent === 100
-                  ? 'Full payment collected upfront'
-                  : `${draft.depositPercent}% of service price collected at booking`}
+                {(draft.depositCents ?? 0) > 0
+                  ? `${fullMoney((draft.depositCents ?? 0) / 100)} flat deposit collected at booking`
+                  : draft.depositPercent === 100
+                    ? 'Full payment collected upfront'
+                    : `${draft.depositPercent}% of service price collected at booking`}
+              </Text>
+              <Text style={[styles.label, { color: theme.secondaryText }]}>Flat amount (optional)</Text>
+              <View style={[styles.inputRow, { backgroundColor: theme.inputBackground, borderRadius: theme.isEditorial ? 2 : 12 }]}>
+                <Text style={[styles.sub, { color: theme.secondaryText }]}>$</Text>
+                <TextInput
+                  value={flatDeposit}
+                  onChangeText={changeFlatDeposit}
+                  placeholder="0.00"
+                  placeholderTextColor={theme.tertiaryText}
+                  keyboardType="decimal-pad"
+                  accessibilityLabel="Flat deposit in dollars"
+                  style={[styles.input, { color: theme.primaryText }]}
+                />
+              </View>
+              <Text style={[styles.sub, { color: flatError ? iOSColors.red : theme.secondaryText }]}>
+                {flatError ?? 'A flat amount replaces the percent. Leave blank to use the percent.'}
               </Text>
             </>
           ) : null}
@@ -700,7 +740,7 @@ function ManageView({
             showToast('Booking URL updated!');
             return null;
           } catch (e) {
-            return errMsg(e, "Couldn't save the URL.");
+            return errorMessage(e, "Couldn't save the URL.");
           }
         }}
       />

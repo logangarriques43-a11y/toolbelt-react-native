@@ -22,10 +22,20 @@ export interface SMSConversation {
   lastMessageAt?: string;
 }
 
+/** A photo on a message. `url` is a signed link (15 minutes) or null. */
+export interface SMSMedia {
+  id: string;
+  status: string;
+  contentType?: string | null;
+  url: string | null;
+}
+
 export interface SMSMessage {
   id: string;
   direction: 'inbound' | 'outbound';
   body: string;
+  /** Older servers and optimistic replies have none. */
+  media?: SMSMedia[];
   aiIntentDetected?: string;
   aiConfidence?: number;
   status: string;

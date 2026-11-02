@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Icon } from '@/components/icon';
 import { ThemedIconTile } from '@/components/themed';
 import { useSession } from '@/context/session';
+import { useTattooEntry } from '@/hooks/use-tattoo';
 import { FeatureFlags } from '@/lib/feature-flags';
 import { displayNameFromEmail } from '@/lib/name';
 import { clientInitials } from '@/models/client';
@@ -23,8 +24,9 @@ export function HamburgerMenu({ visible, onClose }: { visible: boolean; onClose:
   const theme = useAppTheme();
   const router = useRouter();
   const { account, signOut } = useSession();
+  const tattoo = useTattooEntry();
 
-  const go = (path: '/appointments/search' | '/clients' | '/services' | '/staff' | '/import-data' | '/messages' | '/sms-conversations' | '/settings' | '/online-booking') => {
+  const go = (path: '/appointments/search' | '/clients' | '/services' | '/staff' | '/import-data' | '/messages' | '/sms-conversations' | '/settings' | '/online-booking' | '/tattoo') => {
     onClose();
     router.push(path);
   };
@@ -61,6 +63,7 @@ export function HamburgerMenu({ visible, onClose }: { visible: boolean; onClose:
               <Item icon="bubble.left.and.text.bubble.right.fill" title="AI Texting" onPress={() => go('/sms-conversations')} />
               <Item icon="person.badge.key.fill" title="Staff" onPress={() => go('/staff')} />
               <Item icon="globe" title="Online Booking" onPress={() => go('/online-booking')} />
+              {tattoo.visible ? <Item icon="paintbrush.fill" title="Tattoo Studio" onPress={() => go('/tattoo')} /> : null}
               {/* Waitlist — hidden for v1.0 (see FeatureFlags). */}
               {FeatureFlags.waitlist ? <Item icon="list.number" title="Waitlist" onPress={() => stub('Waitlist')} /> : null}
               <Item icon="square.and.arrow.down.on.square" title="Import Data" onPress={() => go('/import-data')} />

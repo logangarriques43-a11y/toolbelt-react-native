@@ -12,6 +12,11 @@
 
 const usd = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
 
+/** Full USD: 1234.5 → "$1,234.50". */
+export function fullMoney(value: number): string {
+  return usd.format(value);
+}
+
 /** Rounds to 2 decimals and strips trailing zeros: 1.00 → "1", 1.10 → "1.1". */
 function trimmedDecimals(value: number): string {
   const rounded = Math.round(value * 100) / 100;

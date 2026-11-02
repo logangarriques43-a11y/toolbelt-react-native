@@ -30,6 +30,12 @@ export interface BookingPageConfig {
   welcomeMessage: string;
   requireDeposit: boolean;
   depositPercent: number;
+  /**
+   * Flat deposit in integer cents. Above 0 it replaces `depositPercent`.
+   * Undefined means the server didn't report it: leave it undefined so a save
+   * omits the field and the stored amount is kept.
+   */
+  depositCents?: number;
   /** Empty = every service available for online booking. */
   enabledServiceIds: string[];
   accentColorHex: string;
@@ -103,6 +109,7 @@ function fromDTO(d: Partial<BookingPageConfig> | null | undefined): BookingPageC
     colorMode: MODES.includes(c.colorMode) ? c.colorMode : 'single',
     fontFamily: FONTS.includes(c.fontFamily) ? c.fontFamily : 'modern',
     logoURL: c.logoURL ?? null,
+    depositCents: Number.isInteger(c.depositCents) ? c.depositCents : undefined,
   };
 }
 

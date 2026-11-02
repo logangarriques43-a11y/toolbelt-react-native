@@ -23,6 +23,7 @@ import { BACKEND_ORIGIN } from '@/config/api';
 import { useBusinessSettings } from '@/context/business-settings-store';
 import { usePermissions } from '@/context/permissions-store';
 import { useSession } from '@/context/session';
+import { useTattooEntry } from '@/hooks/use-tattoo';
 import { ApiError } from '@/lib/api-client';
 import { reminderTimingLabel } from '@/models/business-settings';
 import { LOOK_SWATCHES, PALETTES, iOSColors, type LookId, type ThemeMode } from '@/theme/tokens';
@@ -36,6 +37,7 @@ export default function Settings() {
   const { signOut } = useSession();
   const { can } = usePermissions();
   const s = useBusinessSettings();
+  const tattoo = useTattooEntry();
   const [deleting, setDeleting] = useState(false);
 
   const open = (path: string) => WebBrowser.openBrowserAsync(`${BACKEND_ORIGIN}/${path}`);
@@ -128,6 +130,12 @@ export default function Settings() {
             <Row icon="mappin.circle.fill" title="Business Address" color={iOSColors.red} onPress={() => router.push('/settings/business-address')} />
             <Divider />
             <Row icon="globe" title="Online Booking Page" onPress={() => router.push('/online-booking')} />
+            {tattoo.visible ? (
+              <>
+                <Divider />
+                <Row icon="paintbrush.fill" title="Tattoo Studio" onPress={() => router.push('/tattoo')} />
+              </>
+            ) : null}
           </Section>
 
           {/* Notifications */}

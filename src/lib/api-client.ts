@@ -26,6 +26,11 @@ export class ApiError extends Error {
   }
 }
 
+/** The server's message for an API failure, else `fallback`. */
+export function errorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback;
+}
+
 type TwoFactorListener = (error: ApiError) => void;
 const twoFactorListeners = new Set<TwoFactorListener>();
 
