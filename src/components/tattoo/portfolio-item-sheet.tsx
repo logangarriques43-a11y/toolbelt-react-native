@@ -1,10 +1,10 @@
 /**
  * PortfolioItemSheet — one portfolio piece. Staff see the photo and its styles;
- * owners can also change the styles and delete the piece.
+ * owners can also change the styles, pick it for the booking page and delete it.
  */
 
 import { useEffect, useState } from 'react';
-import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 
 import { deleteTattooPortfolioItem, updateTattooPortfolioItem } from '@/api/tattoo';
 import { SignedPhoto } from '@/components/signed-photo';
@@ -20,6 +20,7 @@ export function PortfolioItemSheet({
   styleOptions,
   canEdit,
   onClose,
+  onPatched,
   onSaved,
   onDeleted,
 }: {
@@ -27,12 +28,15 @@ export function PortfolioItemSheet({
   styleOptions: TattooStyle[];
   canEdit: boolean;
   onClose: () => void;
+  /** Changes one cached piece in place, without closing the sheet. */
+  onPatched: (id: string, patch: Partial<TattooPortfolioItem>) => void;
   onSaved: (item: TattooPortfolioItem) => void;
   onDeleted: (id: string) => void;
 }) {
   const theme = useAppTheme();
   const [tags, setTags] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
+  const [savingShown, setSavingShown] = useState(false);
 
   const itemId = item?.id;
   const savedTags = item?.styleTags;
@@ -56,6 +60,24 @@ export function PortfolioItemSheet({
       Alert.alert("Couldn't save styles", errorMessage(e, 'Please try again.'));
     } finally {
       setBusy(false);
+    }
+  };
+
+  // Saves at once, unlike styles. Optimistic, and rolled back if refused
+  // (the server allows 9 picks per artist and says so when that's hit).
+  const setShown = async (value: boolean) => {
+    const id = item.id;
+    const previous = item.showOnBookingPage;
+    setSavingShown(true);
+    onPatched(id, { showOnBookingPage: value });
+    try {
+      const next = await updateTattooPortfolioItem(id, { showOnBookingPage: value });
+      onPatched(id, { showOnBookingPage: next.showOnBookingPage });
+    } catch (e) {
+      onPatched(id, { showOnBookingPage: previous });
+      Alert.alert("Couldn't update booking page", errorMessage(e, 'Please try again.'));
+    } finally {
+      setSavingShown(false);
     }
   };
 
@@ -122,6 +144,19 @@ export function PortfolioItemSheet({
           </View>
 
           {canEdit ? (
+            <View style={styles.switchRow}>
+              <Text style={[styles.switchTitle, { color: theme.primaryText }]}>Show on booking page</Text>
+              <Switch
+                value={item.showOnBookingPage}
+                disabled={savingShown || busy}
+                onValueChange={setShown}
+                accessibilityLabel="Show on booking page"
+                trackColor={{ true: theme.live, false: theme.inputBackground }}
+              />
+            </View>
+          ) : null}
+
+          {canEdit ? (
             <View style={styles.actions}>
               <ThemedButton title="Save styles" kind="accent" loading={busy} disabled={!changed} onPress={save} />
               <Pressable onPress={confirmDelete} disabled={busy} style={styles.delete} hitSlop={8}>
@@ -148,6 +183,8 @@ const styles = StyleSheet.create({
   tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   tag: { paddingHorizontal: 12, paddingVertical: 7 },
   tagText: { fontSize: 13, fontWeight: '600' },
+  switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginTop: 6 },
+  switchTitle: { flex: 1, fontSize: 15, fontWeight: '600' },
   actions: { gap: 14, marginTop: 8 },
   delete: { alignItems: 'center', paddingVertical: 8 },
   deleteText: { fontSize: 15, fontWeight: '600' },

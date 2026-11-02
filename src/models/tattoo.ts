@@ -20,6 +20,8 @@ export interface TattooSettings {
   depositCents: number;
   consultationServiceId: string | null;
   styles: TattooStyle[];
+  /** Server staff ids whose photos the public booking page leaves out. Empty = every artist shows. */
+  bookingPageHiddenStaffIds: string[];
 }
 
 /** PUT /tattoo/settings answers without `styles`. */
@@ -28,6 +30,8 @@ export type TattooSettingsUpdateResult = Omit<TattooSettings, 'styles'>;
 export interface TattooSettingsUpdate {
   enabled?: boolean;
   depositCents?: number;
+  /** The whole new list; the server replaces the old one. */
+  bookingPageHiddenStaffIds?: string[];
 }
 
 export interface TattooPhotoAnalysis {
@@ -83,10 +87,14 @@ export interface TattooPortfolioItem {
   styleTags: string[];
   tagsSource: TattooTagsSource;
   caption: string;
+  /** Picked by the owner for the public booking page (up to 9 per artist). */
+  showOnBookingPage: boolean;
   createdAt: string | null;
 }
 
 export interface TattooPortfolioUpdate {
   styleTags?: string[];
   caption?: string;
+  /** Owner only. The server refuses a 10th pick for one artist with a 409. */
+  showOnBookingPage?: boolean;
 }
