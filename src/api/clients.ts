@@ -8,6 +8,7 @@
  */
 
 import { api } from '@/lib/api-client';
+import type { DeltaSource } from '@/lib/delta-sync';
 import type { Client } from '@/models/client';
 
 /** Wire shape (matches Swift ClientBackendDTO / backend req.body fields). */
@@ -63,10 +64,14 @@ function toDTO(c: Omit<Client, 'id'>): ClientDTO {
   };
 }
 
-export async function listClients(): Promise<Client[]> {
-  const dtos = await api.get<ClientDTO[]>('/clients');
+/** All clients, or with `since` only those changed after it (delta sync). */
+export async function listClients(since?: string): Promise<Client[]> {
+  const dtos = await api.get<ClientDTO[]>('/clients', { since });
   return (dtos ?? []).map(fromDTO);
 }
+
+/** Delta-sync source for the client list (see src/lib/delta-sync.ts). */
+export const clientsSync: DeltaSource<Client> = { list: listClients, deletionsPath: '/clients/deletions' };
 
 export async function createClient(input: Omit<Client, 'id'>): Promise<Client> {
   const dto = await api.post<ClientDTO>('/clients', toDTO(input));

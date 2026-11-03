@@ -5,7 +5,7 @@
 
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DashboardGradient } from '@/components/dashboard-gradient';
@@ -60,13 +60,17 @@ export default function ClientsScreen() {
             </Text>
           </View>
         ) : (
-          <ScrollView contentContainerStyle={styles.list}>
-            {filtered.map((client) => (
-              <SwipeToDelete key={client.id} onDelete={() => deleteClient(client.id)}>
+          <FlatList
+            data={filtered}
+            keyExtractor={(client) => client.id}
+            contentContainerStyle={styles.list}
+            keyboardShouldPersistTaps="handled"
+            renderItem={({ item: client }) => (
+              <SwipeToDelete onDelete={() => deleteClient(client.id)}>
                 <ClientCard client={client} onPress={() => router.push(`/clients/${client.id}`)} />
               </SwipeToDelete>
-            ))}
-          </ScrollView>
+            )}
+          />
         )}
 
         <Fab onPress={() => router.push('/clients/new')} />

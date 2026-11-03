@@ -11,6 +11,7 @@
  */
 
 import { api } from '@/lib/api-client';
+import type { DeltaSource } from '@/lib/delta-sync';
 import type {
   Appointment,
   AppointmentStatus,
@@ -96,10 +97,14 @@ function toDTO(a: Omit<Appointment, 'id'>): AppointmentDTO {
   };
 }
 
-export async function listAppointments(): Promise<Appointment[]> {
-  const dtos = await api.get<AppointmentDTO[]>('/appointments');
+/** All appointments, or with `since` only those changed after it (delta sync). */
+export async function listAppointments(since?: string): Promise<Appointment[]> {
+  const dtos = await api.get<AppointmentDTO[]>('/appointments', { since });
   return dtos.map(fromDTO);
 }
+
+/** Delta-sync source for the appointment list (see src/lib/delta-sync.ts). */
+export const appointmentsSync: DeltaSource<Appointment> = { list: listAppointments, deletionsPath: '/appointments/deletions' };
 
 export async function createAppointment(input: Omit<Appointment, 'id'>): Promise<Appointment> {
   const dto = await api.post<AppointmentDTO>('/appointments', toDTO(input));

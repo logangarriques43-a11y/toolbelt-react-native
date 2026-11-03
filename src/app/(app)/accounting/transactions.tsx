@@ -3,7 +3,7 @@
  * Full list (newest first) with swipe-to-delete.
  */
 
-import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, FlatList, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { TransactionRow } from '@/components/accounting/transaction-row';
@@ -37,13 +37,16 @@ export default function Transactions() {
             <Text style={[styles.emptyText, { color: theme.secondaryText }]}>No transactions yet.</Text>
           </View>
         ) : (
-          <ScrollView contentContainerStyle={styles.list}>
-            {sorted.map((t) => (
-              <SwipeToDelete key={t.id} onDelete={() => confirmDelete(t.id, t.title)}>
+          <FlatList
+            data={sorted}
+            keyExtractor={(t) => t.id}
+            contentContainerStyle={styles.list}
+            renderItem={({ item: t }) => (
+              <SwipeToDelete onDelete={() => confirmDelete(t.id, t.title)}>
                 <TransactionRow transaction={t} />
               </SwipeToDelete>
-            ))}
-          </ScrollView>
+            )}
+          />
         )}
       </SafeAreaView>
     </DashboardGradient>

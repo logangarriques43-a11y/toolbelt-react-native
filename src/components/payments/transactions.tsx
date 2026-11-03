@@ -9,7 +9,7 @@
 import type { SFSymbol } from 'expo-symbols';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, ScrollView, SectionList, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DashboardGradient } from '@/components/dashboard-gradient';
@@ -118,7 +118,7 @@ export function PaymentTransactions() {
     map.get(key)!.items.push(u);
   }
   const groups = [...map.entries()]
-    .map(([key, v]) => ({ key, ms: v.ms, items: v.items.sort((a, b) => uniMs(a) - uniMs(b)) }))
+    .map(([key, v]) => ({ key, ms: v.ms, data: v.items.sort((a, b) => uniMs(a) - uniMs(b)) }))
     .sort((a, b) => (filter === 'Upcoming' ? a.ms - b.ms : b.ms - a.ms));
 
   const todayRevenue =
@@ -156,38 +156,43 @@ export function PaymentTransactions() {
       {filtered.length === 0 ? (
         <EmptyState filter={filter} />
       ) : (
-        <ScrollView contentContainerStyle={styles.listPad}>
-          {groups.map((g) => (
-            <View key={g.key}>
-              <View style={styles.sectionHeader}>
-                <View style={[styles.sectionDot, { backgroundColor: theme.accent }]} />
-                <Text style={[styles.sectionLabel, { color: theme.secondaryText }]}>{g.key}</Text>
-                <View style={[styles.sectionTotal, { backgroundColor: theme.accentSoft }]}>
-                  <Text style={[styles.sectionTotalText, { color: theme.accent }]}>
-                    {money0(g.items.reduce((s, u) => s + uniAmount(u), 0))}
-                  </Text>
-                </View>
-                <View style={[styles.sectionRule, { backgroundColor: theme.divider }]} />
+        <SectionList
+          sections={groups}
+          keyExtractor={(u) => uniId(u)}
+          contentContainerStyle={styles.listPad}
+          stickySectionHeadersEnabled={false}
+          renderSectionHeader={({ section: g }) => (
+            <View style={styles.sectionHeader}>
+              <View style={[styles.sectionDot, { backgroundColor: theme.accent }]} />
+              <Text style={[styles.sectionLabel, { color: theme.secondaryText }]}>{g.key}</Text>
+              <View style={[styles.sectionTotal, { backgroundColor: theme.accentSoft }]}>
+                <Text style={[styles.sectionTotalText, { color: theme.accent }]}>
+                  {money0(g.data.reduce((s, u) => s + uniAmount(u), 0))}
+                </Text>
               </View>
-              <View style={styles.cards}>
-                {g.items.map((u) => (
-                  <Pressable key={uniId(u)} onPress={() => setDetail(u)}>
-                    {u.kind === 'appointment' ? (
-                      <AppointmentCard appt={u.appt} isPast={new Date(u.appt.endTime).getTime() < now && !isToday(u.appt.startTime)} />
-                    ) : (
-                      <SaleCard sale={u.sale} />
-                    )}
-                  </Pressable>
-                ))}
-              </View>
+              <View style={[styles.sectionRule, { backgroundColor: theme.divider }]} />
             </View>
-          ))}
-        </ScrollView>
+          )}
+          ItemSeparatorComponent={CardGap}
+          renderItem={({ item: u }) => (
+            <Pressable style={styles.cardRow} onPress={() => setDetail(u)}>
+              {u.kind === 'appointment' ? (
+                <AppointmentCard appt={u.appt} isPast={new Date(u.appt.endTime).getTime() < now && !isToday(u.appt.startTime)} />
+              ) : (
+                <SaleCard sale={u.sale} />
+              )}
+            </Pressable>
+          )}
+        />
       )}
 
       <TransactionDetailSheet txn={detail} onClose={() => setDetail(null)} />
     </View>
   );
+}
+
+function CardGap() {
+  return <View style={styles.cardGap} />;
 }
 
 function SummaryPill({ label, amount, count, color }: { label: string; amount: number; count: number; color: string }) {
@@ -511,7 +516,8 @@ const styles = StyleSheet.create({
   sectionTotal: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10 },
   sectionTotalText: { fontSize: 12, fontWeight: '700' },
   sectionRule: { flex: 1, height: 1 },
-  cards: { gap: 8, paddingHorizontal: 16 },
+  cardRow: { paddingHorizontal: 16 },
+  cardGap: { height: 8 },
   // Card
   card: { flexDirection: 'row', overflow: 'hidden' },
   accent: { width: 5, alignSelf: 'stretch', marginVertical: 6, borderRadius: 3 },

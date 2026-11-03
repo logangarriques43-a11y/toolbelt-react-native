@@ -17,10 +17,11 @@ import { Alert } from 'react-native';
 import {
   createAppointment,
   deleteAppointment as deleteAppointmentApi,
-  listAppointments,
+  appointmentsSync,
   updateAppointment as updateAppointmentApi,
 } from '@/api/appointments';
 import { ApiError } from '@/lib/api-client';
+import { deltaQueryFn, replaceOptimistic } from '@/lib/delta-sync';
 import { uuid } from '@/lib/id';
 import type { Appointment } from '@/models/appointment';
 
@@ -57,7 +58,10 @@ function alertFailure(action: string, err: unknown) {
 
 export function AppointmentsProvider({ children }: { children: ReactNode }) {
   const qc = useQueryClient();
-  const query = useQuery({ queryKey: APPOINTMENTS_QUERY_KEY, queryFn: listAppointments });
+  const query = useQuery({
+    queryKey: APPOINTMENTS_QUERY_KEY,
+    queryFn: deltaQueryFn(qc, APPOINTMENTS_QUERY_KEY, appointmentsSync),
+  });
 
   const read = () => qc.getQueryData<Appointment[]>(APPOINTMENTS_QUERY_KEY) ?? [];
   const write = (next: Appointment[]) => qc.setQueryData(APPOINTMENTS_QUERY_KEY, next);
@@ -77,7 +81,7 @@ export function AppointmentsProvider({ children }: { children: ReactNode }) {
       alertFailure('save', err);
     },
     onSuccess: (saved, _input, ctx) => {
-      write(read().map((a) => (a.id === ctx?.tempId ? saved : a)));
+      if (ctx) write(replaceOptimistic(read(), ctx.tempId, saved));
     },
   });
 

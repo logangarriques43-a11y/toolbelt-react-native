@@ -1,7 +1,7 @@
 /**
  * Clients store — now backed by the real backend via React Query (was in-memory).
  *
- * The list comes from `GET /clients` (cached, refetched on invalidation); create/
+ * The list comes from `GET /clients` (cached, delta-synced on invalidation; see src/lib/delta-sync.ts); create/
  * update/delete POST/PUT/DELETE and invalidate the list. The public API is the
  * same as before except the mutations are async (they hit the network), so
  * callers that need the created client `await addClient(...)`.
@@ -10,7 +10,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createContext, useContext, useMemo, type ReactNode } from 'react';
 
-import { createClient, deleteClient as apiDeleteClient, listClients, updateClient as apiUpdateClient } from '@/api/clients';
+import { clientsSync, createClient, deleteClient as apiDeleteClient, updateClient as apiUpdateClient } from '@/api/clients';
+import { deltaQueryFn } from '@/lib/delta-sync';
 import type { Client } from '@/models/client';
 
 export const CLIENTS_QUERY_KEY = ['clients'] as const;
@@ -31,7 +32,10 @@ const ClientsContext = createContext<ClientsStore | null>(null);
 
 export function ClientsProvider({ children }: { children: ReactNode }) {
   const qc = useQueryClient();
-  const { data, isLoading, error } = useQuery({ queryKey: CLIENTS_QUERY_KEY, queryFn: listClients });
+  const { data, isLoading, error } = useQuery({
+    queryKey: CLIENTS_QUERY_KEY,
+    queryFn: deltaQueryFn(qc, CLIENTS_QUERY_KEY, clientsSync),
+  });
   const clients = useMemo(() => data ?? [], [data]);
 
   const invalidate = () => qc.invalidateQueries({ queryKey: CLIENTS_QUERY_KEY });

@@ -21,12 +21,13 @@ import { Alert } from 'react-native';
 import {
   createInvoice,
   deleteInvoice as deleteInvoiceApi,
-  listInvoices,
+  invoicesSync,
   sendInvoice as sendInvoiceApi,
   updateInvoice as updateInvoiceApi,
   type SendInvoiceResult,
 } from '@/api/invoices';
 import { ApiError } from '@/lib/api-client';
+import { deltaQueryFn, replaceOptimistic } from '@/lib/delta-sync';
 import { uuid } from '@/lib/id';
 import type { Invoice, InvoiceStatus } from '@/models/invoice';
 
@@ -57,7 +58,10 @@ function alertFailure(action: string, err: unknown) {
 
 export function InvoicesProvider({ children }: { children: ReactNode }) {
   const qc = useQueryClient();
-  const query = useQuery({ queryKey: INVOICES_QUERY_KEY, queryFn: listInvoices });
+  const query = useQuery({
+    queryKey: INVOICES_QUERY_KEY,
+    queryFn: deltaQueryFn(qc, INVOICES_QUERY_KEY, invoicesSync),
+  });
 
   const read = () => qc.getQueryData<Invoice[]>(INVOICES_QUERY_KEY) ?? [];
   const write = (next: Invoice[]) => qc.setQueryData(INVOICES_QUERY_KEY, next);
@@ -75,7 +79,8 @@ export function InvoicesProvider({ children }: { children: ReactNode }) {
       alertFailure('save', err);
     },
     onSuccess: (saved, vars) => {
-      write(read().map((i) => (i.id === vars.tempId ? { ...i, id: saved.id } : i)));
+      const local = read().find((i) => i.id === vars.tempId);
+      if (local) write(replaceOptimistic(read(), vars.tempId, { ...local, id: saved.id }));
     },
   });
 
