@@ -1,27 +1,47 @@
 /**
  * AI Texting setup — port of SMSSetupView.swift.
- * intro → area code → provisioning → success / already-set-up. Provisions a (fake)
- * business number into the stub store; real Twilio provisioning is deferred.
+ * intro → area code → provisioning → success / setting up / already set up.
+ *
+ * The number is real: `POST /sms-number/provision` buys it for a business with
+ * an active AI SMS plan (Google Play via RevenueCat, or the App Store). No plan
+ * answers 402, which opens the paywall here; a purchase then provisions with
+ * the area code already chosen. Afterwards the number is read from
+ * `/phone-numbers` through the SMS store.
  */
 
 import { useRouter } from 'expo-router';
 import type { SFSymbol } from 'expo-symbols';
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { isNoSubscriptionError, provisionSmsNumber } from '@/api/sms';
 import { ConsentQRCard } from '@/components/sms/consent-qr-card';
+import { AiSmsPaywall } from '@/components/sms/ai-sms-paywall';
 import { DashboardGradient } from '@/components/dashboard-gradient';
 import { Icon } from '@/components/icon';
 import { KeyboardAwareForm } from '@/components/keyboard-aware-form';
 import { ThemedButton, ThemedIconTile } from '@/components/themed';
 import { useSession } from '@/context/session';
 import { useSMS } from '@/context/sms-store';
+import { errorMessage } from '@/lib/api-client';
 import { formatPhone, POPULAR_AREA_CODES } from '@/models/sms';
 import { iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
-type Step = 'intro' | 'areaCode' | 'provisioning' | 'success' | 'alreadySetUp';
+type Step = 'intro' | 'areaCode' | 'provisioning' | 'paywall' | 'settingUp' | 'success' | 'alreadySetUp';
+
+/**
+ * Right after a Play purchase the backend may not have the RevenueCat webhook
+ * yet, so the provision call can still answer 402 for a few seconds. Retry
+ * that long before telling the buyer we're still confirming.
+ */
+const PURCHASE_CONFIRM_ATTEMPTS = 6;
+const PURCHASE_CONFIRM_DELAY_MS = 2500;
+
+const PLAY_SUBSCRIPTIONS_URL = 'https://play.google.com/store/account/subscriptions';
+
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export default function SMSSetup() {
   const theme = useAppTheme();
@@ -30,20 +50,84 @@ export default function SMSSetup() {
   const { account } = useSession();
   const [step, setStep] = useState<Step>(sms.phoneNumber ? 'alreadySetUp' : 'intro');
   const [areaCode, setAreaCode] = useState('');
+  // Set once a purchase went through on this screen, so a later 402 means
+  // "still confirming", never "buy again".
+  const [purchased, setPurchased] = useState(false);
+  const [settingUpMessage, setSettingUpMessage] = useState('');
+  const [provisionedNumber, setProvisionedNumber] = useState<string | null>(null);
+  const mounted = useRef(true);
+
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (sms.phoneNumber && step === 'intro') setStep('alreadySetUp');
   }, [sms.phoneNumber, step]);
 
-  const provision = () => {
+  const provision = async (afterPurchase = purchased) => {
     setStep('provisioning');
-    setTimeout(() => {
-      sms.provision(areaCode || undefined, account?.businessName);
-      setStep('success');
-    }, 900);
+    const attempts = afterPurchase ? PURCHASE_CONFIRM_ATTEMPTS : 1;
+    for (let attempt = 1; attempt <= attempts; attempt++) {
+      try {
+        const result = await provisionSmsNumber({
+          areaCode: areaCode || undefined,
+          businessName: account?.businessName,
+        });
+        if (!mounted.current) return;
+        if (result.provisioningStatus === 'ready' && result.phoneNumber) {
+          setProvisionedNumber(result.phoneNumber);
+          setStep('success');
+          // Pick the number up everywhere else (inbox, settings) from /phone-numbers.
+          sms.refreshPhoneNumber().catch((err) => console.warn('[sms-setup] phone-number refresh failed', err));
+          return;
+        }
+        setSettingUpMessage(
+          result.provisioningStatus === 'failed'
+            ? "Your plan is active, but we couldn't finish setting up your number. Please try again."
+            : 'Your plan is active and your number is still being set up. This can take a minute.',
+        );
+        setStep('settingUp');
+        return;
+      } catch (err) {
+        if (!mounted.current) return;
+        if (isNoSubscriptionError(err)) {
+          if (attempt < attempts) {
+            await delay(PURCHASE_CONFIRM_DELAY_MS);
+            if (!mounted.current) return;
+            continue;
+          }
+          if (afterPurchase) {
+            setSettingUpMessage(
+              "Your purchase went through. We're still confirming it with Google Play. Try again in a moment.",
+            );
+            setStep('settingUp');
+          } else {
+            setStep('paywall');
+          }
+          return;
+        }
+        setSettingUpMessage(errorMessage(err, "We couldn't reach the server. Please try again."));
+        setStep('settingUp');
+        return;
+      }
+    }
   };
 
-  const formatted = sms.phoneNumber ? formatPhone(sms.phoneNumber.phoneNumber) : '';
+  const onPurchased = () => {
+    setPurchased(true);
+    void provision(true);
+  };
+
+  if (step === 'paywall') {
+    return <AiSmsPaywall onUnlocked={onPurchased} onPurchasePending={onPurchased} />;
+  }
+
+  const shownNumber = step === 'success' ? provisionedNumber : sms.phoneNumber?.phoneNumber;
+  const formatted = shownNumber ? formatPhone(shownNumber) : '';
 
   return (
     <DashboardGradient>
@@ -113,7 +197,7 @@ export default function SMSSetup() {
                   );
                 })}
               </View>
-              <ThemedButton title={areaCode ? `Get a ${areaCode} Number` : 'Get Any Available Number'} onPress={provision} style={styles.btn} />
+              <ThemedButton title={areaCode ? `Get a ${areaCode} Number` : 'Get Any Available Number'} onPress={() => void provision()} style={styles.btn} />
               <Pressable onPress={() => setStep('intro')}>
                 <Text style={[styles.goBack, { color: theme.secondaryText }]}>Go Back</Text>
               </Pressable>
@@ -125,6 +209,20 @@ export default function SMSSetup() {
               <ActivityIndicator size="large" color={theme.accent} />
               <Text style={[styles.title, theme.display(24)]}>Setting up your number...</Text>
               <Text style={[styles.subtitle, { color: theme.secondaryText }]}>This usually takes a few seconds</Text>
+            </View>
+          )}
+
+          {step === 'settingUp' && (
+            <View style={[styles.center, styles.provisioning]}>
+              <View style={[styles.hero, styles.successHero, { backgroundColor: theme.accentSoft, borderRadius: theme.isEditorial ? 2 : 22 }]}>
+                <Icon name="hourglass" size={32} color={theme.accent} />
+              </View>
+              <Text style={[styles.title, theme.display(24)]}>Setting up your number</Text>
+              <Text style={[styles.subtitle, { color: theme.secondaryText }]}>{settingUpMessage}</Text>
+              <ThemedButton title="Try Again" onPress={() => void provision()} style={styles.btn} />
+              <Pressable onPress={() => setStep('areaCode')}>
+                <Text style={[styles.goBack, { color: theme.secondaryText }]}>Change Area Code</Text>
+              </Pressable>
             </View>
           )}
 
@@ -147,8 +245,8 @@ export default function SMSSetup() {
               <ConsentQRCard />
               <ThemedButton title="View Conversations" onPress={() => router.replace('/sms-conversations')} style={styles.btn} />
               {step === 'alreadySetUp' && (
-                <Pressable onPress={() => { sms.release(); setStep('intro'); }}>
-                  <Text style={[styles.deactivate, { color: iOSColors.red }]}>Deactivate AI Texting</Text>
+                <Pressable onPress={() => void Linking.openURL(PLAY_SUBSCRIPTIONS_URL)}>
+                  <Text style={[styles.deactivate, { color: iOSColors.red }]}>Manage or Cancel Subscription</Text>
                 </Pressable>
               )}
             </View>

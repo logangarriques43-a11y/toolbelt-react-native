@@ -1,18 +1,19 @@
 /**
  * AI Conversations — port of SMSConversationsView.swift.
- * Status-filtered list of AI SMS conversations over the stub store. Tap a row to
- * open the thread; the gear opens the phone-number setup. Backend polling is N/A.
+ * Status-filtered list of AI SMS conversations from the backend. Tap a row to
+ * open the thread; the gear opens the phone-number setup. A paid plan without a
+ * number yet points at setup, which provisions it.
  */
 
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AiSmsPaywall } from '@/components/sms/ai-sms-paywall';
 import { DashboardGradient } from '@/components/dashboard-gradient';
 import { Icon } from '@/components/icon';
-import { ThemedIconTile } from '@/components/themed';
+import { ThemedButton, ThemedIconTile } from '@/components/themed';
 import { useSMS } from '@/context/sms-store';
 import { useAiSmsEntitlement } from '@/hooks/use-ai-sms-entitlement';
 import {
@@ -39,14 +40,18 @@ export default function SMSConversations() {
 
   const list = sms.conversations.filter((c) => c.status === filter);
 
-  // Gate: AI SMS is unlocked by the `ai_sms` entitlement. While it's resolving,
-  // hold on the gradient; if not entitled, show the paywall at this entry point.
-  if (entLoading) {
+  // Gate: AI SMS is unlocked by the `ai_sms` entitlement, or by already having
+  // a number (e.g. a plan bought on iOS, which RevenueCat here doesn't see).
+  // While either is resolving, hold on the gradient; otherwise show the paywall
+  // at this entry point, and send a fresh purchase to setup for its number.
+  if (entLoading || (!entitled && sms.phoneNumberLoading)) {
     return <DashboardGradient><SafeAreaView style={styles.safe} edges={['top']} /></DashboardGradient>;
   }
-  if (!entitled) {
-    return <AiSmsPaywall />;
+  if (!entitled && !sms.phoneNumber) {
+    const toSetup = () => router.replace('/sms-setup');
+    return <AiSmsPaywall onUnlocked={toSetup} onPurchasePending={toSetup} />;
   }
+  const needsNumber = !sms.phoneNumber && !sms.phoneNumberLoading;
 
   return (
     <DashboardGradient>
@@ -83,18 +88,28 @@ export default function SMSConversations() {
           })}
         </ScrollView>
 
-        {list.length === 0 ? (
+        {needsNumber ? (
+          <View style={styles.empty}>
+            <ThemedIconTile name="phone.fill" size={72} filled />
+            <Text style={[styles.emptyTitle, theme.display(24)]}>Choose Your Number</Text>
+            <Text style={[styles.emptySub, { color: theme.secondaryText }]}>Your plan is active. Pick an area code to get your AI texting number.</Text>
+            <ThemedButton title="Set Up My Number" onPress={() => router.push('/sms-setup')} style={styles.setupBtn} />
+          </View>
+        ) : list.length === 0 ? (
           <View style={styles.empty}>
             <Icon name="bubble.left.and.bubble.right" size={80} color={theme.tertiaryText} />
             <Text style={[styles.emptyTitle, theme.display(24)]}>No Conversations Yet</Text>
             <Text style={[styles.emptySub, { color: theme.secondaryText }]}>When clients text your AI number, their conversations will appear here.</Text>
           </View>
         ) : (
-          <ScrollView contentContainerStyle={styles.list}>
-            {list.map((c) => (
-              <ConversationRow key={c.id} conversation={c} onPress={() => router.push(`/sms-conversations/${c.id}`)} />
-            ))}
-          </ScrollView>
+          <FlatList
+            data={list}
+            keyExtractor={(c) => c.id}
+            contentContainerStyle={styles.list}
+            renderItem={({ item }) => (
+              <ConversationRow conversation={item} onPress={() => router.push(`/sms-conversations/${item.id}`)} />
+            )}
+          />
         )}
       </SafeAreaView>
     </DashboardGradient>
@@ -146,6 +161,7 @@ const styles = StyleSheet.create({
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16, paddingHorizontal: 40 },
   emptyTitle: { textAlign: 'center' },
   emptySub: { fontSize: 16, textAlign: 'center' },
+  setupBtn: { alignSelf: 'stretch' },
   list: { padding: 16, gap: 12, paddingBottom: 24 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16 },
   rowTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
