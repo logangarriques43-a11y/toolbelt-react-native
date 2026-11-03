@@ -7,7 +7,7 @@
 
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { InvoiceRow } from '@/components/accounting/invoice-row';
@@ -89,15 +89,19 @@ export default function Invoices() {
             ) : null}
           </View>
         ) : (
-          <ScrollView contentContainerStyle={styles.list}>
-            {filtered.map((inv) => (
-              <SwipeToDelete key={inv.id} onDelete={() => deleteInvoice(inv.id)}>
+          <FlatList
+            data={filtered}
+            keyExtractor={(inv) => inv.id}
+            contentContainerStyle={styles.list}
+            keyboardShouldPersistTaps="handled"
+            renderItem={({ item: inv }) => (
+              <SwipeToDelete onDelete={() => deleteInvoice(inv.id)}>
                 <Pressable onPress={() => setPreview(inv)}>
                   <InvoiceRow invoice={inv} />
                 </Pressable>
               </SwipeToDelete>
-            ))}
-          </ScrollView>
+            )}
+          />
         )}
       </SafeAreaView>
 

@@ -5,7 +5,7 @@
 
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DashboardGradient } from '@/components/dashboard-gradient';
@@ -103,14 +103,20 @@ export default function SearchScreen() {
             </Text>
           </View>
         ) : (
-          <ScrollView contentContainerStyle={styles.results}>
-            <Text style={[styles.count, { color: theme.secondaryText }]}>
-              {results.length} appointment{results.length === 1 ? '' : 's'} found
-            </Text>
-            {results.map((a) => (
-              <ResultCard key={a.id} appointment={a} onPress={() => router.push(`/appointments/${a.id}`)} />
-            ))}
-          </ScrollView>
+          <FlatList
+            data={results}
+            keyExtractor={(a) => a.id}
+            contentContainerStyle={styles.results}
+            keyboardShouldPersistTaps="handled"
+            ListHeaderComponent={
+              <Text style={[styles.count, { color: theme.secondaryText }]}>
+                {results.length} appointment{results.length === 1 ? '' : 's'} found
+              </Text>
+            }
+            renderItem={({ item: a }) => (
+              <ResultCard appointment={a} onPress={() => router.push(`/appointments/${a.id}`)} />
+            )}
+          />
         )}
       </SafeAreaView>
     </DashboardGradient>

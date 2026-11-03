@@ -5,7 +5,7 @@
 
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DashboardGradient } from '@/components/dashboard-gradient';
@@ -72,10 +72,13 @@ export default function SelectClient() {
               </Text>
             </View>
           ) : (
-            <ScrollView contentContainerStyle={styles.list}>
-              {clients.map((client) => (
+            <FlatList
+              data={clients}
+              keyExtractor={(client) => client.id}
+              contentContainerStyle={styles.list}
+              keyboardShouldPersistTaps="handled"
+              renderItem={({ item: client }) => (
                 <Pressable
-                  key={client.id}
                   onPress={() => choose(client)}
                   style={[styles.card, theme.card]}>
                   <View style={[styles.avatar, { backgroundColor: theme.accentSoft, borderRadius: theme.isEditorial ? 2 : 25 }]}>
@@ -90,8 +93,8 @@ export default function SelectClient() {
                   </View>
                   <Icon name="chevron.right" size={14} color={theme.chevronTint} />
                 </Pressable>
-              ))}
-            </ScrollView>
+              )}
+            />
           )}
         </View>
       </SafeAreaView>

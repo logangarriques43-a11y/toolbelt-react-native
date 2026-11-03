@@ -15,9 +15,10 @@ import { Alert } from 'react-native';
 import {
   createLedgerEntry,
   deleteLedgerEntry as deleteLedgerEntryApi,
-  listLedger,
+  ledgerSync,
 } from '@/api/ledger';
 import { ApiError } from '@/lib/api-client';
+import { deltaQueryFn, replaceOptimistic } from '@/lib/delta-sync';
 import { uuid } from '@/lib/id';
 import { periodContains, type Transaction, type TransactionPeriod } from '@/models/transaction';
 
@@ -43,7 +44,10 @@ function alertFailure(action: string, err: unknown) {
 
 export function AccountingProvider({ children }: { children: ReactNode }) {
   const qc = useQueryClient();
-  const query = useQuery({ queryKey: LEDGER_QUERY_KEY, queryFn: listLedger });
+  const query = useQuery({
+    queryKey: LEDGER_QUERY_KEY,
+    queryFn: deltaQueryFn(qc, LEDGER_QUERY_KEY, ledgerSync),
+  });
 
   const read = () => qc.getQueryData<Transaction[]>(LEDGER_QUERY_KEY) ?? [];
   const write = (next: Transaction[]) => qc.setQueryData(LEDGER_QUERY_KEY, next);
@@ -64,7 +68,7 @@ export function AccountingProvider({ children }: { children: ReactNode }) {
         const tempId = `optimistic-${uuid()}`;
         write([...read(), { ...input, id: tempId }]);
         createLedgerEntry(input)
-          .then((saved) => write(read().map((t) => (t.id === tempId ? saved : t))))
+          .then((saved) => write(replaceOptimistic(read(), tempId, saved)))
           .catch((err) => {
             write(read().filter((t) => t.id !== tempId));
             alertFailure('save transaction', err);

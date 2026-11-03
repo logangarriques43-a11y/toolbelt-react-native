@@ -21,6 +21,7 @@
  */
 
 import { api } from '@/lib/api-client';
+import type { DeltaSource } from '@/lib/delta-sync';
 import { uuid } from '@/lib/id';
 import type { Invoice, InvoiceStatus } from '@/models/invoice';
 
@@ -92,10 +93,14 @@ function toDTO(inv: Omit<Invoice, 'id' | 'createdAt'>): InvoiceDTO {
   };
 }
 
-export async function listInvoices(): Promise<Invoice[]> {
-  const dtos = await api.get<InvoiceDTO[]>('/invoices');
+/** All invoices, or with `since` only those changed after it (delta sync). */
+export async function listInvoices(since?: string): Promise<Invoice[]> {
+  const dtos = await api.get<InvoiceDTO[]>('/invoices', { since });
   return dtos.map(fromDTO);
 }
+
+/** Delta-sync source for the invoice list (see src/lib/delta-sync.ts). */
+export const invoicesSync: DeltaSource<Invoice> = { list: listInvoices, deletionsPath: '/invoices/deletions' };
 
 export async function createInvoice(input: Omit<Invoice, 'id' | 'createdAt'>): Promise<Invoice> {
   const dto = await api.post<InvoiceDTO>('/invoices', toDTO(input));

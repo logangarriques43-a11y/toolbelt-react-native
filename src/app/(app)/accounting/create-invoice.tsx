@@ -7,7 +7,7 @@
 
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { Alert, FlatList, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { KeyboardAwareForm } from '@/components/keyboard-aware-form';
@@ -471,14 +471,16 @@ function ClientSheet({ visible, clients, onClose, onPick }: { visible: boolean; 
         {clients.length === 0 ? (
           <Text style={[styles.sheetLabel, { color: theme.secondaryText }]}>No clients yet.</Text>
         ) : (
-          <ScrollView>
-            {clients.map((c) => (
-              <Pressable key={c.id} onPress={() => onPick(c)} style={styles.clientRow}>
+          <FlatList
+            data={clients}
+            keyExtractor={(c) => c.id}
+            renderItem={({ item: c }) => (
+              <Pressable onPress={() => onPick(c)} style={styles.clientRow}>
                 <Text style={[styles.clientName, { color: theme.primaryText }]}>{c.name}</Text>
                 <Text style={[styles.clientPhone, { color: theme.secondaryText }]}>{c.phoneNumber}</Text>
               </Pressable>
-            ))}
-          </ScrollView>
+            )}
+          />
         )}
       </View>
     </Modal>

@@ -9,6 +9,7 @@
  */
 
 import { api } from '@/lib/api-client';
+import type { DeltaSource } from '@/lib/delta-sync';
 import type { Transaction, TransactionCategory } from '@/models/transaction';
 
 interface LedgerDTO {
@@ -44,10 +45,14 @@ function toDTO(t: Omit<Transaction, 'id'>): LedgerDTO {
   };
 }
 
-export async function listLedger(): Promise<Transaction[]> {
-  const dtos = await api.get<LedgerDTO[]>('/ledger');
+/** All entries, or with `since` only those changed after it (delta sync). */
+export async function listLedger(since?: string): Promise<Transaction[]> {
+  const dtos = await api.get<LedgerDTO[]>('/ledger', { since });
   return dtos.map(fromDTO);
 }
+
+/** Delta-sync source for the transaction list (see src/lib/delta-sync.ts). */
+export const ledgerSync: DeltaSource<Transaction> = { list: listLedger, deletionsPath: '/ledger/deletions' };
 
 export async function createLedgerEntry(input: Omit<Transaction, 'id'>): Promise<Transaction> {
   const dto = await api.post<LedgerDTO>('/ledger', toDTO(input));
