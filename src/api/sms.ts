@@ -4,9 +4,10 @@
  *
  * Only the inbox is wired here: list conversations, list a conversation's
  * messages, escalate ("take over"), send an agent reply, and read the
- * provisioned business number. Number provisioning is a Stripe-checkout flow
- * (`/phone-numbers/checkout`, and `/phone-numbers/provision` is admin-only), so
- * it stays deferred with the payments work.
+ * provisioned business number, plus the self-serve number for a paid AI SMS
+ * subscription: `POST /sms-number/provision` (owner only). A Google Play
+ * purchase only records the entitlement (RevenueCat webhook); this call is what
+ * buys the Twilio number. Afterwards the number is read from `/phone-numbers`.
  *
  * These routes live under smsRoutes, mounted at both /api and /api/v1 (the
  * latter added so the RN /api/v1 base can reach them). Every route is
@@ -14,7 +15,7 @@
  * a provisioned phone number.
  */
 
-import { api } from '@/lib/api-client';
+import { api, ApiError } from '@/lib/api-client';
 import type { SMSConversation, SMSMedia, SMSMessage, SMSPhoneNumber, SMSStatus } from '@/models/sms';
 
 interface ConversationDTO {
@@ -118,6 +119,69 @@ export async function sendSmsReply(conversationId: string, message: string): Pro
 export async function listPhoneNumbers(): Promise<SMSPhoneNumber[]> {
   const res = await api.get<{ phoneNumbers: PhoneNumberDTO[] }>('/phone-numbers');
   return (res.phoneNumbers ?? []).map(fromPhoneNumber);
+}
+
+/**
+ * Where the business's AI SMS number stands. Same payload from
+ * `GET /app-store/entitlement` and `POST /sms-number/provision`:
+ *   ready   — entitled and the number is live
+ *   pending — entitled, number still being set up (retry)
+ *   failed  — entitled, setup failed this time (retry; the purchase stands)
+ *   none    — not entitled
+ */
+export type SmsProvisioningStatus = 'ready' | 'pending' | 'failed' | 'none';
+
+export interface SmsEntitlement {
+  active: boolean;
+  tier: string | null;
+  tierName: string | null;
+  provisioningStatus: SmsProvisioningStatus;
+  phoneNumber: string | null;
+}
+
+interface EntitlementDTO {
+  active?: boolean;
+  tier?: string | null;
+  tierName?: string | null;
+  provisioningStatus?: string | null;
+  phoneNumber?: string | null;
+}
+
+const PROVISIONING_STATUSES: SmsProvisioningStatus[] = ['ready', 'pending', 'failed', 'none'];
+
+function fromEntitlement(d: EntitlementDTO): SmsEntitlement {
+  const status = PROVISIONING_STATUSES.includes(d.provisioningStatus as SmsProvisioningStatus)
+    ? (d.provisioningStatus as SmsProvisioningStatus)
+    : 'none';
+  return {
+    active: d.active === true,
+    tier: d.tier ?? null,
+    tierName: d.tierName ?? null,
+    provisioningStatus: status,
+    phoneNumber: d.phoneNumber ?? null,
+  };
+}
+
+/**
+ * Buys (or returns the existing) AI SMS number for the signed-in owner's
+ * business. Idempotent, so it doubles as "retry". Throws an ApiError with
+ * status 402 / code `no_active_subscription` when there is no active plan.
+ * A provisioning failure still answers 200 with `provisioningStatus: 'failed'`.
+ */
+export async function provisionSmsNumber(opts: {
+  areaCode?: string;
+  businessName?: string;
+}): Promise<SmsEntitlement> {
+  const body: { areaCode?: string; businessName?: string } = {};
+  if (opts.areaCode && /^\d{3}$/.test(opts.areaCode)) body.areaCode = opts.areaCode;
+  if (opts.businessName?.trim()) body.businessName = opts.businessName.trim();
+  const res = await api.post<EntitlementDTO>('/sms-number/provision', body);
+  return fromEntitlement(res ?? {});
+}
+
+/** True for the 402 the provision call answers without an active plan. */
+export function isNoSubscriptionError(err: unknown): boolean {
+  return err instanceof ApiError && (err.status === 402 || err.code === 'no_active_subscription');
 }
 
 export type SmsAnalyticsPeriod = 'week' | 'month' | 'quarter' | 'year';

@@ -25,7 +25,18 @@ import { fetchAiSmsPlans, purchaseAiSmsPlan, type AiSmsPlan } from '@/lib/ai-sms
 import { iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
-export function AiSmsPaywall({ onUnlocked }: { onUnlocked?: () => void }) {
+/**
+ * `onUnlocked` runs after a purchase that shows the entitlement at once.
+ * `onPurchasePending` runs when Play took the payment but RevenueCat hasn't
+ * reported the entitlement yet; without it the paywall just says so.
+ */
+export function AiSmsPaywall({
+  onUnlocked,
+  onPurchasePending,
+}: {
+  onUnlocked?: () => void;
+  onPurchasePending?: () => void;
+}) {
   const theme = useAppTheme();
   const router = useRouter();
   const [plans, setPlans] = useState<AiSmsPlan[] | null>(null);
@@ -52,6 +63,8 @@ export function AiSmsPaywall({ onUnlocked }: { onUnlocked?: () => void }) {
     setPurchasing(false);
     if (result.status === 'entitled') {
       onUnlocked?.();
+    } else if (result.status === 'purchased-not-entitled' && onPurchasePending) {
+      onPurchasePending();
     } else if (result.status === 'purchased-not-entitled') {
       Alert.alert('Purchase received', 'Your plan is being activated. This can take a moment — pull back in shortly.');
     } else if (result.status === 'error') {

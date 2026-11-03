@@ -4,14 +4,12 @@
  * per-conversation messages, escalate ("take over"), agent replies, and the
  * provisioned business phone number.
  *
- * Number provisioning is a Stripe-checkout flow on the backend (deferred with
- * the payments work), so `provision`/`release` remain LOCAL stubs — a fake
- * number is kept only in memory and is shown only when the business has no
- * real number, so the setup screen still demos without corrupting real data.
+ * The number itself is bought by the setup screen (`provisionSmsNumber`), then
+ * read back here from `/phone-numbers` via `refreshPhoneNumber`.
  */
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useContext, useMemo, type ReactNode } from 'react';
 import { Alert } from 'react-native';
 
 import {
@@ -37,8 +35,10 @@ export interface SMSStore {
   conversations: SMSConversation[];
   conversationById: (id: string) => SMSConversation | undefined;
   phoneNumber: SMSPhoneNumber | null;
-  provision: (areaCode: string | undefined, friendlyName?: string) => void;
-  release: () => void;
+  /** True until `/phone-numbers` has answered once. */
+  phoneNumberLoading: boolean;
+  /** Re-reads `/phone-numbers`, e.g. right after a number was provisioned. */
+  refreshPhoneNumber: () => Promise<void>;
   escalate: (conversationId: string) => void;
   sendReply: (conversationId: string, text: string) => void;
   isLoading: boolean;
@@ -54,17 +54,14 @@ export function SMSProvider({ children }: { children: ReactNode }) {
   const qc = useQueryClient();
   const convQuery = useQuery({ queryKey: CONVERSATIONS_KEY, queryFn: listConversations });
   const phoneQuery = useQuery({ queryKey: PHONE_NUMBERS_KEY, queryFn: listPhoneNumbers });
-  const [stubNumber, setStubNumber] = useState<SMSPhoneNumber | null>(null);
 
   const conversations = convQuery.data ?? [];
 
-  // The provisioned business line: the active number, else the first one. A
-  // local stub (from the deferred provision flow) only shows when there's none.
-  const realNumber = useMemo(() => {
+  // The provisioned business line: the active number, else the first one.
+  const phoneNumber = useMemo(() => {
     const list = phoneQuery.data ?? [];
     return list.find((p) => p.isActive) ?? list[0] ?? null;
   }, [phoneQuery.data]);
-  const phoneNumber = realNumber ?? stubNumber;
 
   const readConvs = () => qc.getQueryData<SMSConversation[]>(CONVERSATIONS_KEY) ?? [];
   const writeConvs = (next: SMSConversation[]) => qc.setQueryData(CONVERSATIONS_KEY, next);
@@ -117,36 +114,24 @@ export function SMSProvider({ children }: { children: ReactNode }) {
       });
   };
 
-  // Deferred: real provisioning is a Stripe checkout ($/mo) + Twilio purchase.
-  // Keep a local stub so the setup screen demos; it never touches the backend.
-  const provision = (areaCode: string | undefined, friendlyName?: string) => {
-    const ac = areaCode && /^\d{3}$/.test(areaCode) ? areaCode : '310';
-    const line = `${Math.floor(1000000 + Math.random() * 8999999)}`;
-    setStubNumber({
-      id: uuid(),
-      phoneNumber: `+1${ac}${line}`,
-      friendlyName,
-      isActive: true,
-      monthlyCostCents: 100,
-      createdAt: new Date().toISOString(),
-    });
+  const refreshPhoneNumber = async () => {
+    await qc.invalidateQueries({ queryKey: PHONE_NUMBERS_KEY });
   };
-  const release = () => setStubNumber(null);
 
   const value = useMemo<SMSStore>(
     () => ({
       conversations,
       conversationById: (id) => conversations.find((c) => c.id === id),
       phoneNumber,
-      provision,
-      release,
+      phoneNumberLoading: phoneQuery.isLoading,
+      refreshPhoneNumber,
       escalate,
       sendReply,
       isLoading: convQuery.isLoading,
     }),
-    // handlers close over stable refs (qc, setStubNumber); re-derive on data.
+    // handlers close over stable refs (qc); re-derive on data.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [conversations, phoneNumber, convQuery.isLoading],
+    [conversations, phoneNumber, phoneQuery.isLoading, convQuery.isLoading],
   );
 
   return <SMSContext.Provider value={value}>{children}</SMSContext.Provider>;
