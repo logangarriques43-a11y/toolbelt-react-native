@@ -30,12 +30,23 @@ export function firebaseAuthErrorMessage(e: unknown): string {
       return 'Network error. Check your connection and try again.';
     case 'auth/requires-recent-login':
       return 'For your security, please confirm your password and try again.';
-    case 'auth/invalid-verification-code':
     case 'auth/invalid-totp-code':
       return 'That code is incorrect. Check your authenticator app and try again.';
-    case 'auth/code-expired':
+    case 'auth/invalid-verification-code':
+      return 'That code is incorrect. Check the text message and try again.';
     case 'auth/totp-challenge-timeout':
       return 'That code has expired. Enter the newest code from your authenticator app.';
+    case 'auth/code-expired':
+      return 'That code has expired. Send a new code and try again.';
+    case 'auth/invalid-verification-id':
+    case 'auth/missing-verification-id':
+      return 'That code request has expired. Send a new code and try again.';
+    case 'auth/captcha-check-failed':
+    case 'auth/invalid-app-credential':
+    case 'auth/missing-app-credential':
+      return "We couldn't confirm you're not a robot. Please try again.";
+    case 'auth/quota-exceeded':
+      return 'Too many text messages have been sent. Try again later, or use a backup code.';
     case 'auth/missing-code':
       return 'Enter the 6-digit code from your authenticator app.';
     case 'auth/unverified-email':

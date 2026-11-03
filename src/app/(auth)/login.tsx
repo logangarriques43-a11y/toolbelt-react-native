@@ -5,8 +5,12 @@
  * The session checks the token's role claim, so a staff login typed here is
  * handed to the staff session automatically.
  *
- * - Two-step sign-in: `auth/multi-factor-auth-required` opens the authenticator
- *   code sheet, which resolves the Firebase MFA challenge.
+ * - Two-step sign-in: `auth/multi-factor-auth-required` opens the code sheet for
+ *   the factor the account actually has. iOS lets an owner choose either an
+ *   authenticator app (TOTP) or a text message (SMS); an SMS-only account used
+ *   to get the authenticator sheet here, which it could never answer, so iOS
+ *   accounts with text-message 2FA couldn't sign in on Android. SMS codes need
+ *   a reCAPTCHA token first (`useRecaptchaVerifier`).
  * - "Use a backup code" recovers an account whose authenticator is lost
  *   (POST /auth/recovery/backup-code → custom token).
  * - "Sign in with Passkey": WebAuthn via react-native-passkey; the email field,
@@ -22,6 +26,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { isPasskeyCancel, passkeyErrorMessage, passkeySignIn, passkeysSupported } from '@/api/webauthn';
 import { BackupCodeSheet } from '@/components/auth/backup-code-sheet';
+import { RecaptchaCancelledError, useRecaptchaVerifier } from '@/components/auth/recaptcha-verifier-sheet';
 import { TotpCodeSheet } from '@/components/auth/totp-code-sheet';
 import { AuthField } from '@/components/auth-field';
 import { BackHeader } from '@/components/back-header';
@@ -33,6 +38,7 @@ import { TitleBadge } from '@/components/title-badge';
 import { useSession } from '@/context/session';
 import { firebaseAuthErrorMessage, firebaseErrorCode } from '@/lib/auth-errors';
 import { auth } from '@/lib/firebase';
+import { phoneHint, totpHint } from '@/lib/mfa-hints';
 import { useAppTheme } from '@/theme/theme-context';
 
 const EMAIL_RE = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
@@ -47,8 +53,52 @@ export default function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [passkeyLoading, setPasskeyLoading] = useState(false);
+  /** The pending MFA challenge and which code sheet answers it. */
   const [resolver, setResolver] = useState<MultiFactorResolver | null>(null);
+  const [mfaMode, setMfaMode] = useState<'totp' | 'sms' | null>(null);
+  const [smsVerificationId, setSmsVerificationId] = useState('');
   const [showBackup, setShowBackup] = useState(false);
+  const recaptcha = useRecaptchaVerifier();
+
+  const closeTwoFactor = () => {
+    setResolver(null);
+    setMfaMode(null);
+    setSmsVerificationId('');
+  };
+
+  /** Text the code to the enrolled phone, then open the SMS code sheet. */
+  const sendSmsCode = async (r: MultiFactorResolver) => {
+    setMfaMode(null);
+    setLoading(true);
+    try {
+      setSmsVerificationId(await session.sendTwoFactorSms(r, recaptcha.verifier));
+      setMfaMode('sms');
+    } catch (e) {
+      if (e instanceof RecaptchaCancelledError) {
+        // Back to the authenticator sheet if there is one; else start over.
+        if (totpHint(r)) setMfaMode('totp');
+        else closeTwoFactor();
+      } else {
+        closeTwoFactor();
+        setError(firebaseAuthErrorMessage(e));
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const startTwoFactor = async (r: MultiFactorResolver) => {
+    setResolver(r);
+    if (totpHint(r)) {
+      setMfaMode('totp');
+    } else if (phoneHint(r)) {
+      await sendSmsCode(r);
+    } else {
+      closeTwoFactor();
+      setError("This account's two-step sign-in method isn't supported on Android yet. Use a backup code.");
+      setShowBackup(true);
+    }
+  };
 
   const login = async () => {
     if (loading) return;
@@ -63,7 +113,7 @@ export default function Login() {
       await session.signInWithEmail(id, password);
     } catch (e) {
       if (firebaseErrorCode(e) === 'auth/multi-factor-auth-required') {
-        setResolver(getMultiFactorResolver(auth, e as MultiFactorError));
+        await startTwoFactor(getMultiFactorResolver(auth, e as MultiFactorError));
       } else {
         setError(firebaseAuthErrorMessage(e));
       }
@@ -175,24 +225,57 @@ export default function Login() {
       </SafeAreaView>
 
       <TotpCodeSheet
-        visible={!!resolver}
-        onClose={() => setResolver(null)}
+        visible={!!resolver && mfaMode === 'totp'}
+        onClose={closeTwoFactor}
         onSubmit={async (code) => {
           if (!resolver) return;
           await session.resolveTwoFactor(resolver, code);
-          setResolver(null);
+          closeTwoFactor();
         }}
         footer={
-          <Pressable
-            style={styles.backupLink}
-            onPress={() => {
-              setResolver(null);
-              setShowBackup(true);
-            }}>
-            <Text style={[styles.forgot, { color: theme.accent }]}>Lost your authenticator? Use a backup code</Text>
-          </Pressable>
+          <View style={styles.mfaLinks}>
+            {resolver && phoneHint(resolver) ? (
+              <Pressable style={styles.backupLink} onPress={() => void sendSmsCode(resolver)}>
+                <Text style={[styles.forgot, { color: theme.accent }]}>Text me a code instead</Text>
+              </Pressable>
+            ) : null}
+            <Pressable
+              style={styles.backupLink}
+              onPress={() => {
+                closeTwoFactor();
+                setShowBackup(true);
+              }}>
+              <Text style={[styles.forgot, { color: theme.accent }]}>Lost your authenticator? Use a backup code</Text>
+            </Pressable>
+          </View>
         }
       />
+      <TotpCodeSheet
+        visible={!!resolver && mfaMode === 'sms'}
+        onClose={closeTwoFactor}
+        message={`We texted a 6-digit code to ${(resolver && phoneHint(resolver)?.phoneNumber) || 'your phone'}. Enter it to finish signing in.`}
+        onSubmit={async (code) => {
+          if (!resolver) return;
+          await session.resolveTwoFactorSms(resolver, smsVerificationId, code);
+          closeTwoFactor();
+        }}
+        footer={
+          <View style={styles.mfaLinks}>
+            <Pressable style={styles.backupLink} onPress={() => resolver && void sendSmsCode(resolver)}>
+              <Text style={[styles.forgot, { color: theme.accent }]}>Send a new code</Text>
+            </Pressable>
+            <Pressable
+              style={styles.backupLink}
+              onPress={() => {
+                closeTwoFactor();
+                setShowBackup(true);
+              }}>
+              <Text style={[styles.forgot, { color: theme.accent }]}>No access to this phone? Use a backup code</Text>
+            </Pressable>
+          </View>
+        }
+      />
+      {recaptcha.sheet}
       <BackupCodeSheet visible={showBackup} initialEmail={identifier.trim()} onClose={() => setShowBackup(false)} />
     </DashboardGradient>
   );
@@ -265,4 +348,5 @@ const styles = StyleSheet.create({
   bottomText: { fontSize: 15 },
   bottomLink: { fontSize: 15, fontWeight: '600' },
   backupLink: { alignSelf: 'center', padding: 8 },
+  mfaLinks: { alignItems: 'center' },
 });
