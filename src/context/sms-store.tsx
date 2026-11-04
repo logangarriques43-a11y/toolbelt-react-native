@@ -1,7 +1,8 @@
 /**
  * AI SMS store — RN counterpart to SMSService.swift (Twilio backend).
  * The inbox is backed by the real backend via React Query: conversations,
- * per-conversation messages, escalate ("take over"), agent replies, and the
+ * per-conversation messages, escalate ("take over"), resume (hand back to the
+ * AI), agent replies, and the
  * provisioned business phone number.
  *
  * The number itself is bought by the setup screen (`provisionSmsNumber`), then
@@ -18,6 +19,7 @@ import {
   listConversations,
   listMessages,
   listPhoneNumbers,
+  resumeConversation,
   sendSmsReply,
   type SmsAnalytics,
   type SmsAnalyticsPeriod,
@@ -40,6 +42,10 @@ export interface SMSStore {
   /** Re-reads `/phone-numbers`, e.g. right after a number was provisioned. */
   refreshPhoneNumber: () => Promise<void>;
   escalate: (conversationId: string) => void;
+  /** Hands an escalated thread back to the AI. Resolves true on success. */
+  resume: (conversationId: string) => Promise<boolean>;
+  /** Re-reads the conversation list (pull to refresh). */
+  refresh: () => Promise<void>;
   sendReply: (conversationId: string, text: string) => void;
   isLoading: boolean;
 }
@@ -81,6 +87,31 @@ export function SMSProvider({ children }: { children: ReactNode }) {
       });
   };
 
+  // RESUME — optimistically flip back to active and clear needs-you, POST,
+  // then reconcile the list and the thread. Roll back + alert on failure.
+  const resume = async (id: string): Promise<boolean> => {
+    const prev = readConvs();
+    writeConvs(
+      prev.map((c) =>
+        c.id === id ? { ...c, status: 'active', needsAttention: false, escalatedAt: undefined } : c,
+      ),
+    );
+    try {
+      await resumeConversation(id);
+    } catch (err) {
+      writeConvs(prev);
+      Alert.alert("Couldn't hand back to AI", errMessage(err));
+      return false;
+    }
+    qc.invalidateQueries({ queryKey: CONVERSATIONS_KEY });
+    qc.invalidateQueries({ queryKey: messagesKey(id) });
+    return true;
+  };
+
+  const refresh = async () => {
+    await qc.invalidateQueries({ queryKey: CONVERSATIONS_KEY });
+  };
+
   // SEND REPLY — optimistically append an outbound bubble + bump the
   // conversation preview, send via Twilio, then refetch. Roll back on failure.
   const sendReply = (id: string, text: string) => {
@@ -98,7 +129,14 @@ export function SMSProvider({ children }: { children: ReactNode }) {
     writeConvs(
       prevConvs.map((c) =>
         c.id === id
-          ? { ...c, lastMessage: text, lastMessageAt: sentAt, messageCount: (c.messageCount ?? 0) + 1 }
+          ? {
+              ...c,
+              lastMessage: text,
+              lastMessageAt: sentAt,
+              messageCount: (c.messageCount ?? 0) + 1,
+              // The owner answering clears "needs you" on the server too.
+              needsAttention: false,
+            }
           : c,
       ),
     );
@@ -126,6 +164,8 @@ export function SMSProvider({ children }: { children: ReactNode }) {
       phoneNumberLoading: phoneQuery.isLoading,
       refreshPhoneNumber,
       escalate,
+      resume,
+      refresh,
       sendReply,
       isLoading: convQuery.isLoading,
     }),

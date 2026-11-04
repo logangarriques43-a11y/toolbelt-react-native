@@ -3,11 +3,14 @@
  * Status-filtered list of AI SMS conversations from the backend. Tap a row to
  * open the thread; the gear opens the phone-number setup. A paid plan without a
  * number yet points at setup, which provisions it.
+ *
+ * Threads that need the owner (escalated to a human, customer waiting) carry a
+ * "Needs you" badge and sort first; a banner above the filters jumps to them.
  */
 
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
-import { FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AiSmsPaywall } from '@/components/sms/ai-sms-paywall';
@@ -16,6 +19,7 @@ import { Icon } from '@/components/icon';
 import { ThemedButton, ThemedIconTile } from '@/components/themed';
 import { useSMS } from '@/context/sms-store';
 import { useAiSmsEntitlement } from '@/hooks/use-ai-sms-entitlement';
+import { withOpacity } from '@/lib/color';
 import {
   conversationDisplayName,
   smsStatusIcon,
@@ -23,6 +27,7 @@ import {
   type SMSConversation,
   type SMSStatus,
 } from '@/models/sms';
+import { iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
 const FILTERS: { key: SMSStatus; label: string }[] = [
@@ -37,8 +42,26 @@ export default function SMSConversations() {
   const sms = useSMS();
   const { entitled, loading: entLoading } = useAiSmsEntitlement();
   const [filter, setFilter] = useState<SMSStatus>('active');
+  const [refreshing, setRefreshing] = useState(false);
 
-  const list = sms.conversations.filter((c) => c.status === filter);
+  // "Needs you" threads first; otherwise keep the server's order (newest first).
+  const list = useMemo(() => {
+    const inFilter = sms.conversations.filter((c) => c.status === filter);
+    return [...inFilter.filter((c) => c.needsAttention), ...inFilter.filter((c) => !c.needsAttention)];
+  }, [sms.conversations, filter]);
+  const needsYou = useMemo(() => sms.conversations.filter((c) => c.needsAttention), [sms.conversations]);
+  // Where the waiting threads live; escalated in practice, but don't assume.
+  const needsYouFilter: SMSStatus = needsYou.every((c) => c.status === 'escalated') ? 'escalated' : needsYou[0]?.status ?? 'escalated';
+  const showNeedsYouBanner = needsYou.length > 0 && !list.some((c) => c.needsAttention);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await sms.refresh();
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   // Gate: AI SMS is unlocked by the `ai_sms` entitlement, or by already having
   // a number (e.g. a plan bought on iOS, which RevenueCat here doesn't see).
@@ -70,6 +93,7 @@ export default function SMSConversations() {
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
           {FILTERS.map((f) => {
             const active = filter === f.key;
+            const waiting = needsYou.filter((c) => c.status === f.key).length;
             return (
               <Pressable key={f.key} onPress={() => setFilter(f.key)}>
                 <View
@@ -82,11 +106,28 @@ export default function SMSConversations() {
                     },
                   ]}>
                   <Text style={[styles.chipText, { color: active ? theme.onAccent : theme.primaryText }]}>{f.label}</Text>
+                  {waiting > 0 && (
+                    <View style={[styles.chipCount, { backgroundColor: theme.cardBackground, borderColor: iOSColors.orange }]}>
+                      <Text style={[styles.chipCountText, { color: iOSColors.orange }]}>{waiting}</Text>
+                    </View>
+                  )}
                 </View>
               </Pressable>
             );
           })}
         </ScrollView>
+
+        {showNeedsYouBanner && (
+          <Pressable
+            onPress={() => setFilter(needsYouFilter)}
+            style={[styles.needsBanner, { backgroundColor: withOpacity(iOSColors.orange, 0.15), borderColor: iOSColors.orange }]}>
+            <Icon name="person.crop.circle.badge.exclamationmark.fill" size={18} color={iOSColors.orange} />
+            <Text style={[styles.needsBannerText, { color: theme.primaryText }]}>
+              {needsYou.length === 1 ? '1 conversation needs you' : `${needsYou.length} conversations need you`}
+            </Text>
+            <Icon name="chevron.right" size={12} color={theme.chevronTint} weight="medium" />
+          </Pressable>
+        )}
 
         {needsNumber ? (
           <View style={styles.empty}>
@@ -106,6 +147,7 @@ export default function SMSConversations() {
             data={list}
             keyExtractor={(c) => c.id}
             contentContainerStyle={styles.list}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.accent} />}
             renderItem={({ item }) => (
               <ConversationRow conversation={item} onPress={() => router.push(`/sms-conversations/${item.id}`)} />
             )}
@@ -119,7 +161,9 @@ export default function SMSConversations() {
 function ConversationRow({ conversation, onPress }: { conversation: SMSConversation; onPress: () => void }) {
   const theme = useAppTheme();
   return (
-    <Pressable style={[styles.row, theme.card]} onPress={onPress}>
+    <Pressable
+      style={[styles.row, theme.card, conversation.needsAttention && { borderWidth: 2, borderColor: iOSColors.orange }]}
+      onPress={onPress}>
       <ThemedIconTile name={smsStatusIcon(conversation.status)} size={44} />
       <View style={styles.flex}>
         <View style={styles.rowTop}>
@@ -132,6 +176,12 @@ function ConversationRow({ conversation, onPress }: { conversation: SMSConversat
             <View style={styles.meta}>
               <Icon name="message.fill" size={10} color={theme.secondaryText} />
               <Text style={[styles.metaText, { color: theme.secondaryText }]}>{conversation.messageCount}</Text>
+            </View>
+          )}
+          {conversation.needsAttention && (
+            <View style={[styles.needsBadge, { backgroundColor: withOpacity(iOSColors.orange, 0.18) }]}>
+              <Icon name="person.fill" size={10} color={iOSColors.orange} />
+              <Text style={[styles.needsBadgeText, { color: iOSColors.orange }]}>Needs you</Text>
             </View>
           )}
           {conversation.hasAppointment && (
@@ -156,8 +206,14 @@ const styles = StyleSheet.create({
   headerTitle: { flex: 1, textAlign: 'center' },
   gear: { minWidth: 70, alignItems: 'flex-end' },
   filters: { gap: 10, paddingHorizontal: 16, paddingBottom: 12 },
-  chip: { paddingHorizontal: 16, paddingVertical: 8, borderWidth: 1 },
+  chip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, paddingVertical: 8, borderWidth: 1 },
   chipText: { fontSize: 14, fontWeight: '500' },
+  chipCount: { minWidth: 18, height: 18, borderRadius: 9, borderWidth: 1, paddingHorizontal: 5, alignItems: 'center', justifyContent: 'center' },
+  chipCountText: { fontSize: 11, fontWeight: '700' },
+  needsBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: 16, marginBottom: 12, padding: 12, borderRadius: 12, borderWidth: 1 },
+  needsBannerText: { flex: 1, fontSize: 14, fontWeight: '600' },
+  needsBadge: { flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8 },
+  needsBadgeText: { fontSize: 11, fontWeight: '700' },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16, paddingHorizontal: 40 },
   emptyTitle: { textAlign: 'center' },
   emptySub: { fontSize: 16, textAlign: 'center' },
@@ -168,7 +224,7 @@ const styles = StyleSheet.create({
   name: { flex: 1, fontSize: 17, fontWeight: '600' },
   time: { fontSize: 12 },
   preview: { fontSize: 14, marginTop: 4 },
-  metaRow: { flexDirection: 'row', gap: 8, marginTop: 6 },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 },
   meta: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   metaText: { fontSize: 11 },
 });

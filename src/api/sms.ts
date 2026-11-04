@@ -3,7 +3,7 @@
  * the wire) to/from the RN camelCase models. Mirrors the Swift SMSService.
  *
  * Only the inbox is wired here: list conversations, list a conversation's
- * messages, escalate ("take over"), send an agent reply, and read the
+ * messages, escalate ("take over"), hand back to the AI (resume), send an agent reply, and read the
  * provisioned business number, plus the self-serve number for a paid AI SMS
  * subscription: `POST /sms-number/provision` (owner only). A Google Play
  * purchase only records the entitlement (RevenueCat webhook); this call is what
@@ -30,6 +30,9 @@ interface ConversationDTO {
   has_appointment?: boolean | null;
   started_at?: string | null;
   last_message_at?: string | null;
+  /** Human-only escalation: the customer texted an escalated thread, or it was just escalated. */
+  needs_attention?: boolean | null;
+  escalated_at?: string | null;
 }
 
 interface MessageDTO {
@@ -68,6 +71,8 @@ function fromConversation(d: ConversationDTO): SMSConversation {
     hasAppointment: d.has_appointment ?? false,
     startedAt: d.started_at ?? undefined,
     lastMessageAt: d.last_message_at ?? undefined,
+    needsAttention: d.needs_attention === true,
+    escalatedAt: d.escalated_at ?? undefined,
   };
 }
 
@@ -110,6 +115,14 @@ export async function listMessages(conversationId: string): Promise<SMSMessage[]
 
 export async function escalateConversation(id: string): Promise<void> {
   await api.post(`/sms/conversations/${id}/escalate`);
+}
+
+/**
+ * Hands an escalated thread back to the AI: the server clears the escalated
+ * state and `needs_attention`, and the AI answers the customer's next text.
+ */
+export async function resumeConversation(id: string): Promise<void> {
+  await api.post(`/sms/conversations/${id}/resume`);
 }
 
 export async function sendSmsReply(conversationId: string, message: string): Promise<void> {
