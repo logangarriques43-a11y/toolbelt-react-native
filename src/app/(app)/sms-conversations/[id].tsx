@@ -2,18 +2,22 @@
  * AI Conversation thread — port of SMSConversationDetailView.swift.
  * Message bubbles (inbound left, outbound gradient right) with AI intent +
  * confidence meta, a status bar, a "Take Over" escalate action, and a reply bar.
- * Replies append locally (no real SMS).
+ *
+ * An escalated thread is human-only: the AI stays quiet until the owner hands
+ * it back. A banner says so (louder when the customer is waiting) and carries
+ * the "Hand back to AI" action, which calls resume and refreshes the thread.
  */
 
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DashboardGradient } from '@/components/dashboard-gradient';
 import { Icon } from '@/components/icon';
 import { SignedPhoto } from '@/components/signed-photo';
 import { useConversationMessages, useSMS } from '@/context/sms-store';
+import { withOpacity } from '@/lib/color';
 import { visibleMessageBody } from '@/lib/tattoo';
 import { conversationDisplayName, formatPhone, type SMSMessage } from '@/models/sms';
 import { iOSColors } from '@/theme/tokens';
@@ -29,6 +33,12 @@ export default function SMSConversationDetail() {
   const conversation = sms.conversationById(id);
   const { messages } = useConversationMessages(id);
   const [reply, setReply] = useState('');
+  const [resuming, setResuming] = useState(false);
+
+  // Opening a thread re-reads the list so the escalation banner is current
+  // (the customer may have texted since the inbox last loaded).
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { void sms.refresh(); }, [id]);
 
   if (!conversation) {
     return (
@@ -55,6 +65,24 @@ export default function SMSConversationDetail() {
       { text: 'Cancel', style: 'cancel' },
       { text: 'Take Over', style: 'destructive', onPress: () => sms.escalate(conversation.id) },
     ]);
+
+  const handBack = () =>
+    Alert.alert('Hand Back to AI', 'The AI will answer this customer\'s next text again.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Hand Back',
+        onPress: async () => {
+          setResuming(true);
+          try {
+            await sms.resume(conversation.id);
+          } finally {
+            setResuming(false);
+          }
+        },
+      },
+    ]);
+
+  const escalated = conversation.status === 'escalated';
 
   const send = () => {
     if (!canSend) return;
@@ -97,6 +125,49 @@ export default function SMSConversationDetail() {
               </View>
             )}
           </View>
+
+          {/* Human-only banner */}
+          {escalated && (
+            <View
+              style={[
+                styles.escalatedBanner,
+                {
+                  backgroundColor: withOpacity(iOSColors.orange, conversation.needsAttention ? 0.18 : 0.1),
+                  borderColor: conversation.needsAttention ? iOSColors.orange : withOpacity(iOSColors.orange, 0.4),
+                },
+              ]}>
+              <View style={styles.escalatedTop}>
+                <Icon
+                  name={conversation.needsAttention ? 'person.crop.circle.badge.exclamationmark.fill' : 'person.fill'}
+                  size={18}
+                  color={iOSColors.orange}
+                />
+                <View style={styles.flex}>
+                  <Text style={[styles.escalatedTitle, { color: theme.primaryText }]}>
+                    {conversation.needsAttention ? 'Needs you' : "You're handling this"}
+                  </Text>
+                  <Text style={[styles.escalatedSub, { color: theme.secondaryText }]}>
+                    {conversation.needsAttention
+                      ? 'The customer is waiting for a reply. The AI won\'t answer until you hand it back.'
+                      : 'The AI is paused for this conversation until you hand it back.'}
+                  </Text>
+                </View>
+              </View>
+              <Pressable
+                onPress={handBack}
+                disabled={resuming}
+                style={[styles.handBackBtn, { borderColor: theme.accent, opacity: resuming ? 0.6 : 1 }]}>
+                {resuming ? (
+                  <ActivityIndicator size="small" color={theme.accent} />
+                ) : (
+                  <>
+                    <Icon name="sparkles" size={14} color={theme.accent} />
+                    <Text style={[styles.handBackText, { color: theme.accent }]}>Hand back to AI</Text>
+                  </>
+                )}
+              </Pressable>
+            </View>
+          )}
 
           {/* Messages */}
           <ScrollView contentContainerStyle={styles.messages}>
@@ -178,6 +249,12 @@ const styles = StyleSheet.create({
   statusText: { fontSize: 13, fontWeight: '500' },
   booked: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   bookedText: { fontSize: 12 },
+  escalatedBanner: { marginHorizontal: 16, marginTop: 10, padding: 12, gap: 10, borderRadius: 12, borderWidth: 1 },
+  escalatedTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  escalatedTitle: { fontSize: 15, fontWeight: '700' },
+  escalatedSub: { fontSize: 13, marginTop: 2 },
+  handBackBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, alignSelf: 'flex-start', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 18, borderWidth: 1, minHeight: 36 },
+  handBackText: { fontSize: 14, fontWeight: '600' },
   messages: { padding: 16, gap: 8 },
   bubbleRow: { flexDirection: 'row' },
   bubbleCol: { maxWidth: '80%', gap: 4 },

@@ -20,6 +20,14 @@ export interface SMSConversation {
   startedAt?: string;
   /** ISO datetime. */
   lastMessageAt?: string;
+  /**
+   * The owner should look at this thread: it was just escalated, or the
+   * customer texted while it's escalated. The AI stays quiet until the owner
+   * replies (clears it) or hands the thread back (resume).
+   */
+  needsAttention: boolean;
+  /** ISO datetime the thread went human-only. */
+  escalatedAt?: string;
 }
 
 /** A photo on a message. `url` is a signed link (15 minutes) or null. */
