@@ -32,6 +32,8 @@ import {
   createUserWithEmailAndPassword,
   EmailAuthProvider,
   onAuthStateChanged,
+  PhoneAuthProvider,
+  PhoneMultiFactorGenerator,
   reauthenticateWithCredential,
   sendEmailVerification,
   signInWithCustomToken as firebaseSignInWithCustomToken,
@@ -40,6 +42,7 @@ import {
   TotpMultiFactorGenerator,
   updatePassword,
   updateProfile,
+  type ApplicationVerifier,
   type MultiFactorResolver,
   type User,
 } from 'firebase/auth';
@@ -58,6 +61,7 @@ import { fetchBookingBusinessName, updateBusinessName } from '@/api/account';
 import { fetchStaffMe, markStaffPasswordChanged } from '@/api/staff';
 import { ApiError } from '@/lib/api-client';
 import { auth } from '@/lib/firebase';
+import { phoneHint, totpHint } from '@/lib/mfa-hints';
 import { USER_DATA_KEYS } from '@/lib/user-data-keys';
 import type { StaffMember } from '@/models/staff';
 
@@ -116,6 +120,12 @@ export interface Session extends SessionState {
   signInStaff: (email: string, password: string) => Promise<void>;
   /** Finish an MFA sign-in with a 6-digit authenticator code. */
   resolveTwoFactor: (resolver: MultiFactorResolver, code: string) => Promise<void>;
+  /** Text the second-factor code to the phone enrolled on the account
+   *  ("Text message" two-step sign-in, set up on iOS). Resolves with the
+   *  verification id for `resolveTwoFactorSms`. Nothing is signed in yet. */
+  sendTwoFactorSms: (resolver: MultiFactorResolver, verifier: ApplicationVerifier) => Promise<string>;
+  /** Finish an MFA sign-in with the 6-digit code from the text message. */
+  resolveTwoFactorSms: (resolver: MultiFactorResolver, verificationId: string, code: string) => Promise<void>;
   /** Exchange a server-minted custom token (passkey / backup code). */
   signInWithToken: (token: string, opts?: { mustResetPassword?: boolean }) => Promise<void>;
   /** Create the owner account (Firebase user, display name, verification email). */
@@ -441,13 +451,30 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
       resolveTwoFactor: (resolver, code) =>
         runInteractive(async () => {
-          const hint = resolver.hints.find((h) => h.factorId === TotpMultiFactorGenerator.FACTOR_ID);
+          const hint = totpHint(resolver);
           if (!hint) {
             throw new SignInError(
-              "Your account uses text-message codes for two-step sign-in, which this app can't receive yet. Use a backup code instead.",
+              "Your account doesn't use an authenticator app for two-step sign-in. Go back and get a text-message code instead.",
             );
           }
           const assertion = TotpMultiFactorGenerator.assertionForSignIn(hint.uid, code.trim());
+          return (await resolver.resolveSignIn(assertion)).user;
+        }),
+
+      sendTwoFactorSms: async (resolver, verifier) => {
+        const hint = phoneHint(resolver);
+        if (!hint) {
+          throw new SignInError(
+            "Your account doesn't use text-message codes for two-step sign-in. Use your authenticator app or a backup code.",
+          );
+        }
+        return new PhoneAuthProvider(auth).verifyPhoneNumber({ multiFactorHint: hint, session: resolver.session }, verifier);
+      },
+
+      resolveTwoFactorSms: (resolver, verificationId, code) =>
+        runInteractive(async () => {
+          const credential = PhoneAuthProvider.credential(verificationId, code.trim());
+          const assertion = PhoneMultiFactorGenerator.assertion(credential);
           return (await resolver.resolveSignIn(assertion)).user;
         }),
 

@@ -1,6 +1,7 @@
 /**
- * TotpCodeSheet — "Enter your authenticator code" step for a Firebase MFA
- * challenge (sign-in, or re-confirming identity before a security change).
+ * TotpCodeSheet — "Enter your 6-digit code" step for a Firebase MFA challenge
+ * (sign-in, or re-confirming identity before a security change). Defaults to
+ * authenticator-app copy; the SMS second factor passes its own `message`.
  * The caller resolves the challenge in `onSubmit`; errors thrown there are
  * shown inline. An optional footer (e.g. "Use a backup code") sits below.
  */
@@ -44,7 +45,7 @@ export function TotpCodeSheet({
 
   const submit = async () => {
     if (busy) return;
-    if (code.length !== 6) return setError('Enter the 6-digit code from your authenticator app.');
+    if (code.length !== 6) return setError('Enter the 6-digit code.');
     setBusy(true);
     setError('');
     try {
