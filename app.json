@@ -99,7 +99,9 @@
         "expo-build-properties",
         {
           "android": {
-            "minSdkVersion": 26
+            "minSdkVersion": 26,
+            "enableMinifyInReleaseBuilds": true,
+            "extraProguardRules": "# @stripe/stripe-react-native compiles against stripe-android-issuing-push-provisioning\n# as compileOnly (the app doesn't ship it), so R8 reports these classes as missing.\n-dontwarn com.stripe.android.pushProvisioning.**\n"
           }
         }
       ]
