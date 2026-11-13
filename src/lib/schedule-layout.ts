@@ -129,13 +129,35 @@ export function calcOverlapLayout(appointments: Appointment[]): Record<string, O
   return info;
 }
 
-export function isToday(date: Date): boolean {
-  const now = new Date();
+/** Same local calendar day. */
+export function sameDay(a: Date, b: Date): boolean {
   return (
-    date.getFullYear() === now.getFullYear() &&
-    date.getMonth() === now.getMonth() &&
-    date.getDate() === now.getDate()
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
   );
+}
+
+export function isToday(date: Date): boolean {
+  return sameDay(date, new Date());
+}
+
+/**
+ * The appointments a calendar grid draws for `date`: those starting that local
+ * day, minus cancelled ones. A cancelled booking frees its slot, so it must not
+ * be drawn. It also must not claim an overlap column. Mirrors Swift
+ * `AppointmentManager.getAppointments(for:)`.
+ *
+ * Android used to draw cancelled rows exactly like live ones. A day with a few
+ * cancelled long bookings showed tall phantom blocks that iOS hides. They also
+ * squeezed the real bookings into narrow side columns. Cancelled rows stay in
+ * the store, so client history and reports still see them.
+ */
+export function gridAppointmentsForDay<T extends { startTime: string; status: string }>(
+  appointments: T[],
+  date: Date,
+): T[] {
+  return appointments.filter((a) => a.status !== 'cancelled' && sameDay(new Date(a.startTime), date));
 }
 
 export function addDays(date: Date, n: number): Date {

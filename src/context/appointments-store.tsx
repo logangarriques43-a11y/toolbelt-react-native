@@ -23,6 +23,7 @@ import {
 import { ApiError } from '@/lib/api-client';
 import { deltaQueryFn, replaceOptimistic } from '@/lib/delta-sync';
 import { uuid } from '@/lib/id';
+import { gridAppointmentsForDay } from '@/lib/schedule-layout';
 import type { Appointment } from '@/models/appointment';
 
 export const APPOINTMENTS_QUERY_KEY = ['appointments'] as const;
@@ -32,6 +33,7 @@ export interface AppointmentsStore {
   addAppointment: (a: Omit<Appointment, 'id'>) => void;
   updateAppointment: (a: Appointment) => void;
   deleteAppointment: (id: string) => void;
+  /** Appointments a calendar grid draws for that day; cancelled ones are left out. */
   getAppointments: (date: Date) => Appointment[];
   getUpcoming: (limit?: number) => Appointment[];
   isLoading: boolean;
@@ -39,14 +41,6 @@ export interface AppointmentsStore {
 }
 
 const AppointmentsContext = createContext<AppointmentsStore | null>(null);
-
-function sameDay(a: Date, b: Date): boolean {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  );
-}
 
 function alertFailure(action: string, err: unknown) {
   const message =
@@ -130,8 +124,8 @@ export function AppointmentsProvider({ children }: { children: ReactNode }) {
       addAppointment: (a) => createMutation.mutate(a),
       updateAppointment: (a) => updateMutation.mutate(a),
       deleteAppointment,
-      getAppointments: (date) =>
-        appointments.filter((a) => sameDay(new Date(a.startTime), date)),
+      // Calendar grids only: cancelled rows are left out (see gridAppointmentsForDay).
+      getAppointments: (date) => gridAppointmentsForDay(appointments, date),
       getUpcoming: (limit = 5) => {
         const now = Date.now();
         return appointments
