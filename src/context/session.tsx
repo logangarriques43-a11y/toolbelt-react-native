@@ -58,10 +58,12 @@ import {
 } from 'react';
 
 import { fetchBookingBusinessName, updateBusinessName } from '@/api/account';
+import { reportOnboardingComplete, reportSignup } from '@/api/onboarding';
 import { fetchStaffMe, markStaffPasswordChanged } from '@/api/staff';
 import { ApiError } from '@/lib/api-client';
 import { auth } from '@/lib/firebase';
 import { phoneHint, totpHint } from '@/lib/mfa-hints';
+import { clearSignupSource, getSignupSource } from '@/lib/signup-source';
 import { USER_DATA_KEYS } from '@/lib/user-data-keys';
 import type { StaffMember } from '@/models/staff';
 
@@ -502,6 +504,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         });
         // The server's copy of the name (SMS sender) — best-effort.
         updateBusinessName(businessName.trim()).catch(() => {});
+        // Tell the backend a new business signed up (team alert + signup funnel,
+        // with the link that brought them in on the web). Analytics only: a
+        // failure must not block the new owner, so it's logged and dropped.
+        reportSignup(getSignupSource(), businessName.trim())
+          .then(clearSignupSource)
+          .catch((err) => console.warn('[session] signup report failed', err));
       },
 
       setNewPassword: async (newPassword, currentPassword) => {
@@ -568,7 +576,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
       completeTwoFactorSetup: () => setState((s) => ({ ...s, twoFactorSetupComplete: true })),
       verifyTwoFactor: () => setState((s) => ({ ...s, twoFactorVerified: true })),
-      completePayout: () => setState((s) => ({ ...s, payoutComplete: true })),
+      completePayout: () => {
+        setState((s) => ({ ...s, payoutComplete: true }));
+        // Funnel "set up" step: payouts approved. Counted once per business server-side.
+        reportOnboardingComplete().catch((err) => console.warn('[session] onboarding report failed', err));
+      },
       skipPayout: () => setState((s) => ({ ...s, payoutSkipped: true })),
     }),
     [state, initializing, runInteractive],

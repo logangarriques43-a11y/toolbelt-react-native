@@ -25,6 +25,8 @@ import { ThemedButton, ThemedIconTile } from '@/components/themed';
 import { useSession } from '@/context/session';
 import { useSMS } from '@/context/sms-store';
 import { errorMessage } from '@/lib/api-client';
+import { openBillingPortal } from '@/lib/billing-portal';
+import { IS_WEB } from '@/lib/platform';
 import { formatPhone, POPULAR_AREA_CODES } from '@/models/sms';
 import { iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
@@ -66,6 +68,9 @@ export default function SMSSetup() {
 
   useEffect(() => {
     if (sms.phoneNumber && step === 'intro') setStep('alreadySetUp');
+    // Browser purchases are provisioned by Stripe's webhook, not by `provision`,
+    // so a number showing up while we wait means setup finished.
+    else if (IS_WEB && sms.phoneNumber && step === 'settingUp') setStep('alreadySetUp');
   }, [sms.phoneNumber, step]);
 
   const provision = async (afterPurchase = purchased) => {
@@ -117,13 +122,48 @@ export default function SMSSetup() {
     }
   };
 
-  const onPurchased = () => {
+  const onPurchased = (phoneNumber?: string) => {
     setPurchased(true);
+    // The browser (Stripe) paywall hands back the number the webhook already
+    // provisioned; the Play paywall doesn't, so provision it here.
+    if (phoneNumber) {
+      setProvisionedNumber(phoneNumber);
+      setStep('success');
+      sms.refreshPhoneNumber().catch((err) => console.warn('[sms-setup] phone-number refresh failed', err));
+      return;
+    }
+    void provision(true);
+  };
+
+  /**
+   * "Try Again" on the setting-up step. After a browser (Stripe) purchase the
+   * number arrives via the webhook, so re-read it instead of calling
+   * `provision` (which only knows store plans and would show the paywall again).
+   */
+  const retry = () => {
+    if (IS_WEB && purchased) {
+      sms.refreshPhoneNumber().catch((err) =>
+        setSettingUpMessage(errorMessage(err, "We couldn't reach the server. Please try again.")),
+      );
+      return;
+    }
+    void provision();
+  };
+
+  /** Stripe-billed purchase still being set up: show "setting up" with a retry. */
+  const onPurchasePending = () => {
+    setPurchased(true);
+    if (IS_WEB) {
+      setSettingUpMessage('Your plan is active and your number is still being set up. This can take a minute.');
+      setStep('settingUp');
+      sms.refreshPhoneNumber().catch((err) => console.warn('[sms-setup] phone-number refresh failed', err));
+      return;
+    }
     void provision(true);
   };
 
   if (step === 'paywall') {
-    return <AiSmsPaywall onUnlocked={onPurchased} onPurchasePending={onPurchased} />;
+    return <AiSmsPaywall onUnlocked={onPurchased} onPurchasePending={onPurchasePending} areaCode={areaCode} />;
   }
 
   const shownNumber = step === 'success' ? provisionedNumber : sms.phoneNumber?.phoneNumber;
@@ -219,10 +259,12 @@ export default function SMSSetup() {
               </View>
               <Text style={[styles.title, theme.display(24)]}>Setting up your number</Text>
               <Text style={[styles.subtitle, { color: theme.secondaryText }]}>{settingUpMessage}</Text>
-              <ThemedButton title="Try Again" onPress={() => void provision()} style={styles.btn} />
-              <Pressable onPress={() => setStep('areaCode')}>
-                <Text style={[styles.goBack, { color: theme.secondaryText }]}>Change Area Code</Text>
-              </Pressable>
+              <ThemedButton title="Try Again" onPress={retry} style={styles.btn} />
+              {IS_WEB && purchased ? null : (
+                <Pressable onPress={() => setStep('areaCode')}>
+                  <Text style={[styles.goBack, { color: theme.secondaryText }]}>Change Area Code</Text>
+                </Pressable>
+              )}
             </View>
           )}
 
@@ -245,7 +287,7 @@ export default function SMSSetup() {
               <ConsentQRCard />
               <ThemedButton title="View Conversations" onPress={() => router.replace('/sms-conversations')} style={styles.btn} />
               {step === 'alreadySetUp' && (
-                <Pressable onPress={() => void Linking.openURL(PLAY_SUBSCRIPTIONS_URL)}>
+                <Pressable onPress={() => void (IS_WEB ? openBillingPortal() : Linking.openURL(PLAY_SUBSCRIPTIONS_URL))}>
                   <Text style={[styles.deactivate, { color: iOSColors.red }]}>Manage or Cancel Subscription</Text>
                 </Pressable>
               )}

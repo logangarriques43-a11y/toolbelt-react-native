@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<!--
+  HTML shell for the browser build (app.toolbelt.tools). Expo uses this file
+  for the single-page web export (app.json → web.output "single"); the phone
+  apps never load it.
+  - Home-screen install: manifest + apple-touch-icon + standalone display.
+  - Desktop framing: the app is designed for phone-width screens, so wider
+    windows show it (and its modal sheets) in a centered 640px column.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>ToolBelt</title>
+    <meta name="description" content="Run your business from one place: bookings, clients, invoices, staff and AI texting." />
+    <meta name="theme-color" content="#3A5240" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="ToolBelt" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="format-detection" content="telephone=no" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" type="image/png" href="/icons/icon-192.png" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <style id="expo-reset">
+      /* react-native-web root setup: full-height body, ScrollView-driven scrolling. */
+      html, body { height: 100%; }
+      body { overflow: hidden; margin: 0; background: #ECEDE6; overscroll-behavior: none; }
+      #root { display: flex; height: 100%; flex: 1; }
+      @media (prefers-color-scheme: dark) { body { background: #0E100E; } }
+
+      /* Row delete button (components/hover-delete.web.tsx): show on hover / keyboard focus, never on touch-only screens. */
+      [data-hover-delete-btn] { opacity: 0; transition: opacity 0.15s ease; }
+      [data-hover-delete]:hover [data-hover-delete-btn], [data-hover-delete-btn]:focus-visible { opacity: 1; }
+      @media (hover: none) { [data-hover-delete-btn] { display: none !important; } }
+
+      /* Keyboard focus ring in the app's sage instead of the browser default. */
+      input:focus-visible, textarea:focus-visible, [tabindex]:focus-visible { outline: 2px solid #8FB996; outline-offset: 1px; }
+
+      /* Desktop framing: centered app column, modal sheets aligned to it. */
+      @media (min-width: 641px) {
+        body { background: #DCDED6; }
+        #root, body > div:not(#root) {
+          max-width: 640px;
+          margin-left: auto !important;
+          margin-right: auto !important;
+          left: 0 !important;
+          right: 0 !important;
+        }
+        #root { box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.06), 0 12px 48px rgba(0, 0, 0, 0.12); }
+        /* react-native-web Modals render a fixed, full-window layer inside a body-level portal; pin it to the column. */
+        body > div:not(#root) > div[style*="fixed"], body > div:not(#root) > div {
+          left: calc(50% - 320px) !important;
+          right: calc(50% - 320px) !important;
+        }
+      }
+      @media (min-width: 641px) and (prefers-color-scheme: dark) {
+        body { background: #0A0B0A; }
+        #root { box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 12px 48px rgba(0, 0, 0, 0.5); }
+      }
+    </style>
+  </head>
+  <body>
+    <noscript>ToolBelt needs JavaScript turned on to run in your browser.</noscript>
+    <div id="root"></div>
+  </body>
+</html>

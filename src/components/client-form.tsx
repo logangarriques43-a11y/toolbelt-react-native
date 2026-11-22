@@ -21,6 +21,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { KeyboardAwareForm } from '@/components/keyboard-aware-form';
 
 import { pickDeviceContact, choosePhoneNumber } from '@/components/contacts-picker-sheet';
+import { CONTACT_PICKER_SUPPORTED } from '@/lib/platform';
 import { Icon } from '@/components/icon';
 import { DatePickerSheet } from '@/components/sheets/date-picker-sheet';
 import { TimeWheelSheet } from '@/components/sheets/time-wheel-sheet';
@@ -218,13 +219,15 @@ export function ClientForm({ editingId }: { editingId?: string }) {
                 )}
               </View>
             </Pressable>
-            <Pressable
-              onPress={importContact}
-              disabled={importing}
-              style={[styles.importRow, { opacity: importing ? 0.5 : 1 }]}>
-              <Icon name="person.crop.circle.badge.plus" size={14} color={theme.accent} />
-              <Text style={[styles.importText, { color: theme.accent }]}>Import from Contacts</Text>
-            </Pressable>
+            {CONTACT_PICKER_SUPPORTED ? (
+              <Pressable
+                onPress={importContact}
+                disabled={importing}
+                style={[styles.importRow, { opacity: importing ? 0.5 : 1 }]}>
+                <Icon name="person.crop.circle.badge.plus" size={14} color={theme.accent} />
+                <Text style={[styles.importText, { color: theme.accent }]}>Import from Contacts</Text>
+              </Pressable>
+            ) : null}
           </View>
 
           {/* Basic Information */}
@@ -313,7 +316,7 @@ export function ClientForm({ editingId }: { editingId?: string }) {
         </KeyboardAwareForm>
       </SafeAreaView>
 
-      {Platform.OS === 'ios' ? (
+      {Platform.OS !== 'android' ? (
         <DatePickerSheet
           visible={birthdaySheet}
           date={birthday ?? noonISO(new Date())}

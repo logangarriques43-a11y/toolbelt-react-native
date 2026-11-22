@@ -14,12 +14,9 @@
 import * as Contacts from 'expo-contacts';
 import { Alert, Linking, Platform } from 'react-native';
 
-export interface PickedContact {
-  name: string;
-  /** Every phone number on the card, primary/mobile first. */
-  phones: string[];
-  email?: string;
-}
+import type { PickedContact } from '@/lib/picked-contact';
+
+export { choosePhoneNumber, type PickedContact } from '@/lib/picked-contact';
 
 const FIELDS = [Contacts.Fields.Name, Contacts.Fields.FirstName, Contacts.Fields.LastName, Contacts.Fields.PhoneNumbers, Contacts.Fields.Emails];
 
@@ -74,24 +71,4 @@ export async function pickDeviceContact(): Promise<PickedContact | null> {
     Alert.alert('Could not open contacts', e instanceof Error ? e.message : 'Please try again.');
     return null;
   }
-}
-
-/** When a contact has several numbers, ask which one to use. */
-export function choosePhoneNumber(contact: PickedContact): Promise<string | null> {
-  if (contact.phones.length <= 1) return Promise.resolve(contact.phones[0] ?? null);
-  return new Promise((resolve) => {
-    Alert.alert(
-      contact.name || 'Choose a number',
-      'Which number should ToolBelt use?',
-      // Android dialogs hold at most three buttons: offer up to three numbers
-      // there (tap outside to cancel); iOS gets up to five plus Cancel.
-      Platform.OS === 'android'
-        ? contact.phones.slice(0, 3).map((p) => ({ text: p, onPress: () => resolve(p) }))
-        : [
-            ...contact.phones.slice(0, 5).map((p) => ({ text: p, onPress: () => resolve(p) })),
-            { text: 'Cancel', style: 'cancel' as const, onPress: () => resolve(null) },
-          ],
-      { cancelable: true, onDismiss: () => resolve(null) },
-    );
-  });
 }

@@ -17,6 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { KeyboardAwareForm } from '@/components/keyboard-aware-form';
 
 import { choosePhoneNumber, pickDeviceContact } from '@/components/contacts-picker-sheet';
+import { CONTACT_PICKER_SUPPORTED } from '@/lib/platform';
 import { DashboardGradient } from '@/components/dashboard-gradient';
 import { Icon } from '@/components/icon';
 import { ColorPickerSheet } from '@/components/sheets/color-picker-sheet';
@@ -176,10 +177,12 @@ export function StaffForm({ editingId }: { editingId?: string }) {
                 </>
               )}
             </Pressable>
-            <Pressable onPress={importContact} disabled={importing} style={[styles.importBtn, { borderColor: theme.divider, backgroundColor: theme.cardBackground, borderRadius: theme.isEditorial ? 2 : 999, opacity: importing ? 0.5 : 1 }]}>
-              <Icon name="person.crop.circle.badge.plus" size={18} color={theme.accent} />
-              <Text style={[styles.importText, { color: theme.accent }]}>Import from Contacts</Text>
-            </Pressable>
+            {CONTACT_PICKER_SUPPORTED ? (
+              <Pressable onPress={importContact} disabled={importing} style={[styles.importBtn, { borderColor: theme.divider, backgroundColor: theme.cardBackground, borderRadius: theme.isEditorial ? 2 : 999, opacity: importing ? 0.5 : 1 }]}>
+                <Icon name="person.crop.circle.badge.plus" size={18} color={theme.accent} />
+                <Text style={[styles.importText, { color: theme.accent }]}>Import from Contacts</Text>
+              </Pressable>
+            ) : null}
           </View>
 
           {/* Fields */}

@@ -24,6 +24,7 @@ import { useSales } from '@/context/sales-store';
 import { uuid } from '@/lib/id';
 import { alertChargeError, saleFieldsFor, useCardCharge, type ChargeResult } from '@/lib/stripe-charge';
 import { PaymentsTerminalProvider, useTapToPay } from '@/lib/stripe-terminal';
+import { TAP_TO_PAY_SUPPORTED } from '@/lib/platform';
 import type { PaymentMethod } from '@/models/sale';
 import { iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
@@ -257,11 +258,13 @@ function PaymentSheet({
   onSelect: (method: PaymentMethod) => void;
 }) {
   const theme = useAppTheme();
-  const methods: { label: PaymentMethod; icon: SFSymbol }[] = [
+  const allMethods: { label: PaymentMethod; icon: SFSymbol }[] = [
     { label: 'Cash', icon: 'banknote.fill' },
     { label: 'Card', icon: 'creditcard.fill' },
     { label: 'Tap to Pay', icon: 'wave.3.right' },
   ];
+  // No Tap to Pay in the browser (needs the phone's NFC).
+  const methods = allMethods.filter((m) => m.label !== 'Tap to Pay' || TAP_TO_PAY_SUPPORTED);
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>

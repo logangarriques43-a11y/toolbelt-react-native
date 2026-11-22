@@ -12,7 +12,6 @@
 import { useRouter } from 'expo-router';
 import type { SFSymbol } from 'expo-symbols';
 import * as DocumentPicker from 'expo-document-picker';
-import * as FileSystem from 'expo-file-system/legacy';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -20,6 +19,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DetectedServicesReviewSheet } from '@/components/import/detected-services-review-sheet';
 import { DeviceCalendarSheet, type DeviceCalendarImport } from '@/components/import/device-calendar-sheet';
+import { DEVICE_CALENDAR_SUPPORTED } from '@/lib/platform';
+import { readPickedTextFile } from '@/lib/read-text-file';
 import { Icon } from '@/components/icon';
 import { ThemedIconTile } from '@/components/themed';
 import { OptionSheet } from '@/components/sheets/option-sheet';
@@ -189,7 +190,7 @@ export default function ImportData() {
       });
       if (res.canceled) return;
       const asset = res.assets[0];
-      const content = await FileSystem.readAsStringAsync(asset.uri);
+      const content = await readPickedTextFile(asset);
       processFile(content, asset.name, ft, cat);
     } catch (e) {
       Alert.alert('Import Error', e instanceof Error ? e.message : 'Could not read the file.');
@@ -667,13 +668,19 @@ function SelectSource({
         <Icon name="arrow.triangle.2.circlepath.circle.fill" size={20} color={theme.accent} />
         <Text style={theme.display(20, '500')}>Sync with Calendar</Text>
       </View>
-      <Text style={[styles.blockSub, { color: theme.secondaryText }]}>Pull appointments from your phone's calendar apps directly.</Text>
-      <SourceCard
-        icon="calendar"
-        title="Device Calendar"
-        subtitle={Platform.OS === 'ios' ? 'Import events from your iPhone calendars' : 'Import from Google, Samsung & other calendars on this phone'}
-        onPress={onDeviceCalendar}
-      />
+      <Text style={[styles.blockSub, { color: theme.secondaryText }]}>
+        {DEVICE_CALENDAR_SUPPORTED
+          ? "Pull appointments from your phone's calendar apps directly."
+          : 'Import appointments from a calendar export (.ics) file.'}
+      </Text>
+      {DEVICE_CALENDAR_SUPPORTED ? (
+        <SourceCard
+          icon="calendar"
+          title="Device Calendar"
+          subtitle={Platform.OS === 'ios' ? 'Import events from your iPhone calendars' : 'Import from Google, Samsung & other calendars on this phone'}
+          onPress={onDeviceCalendar}
+        />
+      ) : null}
       <SourceCard
         icon="g.circle.fill"
         title="Google Calendar"

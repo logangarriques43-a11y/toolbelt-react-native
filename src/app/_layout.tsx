@@ -14,6 +14,7 @@ import { View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { WebHosts } from '@/components/web-hosts';
 import { SessionProvider, useSession } from '@/context/session';
 import { RevenueCatInit } from '@/lib/revenuecat-init';
 import { ThemeProvider, useAppTheme } from '@/theme/theme-context';
@@ -31,6 +32,7 @@ export default function RootLayout() {
             <SessionProvider>
               <RevenueCatInit />
               <RootNavigator />
+              <WebHosts />
             </SessionProvider>
           </QueryClientProvider>
         </ThemeProvider>

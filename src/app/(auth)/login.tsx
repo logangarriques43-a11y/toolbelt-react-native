@@ -39,6 +39,7 @@ import { useSession } from '@/context/session';
 import { firebaseAuthErrorMessage, firebaseErrorCode } from '@/lib/auth-errors';
 import { auth } from '@/lib/firebase';
 import { phoneHint, totpHint } from '@/lib/mfa-hints';
+import { PASSKEYS_OFFERED } from '@/lib/platform';
 import { useAppTheme } from '@/theme/theme-context';
 
 const EMAIL_RE = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
@@ -198,13 +199,15 @@ export default function Login() {
           </View>
 
           <View style={styles.altButtons}>
-            <OutlineButton
-              icon="person.badge.key.fill"
-              title="Sign in with Passkey"
-              accent
-              loading={passkeyLoading}
-              onPress={signInWithPasskey}
-            />
+            {PASSKEYS_OFFERED ? (
+              <OutlineButton
+                icon="person.badge.key.fill"
+                title="Sign in with Passkey"
+                accent
+                loading={passkeyLoading}
+                onPress={signInWithPasskey}
+              />
+            ) : null}
             <OutlineButton icon="key.fill" title="Use a Backup Code" onPress={() => setShowBackup(true)} />
             <OutlineButton
               icon="person.2.fill"

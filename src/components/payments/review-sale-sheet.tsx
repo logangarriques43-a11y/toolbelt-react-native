@@ -37,7 +37,7 @@ import {
   type SelectedProductItem,
   type SelectedServiceItem,
 } from '@/models/cart';
-import { PAYMENT_METHODS, type PaymentMethod, type SaleItem } from '@/models/sale';
+import { AVAILABLE_PAYMENT_METHODS, type PaymentMethod, type SaleItem } from '@/models/sale';
 import { iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
 
@@ -336,7 +336,7 @@ export function ReviewSaleSheet(props: ReviewSaleSheetProps) {
             {/* Payment method */}
             <Field label="Payment Method">
               <View style={styles.methodGrid}>
-                {PAYMENT_METHODS.map((m) => {
+                {AVAILABLE_PAYMENT_METHODS.map((m) => {
                   const active = method === m.method;
                   return (
                     <Pressable key={m.method} style={styles.methodWrap} onPress={() => setMethod(m.method)}>

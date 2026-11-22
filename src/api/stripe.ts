@@ -68,7 +68,11 @@ export function getPayoutBalance(): Promise<PayoutBalance> {
 }
 
 /** Creates the Express account if needed and returns a hosted onboarding URL. */
-export function startHostedOnboarding(input: { email?: string; businessUrl?: string }): Promise<{
+/**
+ * `client: 'web'` makes Stripe return to app.toolbelt.tools/payout instead of
+ * the phone app's toolbelt:// link (the browser can't open that).
+ */
+export function startHostedOnboarding(input: { email?: string; businessUrl?: string; client?: 'web' }): Promise<{
   url: string;
   expiresAt: number;
   stripeAccountId: string;
@@ -77,8 +81,8 @@ export function startHostedOnboarding(input: { email?: string; businessUrl?: str
 }
 
 /** Fresh onboarding/update link for an existing account (expires in ~5 min). */
-export function createAccountLink(): Promise<{ url: string; expiresAt: number }> {
-  return api.post('/stripe/connect/create-account-link', {});
+export function createAccountLink(opts: { client?: 'web' } = {}): Promise<{ url: string; expiresAt: number }> {
+  return api.post('/stripe/connect/create-account-link', opts.client ? { client: opts.client } : {});
 }
 
 // ── Card payments (PaymentSheet) ─────────────────────────────────────
@@ -90,6 +94,11 @@ export interface ChargeInput {
   metadata?: Record<string, string>;
   /** One UUID per checkout attempt — a retried request returns the same intent. */
   idempotencyKey?: string;
+  /**
+   * `'web'` asks for card-only (incl. Apple/Google Pay): a redirect-based
+   * method would reload the browser tab and lose the sale being recorded.
+   */
+  client?: 'web';
 }
 
 export interface CardIntent {

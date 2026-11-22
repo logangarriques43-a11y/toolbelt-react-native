@@ -16,6 +16,8 @@ import * as firebaseAuth from 'firebase/auth';
 import { getAuth, initializeAuth, type Auth } from 'firebase/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import { webAuthDependencies } from '@/lib/firebase-web-auth';
+
 /** Also used by the reCAPTCHA verifier's WebView (`recaptcha-verifier-sheet.tsx`). */
 export const firebaseConfig = {
   apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
@@ -34,6 +36,15 @@ const getReactNativePersistence = (firebaseAuth as unknown as {
 }).getReactNativePersistence;
 
 function makeAuth(): Auth {
+  // The browser build keeps the session in IndexedDB (firebase-web-auth.web.ts).
+  const web = webAuthDependencies();
+  if (web) {
+    try {
+      return initializeAuth(firebaseApp, web);
+    } catch {
+      return getAuth(firebaseApp);
+    }
+  }
   try {
     return initializeAuth(
       firebaseApp,
