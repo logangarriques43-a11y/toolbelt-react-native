@@ -16,7 +16,7 @@
  * Only the web build imports this file.
  */
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useSyncExternalStore } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View, type AlertButton, type AlertOptions } from 'react-native';
 
 import { iOSColors } from '@/theme/tokens';
@@ -31,12 +31,24 @@ interface QueuedAlert {
 }
 
 let nextId = 1;
+// Read with useSyncExternalStore (see AlertHost): the React Compiler memoizes
+// plain reads of module variables during render.
 let queue: QueuedAlert[] = [];
 const listeners = new Set<() => void>();
 
 function emit() {
   for (const l of listeners) l();
 }
+
+function subscribe(l: () => void) {
+  listeners.add(l);
+  return () => {
+    listeners.delete(l);
+  };
+}
+const getQueue = () => queue;
+const EMPTY: QueuedAlert[] = [];
+const getServerQueue = () => EMPTY;
 
 function enqueue(title: string, message?: string, buttons?: AlertButton[], options?: AlertOptions) {
   const list = buttons && buttons.length > 0 ? buttons : [{ text: 'OK' }];
@@ -63,18 +75,8 @@ export function installWebAlert() {
 
 export function AlertHost() {
   const theme = useAppTheme();
-  const [, force] = useState(0);
   const firstButton = useRef<View>(null);
-
-  useEffect(() => {
-    const l = () => force((n) => n + 1);
-    listeners.add(l);
-    return () => {
-      listeners.delete(l);
-    };
-  }, []);
-
-  const current = queue[0];
+  const current = useSyncExternalStore(subscribe, getQueue, getServerQueue)[0];
 
   const press = (button?: AlertButton) => {
     shift();

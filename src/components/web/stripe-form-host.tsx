@@ -13,7 +13,7 @@
 
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
 import { loadStripe, type Appearance, type Stripe } from '@stripe/stripe-js';
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, useSyncExternalStore, type FormEvent } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useAppTheme, type AppTheme } from '@/theme/theme-context';
@@ -38,9 +38,20 @@ interface Pending {
   resolve: (o: StripeFormOutcome) => void;
 }
 
+// Module-level store read with useSyncExternalStore: the React Compiler
+// memoizes plain reads of module variables, so a component that just read
+// `pending` during render would never see a new request.
 let pending: Pending | null = null;
 const listeners = new Set<() => void>();
 const emit = () => listeners.forEach((l) => l());
+const subscribe = (l: () => void) => {
+  listeners.add(l);
+  return () => {
+    listeners.delete(l);
+  };
+};
+const getPending = () => pending;
+const getServerPending = () => null;
 
 /** Open the card form. Only one can be open; a second call cancels the first. */
 export function presentStripeForm(request: StripeFormRequest): Promise<StripeFormOutcome> {
@@ -85,17 +96,8 @@ function appearanceFor(theme: AppTheme): Appearance {
 
 export function StripeFormHost() {
   const theme = useAppTheme();
-  const [, force] = useState(0);
-
-  useEffect(() => {
-    const l = () => force((n) => n + 1);
-    listeners.add(l);
-    return () => {
-      listeners.delete(l);
-    };
-  }, []);
-
-  const request = pending?.request;
+  const current = useSyncExternalStore(subscribe, getPending, getServerPending);
+  const request = current?.request;
   const stripePromise = useMemo(
     () => (request ? stripeFor(request.publishableKey, request.stripeAccount) : null),
     [request],
