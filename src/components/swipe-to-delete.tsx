@@ -1,7 +1,8 @@
 /**
  * SwipeToDelete — swipe a row left to reveal a red delete background; past the
  * threshold it slides off and fires onDelete. Mirrors the DragGesture logic in
- * ServiceCard/ClientCard (offset < -100 → delete, else spring back).
+ * ServiceCard/ClientCard (offset < -100 → delete, else spring back). In the
+ * browser a hover-revealed delete button is added for mouse users.
  */
 
 import type { ReactNode } from 'react';
@@ -15,6 +16,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
+import { HoverDeleteButton } from '@/components/hover-delete';
 import { Icon } from '@/components/icon';
 import { iOSColors } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
@@ -52,13 +54,15 @@ export function SwipeToDelete({
   }));
 
   return (
-    <View>
+    <View dataSet={{ hoverDelete: '' }}>
       <Animated.View style={[styles.deleteBg, { borderRadius: theme.cornerRadius }, deleteBgStyle]}>
         <Icon name="trash.fill" size={24} color="#FFFFFF" />
       </Animated.View>
       <GestureDetector gesture={pan}>
         <Animated.View style={cardStyle}>{children}</Animated.View>
       </GestureDetector>
+      {/* Browser only: hover-revealed delete for mouse users (renders nothing on phones). */}
+      <HoverDeleteButton onDelete={onDelete} />
     </View>
   );
 }

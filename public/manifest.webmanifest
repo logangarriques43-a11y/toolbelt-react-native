@@ -1,0 +1,15 @@
+{
+  "name": "ToolBelt",
+  "short_name": "ToolBelt",
+  "description": "Run your business from one place: bookings, clients, invoices, staff and AI texting.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#141714",
+  "theme_color": "#3A5240",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

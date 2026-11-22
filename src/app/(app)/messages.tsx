@@ -15,6 +15,7 @@ import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View 
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { choosePhoneNumber, pickDeviceContact } from '@/components/contacts-picker-sheet';
+import { CONTACT_PICKER_SUPPORTED } from '@/lib/platform';
 import { Icon } from '@/components/icon';
 import { KeyboardAwareForm } from '@/components/keyboard-aware-form';
 import { ThemedButton } from '@/components/themed';
@@ -379,16 +380,18 @@ function ContactsTab({ clients, onCompose }: { clients: import('@/models/client'
 
   return (
     <View style={styles.flex}>
-      <View style={styles.sourceRow}>
-        {(['My Clients', 'Phone Contacts'] as const).map((s) => {
-          const active = source === s;
-          return (
-            <Pressable key={s} onPress={() => setSource(s)} style={[styles.pill, { backgroundColor: active ? theme.accent : theme.cardBackground }, !active && lightShadow(theme)]}>
-              <Text style={[styles.pillText, { color: active ? theme.onAccent : theme.secondaryText }]}>{s}</Text>
-            </Pressable>
-          );
-        })}
-      </View>
+      {CONTACT_PICKER_SUPPORTED ? (
+        <View style={styles.sourceRow}>
+          {(['My Clients', 'Phone Contacts'] as const).map((s) => {
+            const active = source === s;
+            return (
+              <Pressable key={s} onPress={() => setSource(s)} style={[styles.pill, { backgroundColor: active ? theme.accent : theme.cardBackground }, !active && lightShadow(theme)]}>
+                <Text style={[styles.pillText, { color: active ? theme.onAccent : theme.secondaryText }]}>{s}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      ) : null}
       <View style={[styles.search, { backgroundColor: theme.cardBackground }, lightShadow(theme)]}>
         <Icon name="magnifyingglass" size={16} color={theme.secondaryText} />
         <TextInput value={search} onChangeText={setSearch} placeholder="Search contacts..." placeholderTextColor={theme.secondaryText} style={[styles.searchInput, { color: theme.primaryText }]} />

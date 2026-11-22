@@ -1,0 +1,88 @@
+# Render Blueprint for the browser build of ToolBelt (app.toolbelt.tools).
+#
+# A free static site: Render runs the Expo web export and serves dist/.
+# The phone apps don't use this file. Create it once in Render with
+# New → Blueprint → this repo, then add the custom domain app.toolbelt.tools
+# (Cloudflare DNS: CNAME app → <service>.onrender.com, DNS only / grey cloud).
+# See docs/web-app.md.
+
+services:
+  - type: web
+    name: toolbelt-web
+    runtime: static
+    branch: main
+    buildCommand: npm ci && npx expo export --platform web
+    staticPublishPath: ./dist
+    pullRequestPreviewsEnabled: false
+    envVars:
+      # Same public values as the Android build's .env (EXPO_PUBLIC_* are
+      # compiled into the bundle and are not secrets). Fill them in when the
+      # Blueprint is created.
+      - key: EXPO_PUBLIC_API_BASE_URL
+        value: https://api.toolbelt.tools/api/v1
+      - key: EXPO_PUBLIC_FIREBASE_API_KEY
+        sync: false
+      - key: EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN
+        sync: false
+      - key: EXPO_PUBLIC_FIREBASE_PROJECT_ID
+        sync: false
+      - key: EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET
+        sync: false
+      - key: EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+        sync: false
+      - key: EXPO_PUBLIC_FIREBASE_APP_ID
+        sync: false
+      - key: NODE_VERSION
+        value: "20"
+    routes:
+      # Single-page app: any path that isn't a real file loads the app shell,
+      # and expo-router shows the right screen.
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    headers:
+      - path: /*
+        name: Content-Security-Policy
+        value: >-
+          default-src 'self';
+          script-src 'self' https://js.stripe.com https://*.js.stripe.com https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/ https://apis.google.com;
+          style-src 'self' 'unsafe-inline';
+          img-src 'self' data: blob: https:;
+          font-src 'self' data:;
+          connect-src 'self' https://api.toolbelt.tools https://*.js.stripe.com https://toolbelt-backend-dtvy.onrender.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com https://places.googleapis.com https://api.stripe.com https://r.stripe.com https://m.stripe.network;
+          frame-src https://js.stripe.com https://*.js.stripe.com https://hooks.stripe.com https://www.google.com/recaptcha/ https://recaptcha.google.com https://*.firebaseapp.com;
+          worker-src 'self' blob:;
+          object-src 'none';
+          base-uri 'self';
+          form-action 'self' https://hooks.stripe.com;
+          frame-ancestors 'none';
+          upgrade-insecure-requests
+      - path: /*
+        name: Strict-Transport-Security
+        value: max-age=31536000; includeSubDomains
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
+      - path: /*
+        name: Permissions-Policy
+        value: camera=(self), microphone=(), geolocation=(self), payment=(self "https://js.stripe.com")
+      - path: /*
+        name: Cross-Origin-Opener-Policy
+        value: same-origin-allow-popups
+      # Hashed bundles never change: cache them for a year.
+      - path: /_expo/*
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
+      - path: /assets/*
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
+      # The app shell must always be fresh so a deploy takes effect at once.
+      - path: /index.html
+        name: Cache-Control
+        value: no-cache
+      - path: /
+        name: Cache-Control
+        value: no-cache

@@ -40,6 +40,7 @@ import { LivePill, ThemedButton, ThemedIconTile, ThemedSectionHeader } from '@/c
 import { useSession } from '@/context/session';
 import { firebaseAuthErrorMessage, firebaseErrorCode } from '@/lib/auth-errors';
 import { auth } from '@/lib/firebase';
+import { PASSKEYS_OFFERED } from '@/lib/platform';
 import { useAppTheme } from '@/theme/theme-context';
 
 type PendingAction = { kind: 'enroll' } | { kind: 'remove'; factor: MultiFactorInfo };
@@ -236,19 +237,23 @@ export default function Security() {
                 </Pressable>
               )}
             </MethodRow>
-            <Divider />
-            <MethodRow
-              icon="person.badge.key.fill"
-              title="Passkey"
-              subtitle="Sign in with your fingerprint, face or screen lock">
-              {addingPasskey ? (
-                <ActivityIndicator color={theme.accent} />
-              ) : (
-                <Pressable onPress={addPasskey} hitSlop={8}>
-                  <Text style={[styles.link, { color: theme.accent }]}>Add passkey</Text>
-                </Pressable>
-              )}
-            </MethodRow>
+            {PASSKEYS_OFFERED ? (
+              <>
+                <Divider />
+                <MethodRow
+                  icon="person.badge.key.fill"
+                  title="Passkey"
+                  subtitle="Sign in with your fingerprint, face or screen lock">
+                  {addingPasskey ? (
+                    <ActivityIndicator color={theme.accent} />
+                  ) : (
+                    <Pressable onPress={addPasskey} hitSlop={8}>
+                      <Text style={[styles.link, { color: theme.accent }]}>Add passkey</Text>
+                    </Pressable>
+                  )}
+                </MethodRow>
+              </>
+            ) : null}
             <Divider />
             <MethodRow
               icon="phone.fill"

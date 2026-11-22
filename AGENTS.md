@@ -28,6 +28,8 @@ Don't copy a block from another store or screen. Find or create the shared helpe
 - **UI tokens.** Colors come from `src/theme/tokens.ts` and `src/components/themed.tsx`. If a token is missing, add it there. Never assume white text on the accent color.
 - **Icons.** Use only names present in `icon-map.ts`. An unmapped name renders blank in release builds.
 
+- **Browser build.** The same code ships to app.toolbelt.tools (see `docs/web-app.md`). Phone-only APIs sit behind `name.web.ts(x)` twins or the flags in `src/lib/platform.ts`; never import a native-only module from a shared file without a web twin. After a change, run `npx expo export --platform web` as well.
+
 ## Checks
 
 These must pass; CI runs both:

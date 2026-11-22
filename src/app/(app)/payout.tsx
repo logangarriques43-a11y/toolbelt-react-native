@@ -51,6 +51,7 @@ import { ScreenHeader } from '@/components/screen-header';
 import { LivePill, ThemedButton, ThemedIconTile } from '@/components/themed';
 import { useSession } from '@/context/session';
 import { ApiError } from '@/lib/api-client';
+import { IS_WEB } from '@/lib/platform';
 import { auth } from '@/lib/firebase';
 import { useAppTheme } from '@/theme/theme-context';
 
@@ -171,6 +172,14 @@ export default function PayoutSettings() {
     setOpening(true);
     try {
       const { url } = await getUrl();
+      if (IS_WEB) {
+        // Browser: go to Stripe in this tab; Stripe sends people back to
+        // /payout, which re-reads the account status when it loads. Only ever
+        // navigate to Stripe's own onboarding host.
+        if (!/^https:\/\/connect\.stripe\.com\//.test(url)) throw new Error('Unexpected Stripe link.');
+        window.location.assign(url);
+        return;
+      }
       await WebBrowser.openAuthSessionAsync(url, RETURN_URL);
     } catch (err) {
       Alert.alert("Couldn't open Stripe", errorMessage(err));
@@ -181,13 +190,14 @@ export default function PayoutSettings() {
   };
 
   const email = session.account?.email ?? auth.currentUser?.email ?? undefined;
-  const setUp = () => openStripe(() => startHostedOnboarding({ email }));
+  const client = IS_WEB ? ('web' as const) : undefined;
+  const setUp = () => openStripe(() => startHostedOnboarding({ email, client }));
   // Links expire in ~5 min, so each tap asks for a new one. If the account
   // vanished server-side, fall back to creating it again.
   const continueSetup = () =>
     openStripe(() =>
-      createAccountLink().catch((err) => {
-        if (err instanceof ApiError && err.code === 'NO_CONNECT_ACCOUNT') return startHostedOnboarding({ email });
+      createAccountLink({ client }).catch((err) => {
+        if (err instanceof ApiError && err.code === 'NO_CONNECT_ACCOUNT') return startHostedOnboarding({ email, client });
         throw err;
       }),
     );

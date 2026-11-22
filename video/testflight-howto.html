@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<!--
+  Source for the "Get ToolBelt on your iPhone" TestFlight how-to video
+  (served at app.toolbelt.tools/media/testflight-howto.mp4 and embedded on
+  toolbelt.tools/start). Rendered frame-by-frame by video/render.mjs, which calls
+  window.renderAt(seconds) for every frame — so the animation is a pure
+  function of time, not CSS transitions. Illustrations are simplified on
+  purpose: they show the steps, not pixel copies of Apple's screens.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<style>
+  :root {
+    --bg: #141714; --surface: #1E221E; --muted: #262B26; --text: #ECEDE6; --sub: #A9AFA5;
+    --sage: #8FB996; --deep: #3A5240; --blue: #2F7CF6;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 720px; height: 1280px; overflow: hidden; background: var(--bg); color: var(--text);
+    font-family: -apple-system, "SF Pro Text", "Helvetica Neue", Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+  .serif { font-family: "New York", ui-serif, Georgia, serif; font-weight: 400; }
+  .layer { position: absolute; inset: 0; opacity: 0; }
+  .center { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+  .glow { position: absolute; width: 900px; height: 900px; left: -90px; top: 120px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(143,185,150,0.18), rgba(20,23,20,0) 60%); }
+
+  /* Captions */
+  .cap { position: absolute; left: 56px; right: 56px; top: 86px; }
+  .stepnum { display: inline-flex; width: 52px; height: 52px; border-radius: 26px; background: var(--sage); color: #10140F;
+    font-weight: 800; font-size: 26px; align-items: center; justify-content: center; margin-bottom: 18px; }
+  .cap h2 { font-size: 50px; line-height: 1.08; }
+  .cap p { margin-top: 14px; font-size: 25px; line-height: 1.35; color: var(--sub); }
+
+  /* Phone */
+  .phone { position: absolute; left: 150px; top: 380px; width: 420px; height: 820px; border-radius: 62px;
+    background: #0B0C0B; border: 3px solid #2D332C; box-shadow: 0 30px 80px rgba(0,0,0,0.55); overflow: hidden; }
+  .notch { position: absolute; top: 14px; left: 50%; width: 120px; height: 34px; margin-left: -60px; border-radius: 20px; background: #000; z-index: 5; }
+  .screen { position: absolute; inset: 10px; border-radius: 52px; overflow: hidden; background: #F4F5F1; color: #111; }
+  .screen.dark { background: var(--bg); color: var(--text); }
+  .status { height: 58px; }
+
+  /* Generic store / beta UI bits */
+  .row { display: flex; align-items: center; gap: 18px; padding: 0 26px; }
+  .appicon { width: 92px; height: 92px; border-radius: 22px; flex: none; }
+  .tf { background: linear-gradient(160deg, #5AA8FF, #1F6FE8); position: relative; }
+  .tf::after { content: ""; position: absolute; left: 22px; top: 30px; width: 48px; height: 30px; border-radius: 4px 30px 4px 30px; background: #fff; transform: rotate(-20deg); }
+  .tb { background: url(icon.png) center/cover; }
+  .name { font-size: 24px; font-weight: 700; }
+  .by { font-size: 17px; color: #6B6F68; margin-top: 3px; }
+  .pill { display: inline-flex; align-items: center; justify-content: center; min-width: 96px; height: 42px; padding: 0 22px; border-radius: 21px;
+    background: #E4E7E1; color: var(--blue); font-weight: 800; font-size: 19px; letter-spacing: 0.3px; }
+  .pill.solid { background: var(--blue); color: #fff; }
+  .card { margin: 0 22px; border-radius: 24px; background: #fff; padding: 26px; box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
+  .lines i { display: block; height: 12px; border-radius: 6px; background: #E4E7E1; margin-top: 12px; }
+  .big-btn { height: 66px; border-radius: 18px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 22px; }
+
+  /* Finger tap */
+  .tap { position: absolute; width: 74px; height: 74px; margin: -37px 0 0 -37px; border-radius: 50%;
+    background: rgba(255,255,255,0.55); border: 3px solid rgba(255,255,255,0.9); box-shadow: 0 4px 18px rgba(0,0,0,0.3); opacity: 0; z-index: 9; }
+  .ring { position: absolute; border-radius: 50%; border: 4px solid rgba(143,185,150,0.9); opacity: 0; z-index: 8; }
+
+  .spinner { width: 34px; height: 34px; border-radius: 50%; border: 4px solid rgba(47,124,246,0.25); border-top-color: var(--blue); }
+  .progress { width: 44px; height: 44px; }
+  .footer-url { position: absolute; bottom: 70px; left: 0; right: 0; text-align: center; font-size: 24px; color: var(--sage); font-weight: 600; letter-spacing: 0.3px; }
+</style>
+</head>
+<body>
+<div class="glow"></div>
+
+<!-- Intro -->
+<div class="layer center" id="intro">
+  <div class="appicon tb" style="width:150px;height:150px;border-radius:36px;margin-bottom:44px"></div>
+  <h1 class="serif" style="font-size:70px;line-height:1.05">Get ToolBelt<br/>on your iPhone</h1>
+  <p style="font-size:28px;color:var(--sub);margin-top:26px">3 quick steps · about a minute</p>
+</div>
+
+<!-- Step 1 -->
+<div class="layer" id="s1">
+  <div class="cap"><div class="stepnum">1</div><h2 class="serif">Install TestFlight</h2>
+    <p>Apple's free app for trying new apps. Get it from the App Store.</p></div>
+  <div class="phone"><div class="notch"></div><div class="screen">
+    <div class="status"></div>
+    <div style="padding:26px 26px 10px;font-size:34px;font-weight:800">App Store</div>
+    <div class="row" style="margin-top:18px">
+      <div class="appicon tf"></div>
+      <div style="flex:1"><div class="name">TestFlight</div><div class="by">Apple</div></div>
+      <div id="s1-btn" class="pill">GET</div>
+    </div>
+    <div class="card lines" style="margin-top:34px"><i style="width:70%"></i><i></i><i style="width:85%"></i><i style="width:55%"></i></div>
+    <div class="card lines" style="margin-top:18px"><i style="width:60%"></i><i style="width:90%"></i><i style="width:40%"></i></div>
+  </div></div>
+</div>
+
+<!-- Step 2 -->
+<div class="layer" id="s2">
+  <div class="cap"><div class="stepnum">2</div><h2 class="serif">Open your invite</h2>
+    <p>Tap the ToolBelt link we sent you, choose the iPhone app, then tap Accept.</p></div>
+  <div class="phone"><div class="notch"></div>
+    <div class="screen dark" id="s2-page">
+      <div class="status"></div>
+      <div style="padding:40px 30px 0;text-align:center">
+        <div class="appicon tb" style="margin:0 auto 22px;width:84px;height:84px;border-radius:20px"></div>
+        <div class="serif" style="font-size:36px;line-height:1.1">Run your business<br/>from one place.</div>
+        <div style="font-size:16px;color:var(--sub);margin-top:12px">toolbelt.tools/start</div>
+      </div>
+      <div style="position:absolute;left:28px;right:28px;top:380px">
+        <div class="big-btn" style="background:var(--sage);color:#10140F">Start now in your browser</div>
+        <div class="big-btn" id="s2-beta" style="margin-top:16px;border:2px solid #3A433A;color:var(--text)">Get the iPhone app (beta)</div>
+      </div>
+    </div>
+    <div class="screen" id="s2-invite" style="opacity:0">
+      <div class="status"></div>
+      <div style="padding:26px 26px 0;font-size:34px;font-weight:800">TestFlight</div>
+      <div class="card" style="margin-top:40px;text-align:center;padding:36px 26px">
+        <div class="appicon tb" style="margin:0 auto 18px"></div>
+        <div class="name">ToolBelt</div>
+        <div class="by" style="margin-top:6px">You're invited to test this app</div>
+        <div id="s2-accept" class="big-btn" style="margin-top:28px;background:var(--blue);color:#fff">Accept</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Step 3 -->
+<div class="layer" id="s3">
+  <div class="cap"><div class="stepnum">3</div><h2 class="serif">Tap Install, then Open</h2>
+    <p>ToolBelt downloads like any other app and lands on your home screen.</p></div>
+  <div class="phone"><div class="notch"></div><div class="screen">
+    <div class="status"></div>
+    <div style="padding:26px 26px 0;font-size:34px;font-weight:800">TestFlight</div>
+    <div class="row" style="margin-top:30px">
+      <div class="appicon tb"></div>
+      <div style="flex:1"><div class="name">ToolBelt</div><div class="by">Beta</div></div>
+      <div id="s3-btn" class="pill">INSTALL</div>
+    </div>
+    <div class="card lines" style="margin-top:34px"><div style="font-weight:700;font-size:18px">What to Test</div><i style="width:80%"></i><i></i><i style="width:60%"></i></div>
+  </div></div>
+</div>
+
+<!-- Outro -->
+<div class="layer center" id="outro">
+  <div class="appicon tb" style="width:150px;height:150px;border-radius:36px;margin-bottom:44px"></div>
+  <h1 class="serif" style="font-size:72px;line-height:1.05">You're all set</h1>
+  <p style="font-size:29px;color:var(--sub);margin-top:24px;line-height:1.35;padding:0 70px">
+    Open ToolBelt and sign in with the same email and password you use on the web.</p>
+  <div class="footer-url">toolbelt.tools/start</div>
+</div>
+
+<div class="tap" id="tap"></div>
+<div class="ring" id="ring"></div>
+
+<script>
+  const DURATION = 33;
+  const $ = (id) => document.getElementById(id);
+  const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+  const ease = (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+  /** 0→1 over [a, a+d], held, 1→0 over [b-d, b]. */
+  const window_ = (t, a, b, d = 0.5) => Math.min(ease(clamp((t - a) / d)), ease(clamp((b - t) / d)));
+  const prog = (t, a, b) => ease(clamp((t - a) / (b - a)));
+
+  function scene(id, t, a, b) {
+    const k = window_(t, a, b);
+    const el = $(id);
+    el.style.opacity = k;
+    el.style.transform = `translateY(${(1 - k) * 30}px)`;
+    return k;
+  }
+
+  /** A tap at (x, y) in page px, pressing at time `at`. */
+  function tap(t, x, y, at) {
+    const tapEl = $('tap'), ring = $('ring');
+    const inK = prog(t, at - 0.6, at - 0.15), outK = prog(t, at + 0.25, at + 0.6);
+    const visible = t > at - 0.6 && t < at + 0.6;
+    tapEl.style.left = x + 'px'; tapEl.style.top = y + 'px';
+    tapEl.style.opacity = visible ? Math.min(inK, 1 - outK) : 0;
+    const press = t > at - 0.1 && t < at + 0.25 ? 0.85 : 1;
+    tapEl.style.transform = `scale(${press})`;
+    const r = prog(t, at, at + 0.55);
+    const size = 40 + r * 110;
+    ring.style.width = ring.style.height = size + 'px';
+    ring.style.left = x - size / 2 + 'px'; ring.style.top = y - size / 2 + 'px';
+    ring.style.opacity = t >= at && t < at + 0.55 ? 1 - r : 0;
+    return visible || (t >= at && t < at + 0.55);
+  }
+
+  window.renderAt = function (t) {
+    scene('intro', t, -1, 4.5);
+    const s1 = scene('s1', t, 4.4, 12.6);
+    const s2 = scene('s2', t, 12.4, 21.1);
+    const s3 = scene('s3', t, 20.9, 28.7);
+    scene('outro', t, 28.5, DURATION + 1);
+
+    // Step 1: GET → spinner → OPEN
+    const b1 = $('s1-btn');
+    if (t < 8.2) { b1.textContent = 'GET'; b1.className = 'pill'; b1.innerHTML = 'GET'; }
+    else if (t < 10.2) { b1.className = 'pill'; b1.innerHTML = '<div class="spinner" style="transform:rotate(' + (t * 400) + 'deg)"></div>'; b1.style.background = 'transparent'; }
+    else { b1.className = 'pill'; b1.innerHTML = 'OPEN'; b1.style.background = ''; }
+    if (t < 8.2) b1.style.background = '';
+
+    // Step 2: tap "Get the iPhone app" → invite → tap Accept
+    const toInvite = prog(t, 15.6, 16.2);
+    $('s2-page').style.opacity = 1 - toInvite;
+    $('s2-invite').style.opacity = toInvite;
+    $('s2-beta').style.background = t > 15.1 && t < 15.8 ? 'rgba(143,185,150,0.18)' : '';
+    const acc = $('s2-accept');
+    acc.textContent = t < 18.6 ? 'Accept' : 'Accepted ✓';
+    acc.style.background = t < 18.6 ? 'var(--blue)' : '#2E9E5B';
+
+    // Step 3: INSTALL → progress ring → OPEN
+    const b3 = $('s3-btn');
+    if (t < 23.6) { b3.innerHTML = 'INSTALL'; b3.style.background = ''; }
+    else if (t < 26.2) {
+      const p = clamp((t - 23.8) / 2.2);
+      b3.style.background = 'transparent';
+      b3.innerHTML = `<svg class="progress" viewBox="0 0 44 44"><circle cx="22" cy="22" r="18" fill="none" stroke="rgba(47,124,246,0.22)" stroke-width="4"/>` +
+        `<circle cx="22" cy="22" r="18" fill="none" stroke="#2F7CF6" stroke-width="4" stroke-linecap="round" stroke-dasharray="${(p * 113).toFixed(1)} 113" transform="rotate(-90 22 22)"/>` +
+        `<rect x="16" y="16" width="12" height="12" rx="2" fill="#2F7CF6"/></svg>`;
+    } else { b3.innerHTML = 'OPEN'; b3.style.background = ''; }
+
+    // Taps (page coordinates). The phone screen starts at (163, 393).
+    let shown = false;
+    if (s1 > 0.5) shown = tap(t, 163 + 360, 393 + 58 + 95 + 55, 8.0) || shown;
+    if (s2 > 0.5) shown = tap(t, 360, 393 + 380 + 82 + 33, 15.2) || shown;
+    if (s2 > 0.5 && !shown) shown = tap(t, 360, 393 + 58 + 70 + 40 + 36 + 92 + 18 + 60 + 28 + 33, 18.4) || shown;
+    if (s3 > 0.5 && !shown) shown = tap(t, 163 + 352, 393 + 58 + 70 + 30 + 46, 23.4) || shown;
+    if (!shown) { $('tap').style.opacity = 0; $('ring').style.opacity = 0; }
+  };
+  window.DURATION = DURATION;
+  renderAt(0);
+</script>
+</body>
+</html>

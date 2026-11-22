@@ -134,7 +134,8 @@ const styles = StyleSheet.create({
   unit: { alignItems: 'center', gap: 8, padding: 12 },
   unitLabel: { fontSize: 12, fontWeight: '500' },
   unitControls: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  unitValue: { fontSize: 36, fontWeight: '700', width: 44, textAlign: 'center' },
+  // minWidth (not width): the browser's font draws "00" a hair wider than 44pt, which wrapped it.
+  unitValue: { fontSize: 36, fontWeight: '700', minWidth: 44, textAlign: 'center' },
   colon: { fontSize: 36, fontWeight: '700' },
   ampm: { gap: 6 },
   ampmBtn: { width: 50, height: 38, alignItems: 'center', justifyContent: 'center' },

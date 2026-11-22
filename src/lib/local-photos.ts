@@ -3,8 +3,9 @@
  *
  * iOS keeps these photos on the device and never uploads them (see
  * gap-contracts §10); the RN app does the same. Picked images are copied into
- * `documentDirectory/photos/` (so they survive cache clears) and their file
- * URIs are stored in AsyncStorage under `localPhotos:<kind>:<recordId>`.
+ * `documentDirectory/photos/` (so they survive cache clears; the browser keeps
+ * a downscaled copy instead, see `local-photo-files.web.ts`) and their URIs are
+ * stored in AsyncStorage under `localPhotos:<kind>:<recordId>`.
  *
  * `choosePhoto()` shows the Take Photo / Choose from Library prompt, handles
  * camera permission (with an Open Settings path when denied) and returns the
@@ -12,17 +13,15 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as FileSystem from 'expo-file-system/legacy';
 import * as ImagePicker from 'expo-image-picker';
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, Linking, Platform } from 'react-native';
 
-import { uuid } from '@/lib/id';
+import { deletePhotoFile as deleteFile, persistPhoto as persist } from '@/lib/local-photo-files';
 
 export type PhotoKind = 'client' | 'staff' | 'appointment';
 
 const key = (kind: PhotoKind, id: string) => `localPhotos:${kind}:${id}`;
-const PHOTO_DIR = `${FileSystem.documentDirectory ?? ''}photos/`;
 
 /** All photo URIs stored for a record (oldest first). */
 export async function getPhotos(kind: PhotoKind, id: string): Promise<string[]> {
@@ -56,24 +55,6 @@ export async function setPhoto(kind: PhotoKind, id: string, uri: string | undefi
 /** Delete a picked file that was never saved against a record (e.g. form cancelled). */
 export async function discardPhoto(uri: string): Promise<void> {
   await deleteFile(uri);
-}
-
-async function deleteFile(uri: string): Promise<void> {
-  if (!uri.startsWith(PHOTO_DIR)) return;
-  try {
-    await FileSystem.deleteAsync(uri, { idempotent: true });
-  } catch {
-    // Best effort — a stray file in the photos folder is harmless.
-  }
-}
-
-/** Copy a picker/cache URI into the app's documents folder and return the new URI. */
-async function persist(uri: string): Promise<string> {
-  await FileSystem.makeDirectoryAsync(PHOTO_DIR, { intermediates: true }).catch(() => {});
-  const ext = (uri.split('?')[0].match(/\.(\w{3,4})$/)?.[1] ?? 'jpg').toLowerCase();
-  const dest = `${PHOTO_DIR}${uuid()}.${ext}`;
-  await FileSystem.copyAsync({ from: uri, to: dest });
-  return dest;
 }
 
 function openSettingsAlert(what: string) {

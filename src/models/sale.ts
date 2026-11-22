@@ -9,6 +9,7 @@
 
 import type { SFSymbol } from 'expo-symbols';
 
+import { TAP_TO_PAY_SUPPORTED } from '@/lib/platform';
 import { iOSColors } from '@/theme/tokens';
 
 /** A single line on a sale (a service or product, with a quantity). */
@@ -33,6 +34,11 @@ export const PAYMENT_METHODS: { method: PaymentMethod; icon: SFSymbol; color: st
   { method: 'Digital', icon: 'iphone', color: iOSColors.purple },
   { method: 'Tap to Pay', icon: 'wave.3.right', color: '#33C773' },
 ];
+
+/** The checkout methods this device can take (no Tap to Pay in the browser). */
+export const AVAILABLE_PAYMENT_METHODS = PAYMENT_METHODS.filter(
+  (m) => m.method !== 'Tap to Pay' || TAP_TO_PAY_SUPPORTED,
+);
 
 export interface SaleTransaction {
   id: string;

@@ -177,7 +177,8 @@ const styles = StyleSheet.create({
   },
   stepperLabel: { fontSize: 12, fontWeight: '500' },
   stepperControls: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  stepperValue: { fontSize: 36, fontWeight: '700', width: 44, textAlign: 'center' },
+  // minWidth (not width): the browser's font draws "00" a hair wider than 44pt, which wrapped it.
+  stepperValue: { fontSize: 36, fontWeight: '700', minWidth: 44, textAlign: 'center' },
   stepperUnit: { fontSize: 14, fontWeight: '500' },
   preview: {
     fontSize: 18,
