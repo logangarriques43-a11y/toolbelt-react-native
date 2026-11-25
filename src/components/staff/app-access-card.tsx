@@ -16,7 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StaffAppAccessSheet } from '@/components/staff/app-access-sheet';
 import { StaffLoginHandoffSheet, type StaffLoginHandoff } from '@/components/staff/login-handoff-sheet';
 import { LivePill, ThemedButton, ThemedIconTile } from '@/components/themed';
-import { PERMISSIONS } from '@/models/permission';
+import { GRANTABLE_PERMISSIONS } from '@/models/permission';
 import type { StaffMember } from '@/models/staff';
 import { useAppTheme } from '@/theme/theme-context';
 
@@ -28,13 +28,13 @@ export function StaffAppAccessCard({ member }: { member: StaffMember }) {
 
   const hasLogin = !!member.loginEmail;
   const waiting = hasLogin && member.mustChangePassword === true;
-  const granted = PERMISSIONS.filter((p) => member.permissions?.[p] === true).length;
+  const granted = GRANTABLE_PERMISSIONS.filter((p) => member.permissions?.[p] === true).length;
 
   const subtitle = !hasLogin
     ? 'No login yet. Invite them to see their schedule and the tools you allow.'
     : waiting
       ? `Waiting for first sign-in · ${member.loginEmail}`
-      : `${member.loginEmail} · ${granted} of ${PERMISSIONS.length} permissions`;
+      : `${member.loginEmail} · ${granted} of ${GRANTABLE_PERMISSIONS.length} permissions`;
 
   return (
     <View

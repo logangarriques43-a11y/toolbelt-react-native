@@ -12,7 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { DashboardGradient } from '@/components/dashboard-gradient';
 import { Icon } from '@/components/icon';
 import { useStaff } from '@/context/staff-store';
-import { PERMISSIONS, permissionIcon, permissionSubtitle, permissionTitle } from '@/models/permission';
+import { GRANTABLE_PERMISSIONS, permissionIcon, permissionSubtitle, permissionTitle } from '@/models/permission';
 import type { StaffMember } from '@/models/staff';
 import { useAppTheme } from '@/theme/theme-context';
 
@@ -85,7 +85,7 @@ export function PermissionToggles({
   const theme = useAppTheme();
   const setAll = (value: boolean) => {
     const next: Record<string, boolean> = {};
-    for (const p of PERMISSIONS) next[p] = value;
+    for (const p of GRANTABLE_PERMISSIONS) next[p] = value;
     onChange(next);
   };
   return (
@@ -100,7 +100,7 @@ export function PermissionToggles({
       </View>
 
       <View style={[styles.card, theme.card]}>
-        {PERMISSIONS.map((p, i) => (
+        {GRANTABLE_PERMISSIONS.map((p, i) => (
           <View key={p}>
             {i > 0 ? <View style={[styles.divider, { backgroundColor: theme.divider }]} /> : null}
             <View style={styles.row}>

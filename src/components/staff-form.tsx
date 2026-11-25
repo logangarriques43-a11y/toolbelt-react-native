@@ -29,7 +29,7 @@ import { useServices } from '@/context/services-store';
 import { useStaff } from '@/context/staff-store';
 import { choosePhoto, getPhoto, setPhoto } from '@/lib/local-photos';
 import { formatPhoneNumber } from '@/lib/phone';
-import { PERMISSIONS } from '@/models/permission';
+import { GRANTABLE_PERMISSIONS } from '@/models/permission';
 import { STAFF_ORANGE, staffInitials } from '@/models/staff';
 import { useAppTheme } from '@/theme/theme-context';
 
@@ -69,7 +69,7 @@ export function StaffForm({ editingId }: { editingId?: string }) {
     getPhoto('staff', editingId).then(setPhotoUri);
   }, [editingId]);
 
-  const enabledPermissions = editing ? PERMISSIONS.filter((p) => editing.permissions?.[p] === true).length : 0;
+  const enabledPermissions = editing ? GRANTABLE_PERMISSIONS.filter((p) => editing.permissions?.[p] === true).length : 0;
 
   const canSave = name.trim().length > 0 && role.trim().length > 0;
 
@@ -300,7 +300,7 @@ export function StaffForm({ editingId }: { editingId?: string }) {
                   <View style={styles.linkText}>
                     <Text style={[styles.linkTitle, { color: theme.primaryText }]}>Permissions</Text>
                     <Text style={[styles.linkSub, { color: theme.secondaryText }]}>
-                      {enabledPermissions} of {PERMISSIONS.length} permissions enabled
+                      {enabledPermissions} of {GRANTABLE_PERMISSIONS.length} permissions enabled
                     </Text>
                   </View>
                   <Icon name="chevron.right" size={14} color={theme.chevronTint} />

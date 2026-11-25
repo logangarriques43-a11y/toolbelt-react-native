@@ -9,6 +9,8 @@
 
 import type { SFSymbol } from 'expo-symbols';
 
+import { gatedOff } from '@/lib/feature-flags';
+
 export type Permission =
   | 'viewClients' | 'editClients'
   | 'viewAppointments' | 'editAppointments'
@@ -44,6 +46,17 @@ export const PERMISSIONS: Permission[] = [
   'viewStaffSchedules',
   'manageOwnWorkingHours',
 ];
+
+/**
+ * The toggles an owner sees when choosing what a staff member can do. Mirrors
+ * Swift `Permission.grantable`: permissions for modules not in this build
+ * (FeatureFlags) are left out, so owners aren't offered Payments, Inventory,
+ * Marketing and the like before those features exist. viewStaffSchedules is
+ * left out because nothing checks it yet, so its toggle would do nothing.
+ */
+export const GRANTABLE_PERMISSIONS: Permission[] = PERMISSIONS.filter(
+  (p) => !gatedOff(p) && p !== 'viewStaffSchedules',
+);
 
 const TITLES: Record<Permission, string> = {
   viewClients: 'View Clients', editClients: 'Edit Clients',
