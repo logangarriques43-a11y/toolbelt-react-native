@@ -8,9 +8,11 @@
  * - Stripe card form used by `stripe-charge.web.ts` and the AI Texting paywall.
  * - `router.back()` falls back to the dashboard after a refresh (empty history).
  * - The landing link's `?ref=` / utm tags are remembered for signup attribution.
+ * - Sheets are tagged so wide windows show them centered (`web/modal-frame.ts`).
  */
 
 import { AlertHost, installWebAlert } from '@/components/web/alert-host';
+import { installDesktopModalFrame } from '@/components/web/modal-frame';
 import { installWebBackFallback } from '@/components/web/router-back-shim';
 import { installWebShare } from '@/components/web/share-shim';
 import { StripeFormHost } from '@/components/web/stripe-form-host';
@@ -20,6 +22,7 @@ import { captureSignupSource } from '@/lib/signup-source';
 installWebAlert();
 installWebShare();
 installWebBackFallback();
+installDesktopModalFrame();
 // Remember the landing link's ?ref= / utm tags before navigation drops them.
 captureSignupSource();
 

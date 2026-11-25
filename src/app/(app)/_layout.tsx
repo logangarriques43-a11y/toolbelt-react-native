@@ -2,6 +2,7 @@ import { Stack, useRouter } from 'expo-router';
 import { useEffect, useRef } from 'react';
 import { Alert } from 'react-native';
 
+import { DesktopShell } from '@/components/desktop-shell';
 import { AccountingProvider } from '@/context/accounting-store';
 import { AppointmentFormProvider } from '@/context/appointment-form';
 import { AppointmentsProvider } from '@/context/appointments-store';
@@ -104,7 +105,9 @@ export default function AppLayout() {
                                   <AppointmentFormProvider>
                                     <SessionPermissionsConfig />
                                     <TwoFactorRequiredAlert />
-                                    <Stack screenOptions={{ headerShown: false }} />
+                                    <DesktopShell>
+                                      <Stack screenOptions={{ headerShown: false }} />
+                                    </DesktopShell>
                                   </AppointmentFormProvider>
                                 </AppointmentsProvider>
                               </VendorProvider>

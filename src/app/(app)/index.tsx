@@ -9,7 +9,7 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
-import { useRouter, type Href } from 'expo-router';
+import { useRouter } from 'expo-router';
 import type { SFSymbol } from 'expo-symbols';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Linking, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -31,36 +31,13 @@ import { useSMS } from '@/context/sms-store';
 import { useStaff } from '@/context/staff-store';
 import { useTattooEntry } from '@/hooks/use-tattoo';
 import { HELPER_DESTINATIONS, unavailableScreens } from '@/lib/helper-destinations';
-import { displayNameFromEmail } from '@/lib/name';
+import { initials, resolveDisplayName } from '@/lib/name';
+import { useIsDesktop } from '@/lib/use-desktop';
+import { WORKSPACE } from '@/lib/workspace-nav';
 import type { Appointment } from '@/models/appointment';
 import type { Permission } from '@/models/permission';
 import { DISPLAY_FONT } from '@/theme/tokens';
 import { useAppTheme } from '@/theme/theme-context';
-
-interface WorkspaceItem {
-  icon: SFSymbol;
-  title: string;
-  route: Href;
-  permission?: Permission;
-}
-
-/** Every destination the old tile grid and Quick Actions list had. */
-const WORKSPACE: WorkspaceItem[] = [
-  { icon: 'calendar', title: 'Calendar', route: '/appointments', permission: 'viewAppointments' },
-  // Invoices ship in v1. Give them a direct tile so they aren't only reachable
-  // via Finances, which is gated behind viewReports (off for this build).
-  { icon: 'doc.text.magnifyingglass', title: 'Invoices', route: '/accounting/invoices', permission: 'viewInvoices' },
-  { icon: 'creditcard.fill', title: 'Payments', route: '/payments', permission: 'viewPayments' },
-  { icon: 'dollarsign.circle.fill', title: 'Finances', route: '/accounting', permission: 'viewReports' },
-  { icon: 'shippingbox.fill', title: 'Inventory', route: '/inventory', permission: 'viewInventory' },
-  { icon: 'storefront.fill', title: 'Vendor marketplace', route: '/vending', permission: 'viewVendors' },
-  { icon: 'megaphone.fill', title: 'Marketing', route: '/marketing', permission: 'viewMarketing' },
-  { icon: 'sparkles', title: 'Special features', route: '/special-features' },
-  { icon: 'paintbrush.fill', title: 'Custom website design', route: '/custom-website' },
-  { icon: 'chart.bar.fill', title: 'Analytics', route: '/analytics', permission: 'viewAnalytics' },
-  { icon: 'questionmark.circle.fill', title: 'Help', route: '/help' },
-  { icon: 'gearshape.fill', title: 'Settings', route: '/settings', permission: 'manageSettings' },
-];
 
 export default function Dashboard() {
   const theme = useAppTheme();
@@ -72,6 +49,7 @@ export default function Dashboard() {
   const { staff } = useStaff();
   const { phoneNumber } = useSMS();
   const { role, can } = usePermissions();
+  const desktop = useIsDesktop();
   const chat = useHelperChat();
   const bookingPage = useQuery({ queryKey: ['booking-page'], queryFn: getBookingPage });
   const tattoo = useTattooEntry();
@@ -151,121 +129,158 @@ export default function Dashboard() {
     onMessage: message,
   };
 
+  // Sections, arranged below as one phone column or, on a computer, two columns.
+  const header = (
+    <View style={styles.header}>
+      <View style={styles.headerText}>
+        <Text style={[styles.date, { color: theme.secondaryText }, theme.isEditorial ? styles.tracked : null]}>
+          {formatHeaderDate(now, theme.isEditorial)}
+        </Text>
+        <Text numberOfLines={2} style={[theme.display(32), styles.greeting]}>
+          {greeting(now)}, {firstName}
+        </Text>
+        {account?.businessName ? (
+          <Text numberOfLines={1} style={[styles.business, { color: theme.secondaryText }]}>
+            {account.businessName}
+          </Text>
+        ) : null}
+      </View>
+      {desktop ? null : (
+        <Pressable
+          onPress={() => setMenuOpen(true)}
+          accessibilityLabel="Account menu"
+          style={[styles.avatar, { backgroundColor: theme.accentSoft, borderRadius: theme.isEditorial ? 2 : 22 }]}>
+          <Text style={[styles.avatarText, { color: theme.accent }]}>{initials(displayName)}</Text>
+        </Pressable>
+      )}
+    </View>
+  );
+
+  const helper = <HelperEntryCard onOpen={openHelper} />;
+
+  const todaySection = (
+    <View style={styles.section}>
+      <ThemedSectionHeader
+        title="Today"
+        right={
+          <Pressable onPress={() => router.push('/appointments')} hitSlop={8}>
+            <Text style={[styles.link, { color: theme.accent }]}>Calendar</Text>
+          </Pressable>
+        }
+      />
+      <DaySection {...day} />
+    </View>
+  );
+
+  const channels = (
+    <View style={styles.section}>
+      <ThemedSectionHeader title="Channels" />
+      <View style={theme.isEditorial ? null : theme.card}>
+        <ListRow
+          icon="globe"
+          title="Online booking"
+          subtitle={bookingLive ? 'Clients can book from your page' : 'Let clients book from your page'}
+          trailing={<LivePill live={bookingLive} />}
+          onPress={() => router.push('/online-booking')}
+        />
+        <Hairline inset />
+        <ListRow
+          icon="bubble.left.and.text.bubble.right.fill"
+          title="AI texting"
+          subtitle={smsActive ? 'Clients can text your number to book' : 'Let clients book by text'}
+          trailing={<LivePill live={smsActive} />}
+          onPress={() => router.push('/sms-setup')}
+        />
+        {tattoo.visible ? (
+          <>
+            <Hairline inset />
+            <ListRow
+              icon="paintbrush.fill"
+              title="Tattoo Studio"
+              subtitle={tattoo.enabled ? 'Requests and portfolios' : 'Take tattoo requests by text'}
+              trailing={<LivePill live={tattoo.enabled} />}
+              onPress={() => router.push('/tattoo')}
+            />
+          </>
+        ) : null}
+      </View>
+    </View>
+  );
+
+  const counts = (
+    <View style={[styles.counts, theme.isEditorial ? null : theme.card]}>
+      <Count label="Clients" value={clients.length} onPress={() => router.push('/clients')} />
+      <View style={[styles.countRule, { backgroundColor: theme.divider }]} />
+      <Count label="Services" value={services.length} onPress={() => router.push('/services')} />
+      <View style={[styles.countRule, { backgroundColor: theme.divider }]} />
+      <Count label="Team" value={staff.length} onPress={() => router.push('/staff')} />
+    </View>
+  );
+
+  const actions = (
+    <View style={styles.actions}>
+      <ThemedButton
+        title="New appointment"
+        icon="plus"
+        kind="inverse"
+        style={styles.flex}
+        onPress={() => router.push('/appointments/create')}
+      />
+      <ThemedButton
+        title="Create invoice"
+        icon="doc.text.fill"
+        kind="quiet"
+        style={styles.flex}
+        onPress={() => router.push('/accounting/create-invoice')}
+      />
+    </View>
+  );
+
+  const workspace = (
+    <View style={styles.section}>
+      <ThemedSectionHeader title="Workspace" />
+      <View style={theme.isEditorial ? null : theme.card}>
+        {WORKSPACE.filter((w) => allowed(w.permission)).map((w, i) => (
+          <View key={w.title}>
+            {i > 0 ? <Hairline inset /> : null}
+            <ListRow icon={w.icon} title={w.title} onPress={() => router.push(w.route)} />
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+
   return (
     <View style={[styles.fill, { backgroundColor: theme.background }]}>
       <SafeAreaView style={styles.fill} edges={['top']}>
-        <ScrollView contentContainerStyle={styles.content}>
-          {/* Header */}
-          <View style={styles.header}>
-            <View style={styles.headerText}>
-              <Text style={[styles.date, { color: theme.secondaryText }, theme.isEditorial ? styles.tracked : null]}>
-                {formatHeaderDate(now, theme.isEditorial)}
-              </Text>
-              <Text numberOfLines={2} style={[theme.display(32), styles.greeting]}>
-                {greeting(now)}, {firstName}
-              </Text>
-              {account?.businessName ? (
-                <Text numberOfLines={1} style={[styles.business, { color: theme.secondaryText }]}>
-                  {account.businessName}
-                </Text>
-              ) : null}
-            </View>
-            <Pressable
-              onPress={() => setMenuOpen(true)}
-              accessibilityLabel="Account menu"
-              style={[styles.avatar, { backgroundColor: theme.accentSoft, borderRadius: theme.isEditorial ? 2 : 22 }]}>
-              <Text style={[styles.avatarText, { color: theme.accent }]}>{initials(displayName)}</Text>
-            </Pressable>
-          </View>
-
-          <HelperEntryCard onOpen={openHelper} />
-
-          {/* Today */}
-          <View style={styles.section}>
-            <ThemedSectionHeader
-              title="Today"
-              right={
-                <Pressable onPress={() => router.push('/appointments')} hitSlop={8}>
-                  <Text style={[styles.link, { color: theme.accent }]}>Calendar</Text>
-                </Pressable>
-              }
-            />
-            <DaySection {...day} />
-          </View>
-
-          {/* Channels */}
-          <View style={styles.section}>
-            <ThemedSectionHeader title="Channels" />
-            <View style={theme.isEditorial ? null : theme.card}>
-              <ListRow
-                icon="globe"
-                title="Online booking"
-                subtitle={bookingLive ? 'Clients can book from your page' : 'Let clients book from your page'}
-                trailing={<LivePill live={bookingLive} />}
-                onPress={() => router.push('/online-booking')}
-              />
-              <Hairline inset />
-              <ListRow
-                icon="bubble.left.and.text.bubble.right.fill"
-                title="AI texting"
-                subtitle={smsActive ? 'Clients can text your number to book' : 'Let clients book by text'}
-                trailing={<LivePill live={smsActive} />}
-                onPress={() => router.push('/sms-setup')}
-              />
-              {tattoo.visible ? (
-                <>
-                  <Hairline inset />
-                  <ListRow
-                    icon="paintbrush.fill"
-                    title="Tattoo Studio"
-                    subtitle={tattoo.enabled ? 'Requests and portfolios' : 'Take tattoo requests by text'}
-                    trailing={<LivePill live={tattoo.enabled} />}
-                    onPress={() => router.push('/tattoo')}
-                  />
-                </>
-              ) : null}
-            </View>
-          </View>
-
-          {/* Counts */}
-          <View style={[styles.counts, theme.isEditorial ? null : theme.card]}>
-            <Count label="Clients" value={clients.length} onPress={() => router.push('/clients')} />
-            <View style={[styles.countRule, { backgroundColor: theme.divider }]} />
-            <Count label="Services" value={services.length} onPress={() => router.push('/services')} />
-            <View style={[styles.countRule, { backgroundColor: theme.divider }]} />
-            <Count label="Team" value={staff.length} onPress={() => router.push('/staff')} />
-          </View>
-
-          {/* Main actions */}
-          <View style={styles.actions}>
-            <ThemedButton
-              title="New appointment"
-              icon="plus"
-              kind="inverse"
-              style={styles.flex}
-              onPress={() => router.push('/appointments/create')}
-            />
-            <ThemedButton
-              title="Create invoice"
-              icon="doc.text.fill"
-              kind="quiet"
-              style={styles.flex}
-              onPress={() => router.push('/accounting/create-invoice')}
-            />
-          </View>
-
-          {/* Workspace */}
-          <View style={styles.section}>
-            <ThemedSectionHeader title="Workspace" />
-            <View style={theme.isEditorial ? null : theme.card}>
-              {WORKSPACE.filter((w) => allowed(w.permission)).map((w, i) => (
-                <View key={w.title}>
-                  {i > 0 ? <Hairline inset /> : null}
-                  <ListRow icon={w.icon} title={w.title} onPress={() => router.push(w.route)} />
+        <ScrollView contentContainerStyle={[styles.content, desktop && styles.desktopContent]}>
+          {desktop ? (
+            <>
+              {header}
+              <View style={styles.desktopColumns}>
+                <View style={styles.desktopMain}>
+                  {helper}
+                  {todaySection}
                 </View>
-              ))}
-            </View>
-          </View>
+                {/* The sidebar lists every Workspace destination, so it isn't repeated here. */}
+                <View style={styles.desktopSide}>
+                  {counts}
+                  {actions}
+                  {channels}
+                </View>
+              </View>
+            </>
+          ) : (
+            <>
+              {header}
+              {helper}
+              {todaySection}
+              {channels}
+              {counts}
+              {actions}
+              {workspace}
+            </>
+          )}
         </ScrollView>
       </SafeAreaView>
 
@@ -669,19 +684,7 @@ function AccountMenu({
 
 // MARK: - Helpers
 
-function resolveDisplayName(name?: string, email?: string): string {
-  if (!name) return 'Business Owner';
-  if (name.includes('@')) return displayNameFromEmail(name);
-  if (email && email.toLowerCase().startsWith(`${name.toLowerCase()}@`)) {
-    return displayNameFromEmail(email);
-  }
-  return name;
-}
 
-function initials(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  return ((parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '')).toUpperCase() || '?';
-}
 
 function sameDay(a: Date, b: Date): boolean {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
@@ -716,6 +719,11 @@ const styles = StyleSheet.create({
   fill: { flex: 1 },
   flex: { flex: 1 },
   content: { gap: 28, paddingHorizontal: 20, paddingTop: 20, paddingBottom: 48 },
+  // Computer layout (web, wide windows): wider margins, two columns.
+  desktopContent: { paddingHorizontal: 40, paddingTop: 36, width: '100%', maxWidth: 1180, alignSelf: 'center' },
+  desktopColumns: { flexDirection: 'row', alignItems: 'flex-start', gap: 32 },
+  desktopMain: { flex: 1.5, minWidth: 0, gap: 28 },
+  desktopSide: { flex: 1, minWidth: 300, maxWidth: 420, gap: 20 },
   header: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   headerText: { flex: 1, gap: 6 },
   date: { fontSize: 13, fontWeight: '600' },

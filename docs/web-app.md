@@ -32,8 +32,21 @@ of these seams:
 | Stripe Connect payout setup | Same-tab redirect to Stripe. The backend sends web users back to `/payout` (`client: 'web'`). |
 
 Capability flags live in `src/lib/platform.ts`. `public/index.html` is the
-HTML shell: home-screen install metadata, plus centering the phone-width app on
-wide screens.
+HTML shell: home-screen install metadata and the window-size rules below.
+
+### Window sizes
+
+| Window | Layout |
+| --- | --- |
+| Under 641px (phones) | The phone layout, full width. |
+| 641–1023px (tablets, half-screen windows) | The phone layout in a centered 640px column. Sheets are pinned to the column. |
+| 1024px and wider (computers) | Desktop layout: a sidebar with every area, "New appointment" and the account (`components/desktop-shell.web.tsx`). Home is two columns and the calendar opens on the week, with ← / → / Today buttons and the same keyboard keys. Other screens, laid out for a phone, sit in a centered 880px column. Full-screen sheets open as a centered panel over a dimmed window; bottom sheets stay in a centered column with matching dim, and clicking beside them closes them (`components/web/modal-frame.ts`). Sign-in screens sit in a 520px column. |
+
+`useIsDesktop()` (`lib/use-desktop*.ts`) is always `false` in the phone apps,
+so the desktop branches never run there. Grids that size themselves from the
+width use `useContentWidth()` (`lib/content-width.ts`), which is the window on
+phones and the measured screen area in the browser. The sidebar and the phone
+dashboard's Workspace list share `lib/workspace-nav.ts`.
 
 Signups report `signupSource` (platform, plus the `?ref=` / `utm_*` tags of the
 link that brought a web visitor) to `POST /onboarding/save`. The backend emails
@@ -89,8 +102,9 @@ swift video/encode.swift /tmp/frames public/media/testflight-howto.mp4 30
 
 ## Known limits (phase 2)
 
-- Layout is the phone layout, centered on desktop. A true wide-screen layout
-  (calendar week view across the screen, side navigation) is future work.
+- On a computer, screens other than Home and Calendar keep their phone layout
+  in a centered column. Multi-column versions of the lists (clients, invoices)
+  are future work.
 - Inventory, vending, tattoo, accounting extras and Plaid load and work through
   the same screens, but were not part of the phase-1 browser pass.
 - The JS bundle is ~4.5 MB before compression (Render serves it compressed).

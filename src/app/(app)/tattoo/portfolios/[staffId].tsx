@@ -17,7 +17,6 @@ import {
   StyleSheet,
   Switch,
   Text,
-  useWindowDimensions,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -45,6 +44,7 @@ import {
 } from '@/lib/tattoo';
 import type { TattooPortfolioItem, TattooSettings } from '@/models/tattoo';
 import { useAppTheme } from '@/theme/theme-context';
+import { useContentWidth } from '@/lib/content-width';
 
 const COLUMNS = 3;
 const GAP = 6;
@@ -54,7 +54,7 @@ const UPLOAD_QUALITY = 0.7;
 export default function TattooPortfolio() {
   const theme = useAppTheme();
   const qc = useQueryClient();
-  const { width } = useWindowDimensions();
+  const width = useContentWidth();
   const { staffId } = useLocalSearchParams<{ staffId: string }>();
   const { uid } = useSession();
   const { role } = usePermissions();

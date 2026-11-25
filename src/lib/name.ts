@@ -16,3 +16,23 @@ export function displayNameFromEmail(email: string): string {
     .join(' ');
   return cleaned || 'Business Owner';
 }
+
+/**
+ * The name to greet the signed-in person by: their saved name, unless it is
+ * missing or just their email (or its local part), in which case one derived
+ * from the email.
+ */
+export function resolveDisplayName(name?: string, email?: string): string {
+  if (!name) return 'Business Owner';
+  if (name.includes('@')) return displayNameFromEmail(name);
+  if (email && email.toLowerCase().startsWith(`${name.toLowerCase()}@`)) {
+    return displayNameFromEmail(email);
+  }
+  return name;
+}
+
+/** Up to two initials for an avatar ("Jordan Lee" → "JL"). */
+export function initials(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  return ((parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '')).toUpperCase() || '?';
+}

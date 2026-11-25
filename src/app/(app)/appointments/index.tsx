@@ -25,6 +25,7 @@ import { ViewSwitcherSheet, type ScheduleViewType } from '@/components/schedule/
 import { useAppointments } from '@/context/appointments-store';
 import { useStaff } from '@/context/staff-store';
 import { TIME_COL_WIDTH, addDays, isToday } from '@/lib/schedule-layout';
+import { useIsDesktop } from '@/lib/use-desktop';
 import type { Appointment } from '@/models/appointment';
 import { useAppTheme } from '@/theme/theme-context';
 
@@ -45,7 +46,9 @@ export default function Schedule() {
   const { appointments, getAppointments } = useAppointments();
   const { staff } = useStaff();
 
-  const [viewType, setViewType] = useState<ScheduleViewType>('day');
+  // A computer has room for the whole week; phones open on today.
+  const desktop = useIsDesktop();
+  const [viewType, setViewType] = useState<ScheduleViewType>(desktop ? 'week' : 'day');
   const [displayedDate, setDisplayedDate] = useState(new Date());
   const [currentTime, setCurrentTime] = useState(new Date());
   const [switcherOpen, setSwitcherOpen] = useState(false);
@@ -63,6 +66,29 @@ export default function Schedule() {
     return () => clearInterval(t);
   }, []);
 
+  // Previous / next period, for the computer layout's arrows and ← → keys.
+  const step = (dir: 1 | -1) =>
+    setDisplayedDate((d) =>
+      viewType === 'month'
+        ? new Date(d.getFullYear(), d.getMonth() + dir, 1)
+        : addDays(d, dir * (viewType === 'week' ? 7 : viewType === 'threeDay' ? 3 : 1)),
+    );
+  const canStep = desktop && viewType !== 'schedule';
+
+  useEffect(() => {
+    if (!canStep || typeof document === 'undefined') return;
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (e.metaKey || e.ctrlKey || e.altKey || t?.closest?.('input, textarea, [contenteditable="true"]')) return;
+      if (e.key === 'ArrowLeft') step(-1);
+      else if (e.key === 'ArrowRight') step(1);
+      else if (e.key === 't' || e.key === 'T') setDisplayedDate(new Date());
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canStep, viewType]);
+
   const today = isToday(displayedDate);
   const openDetail = (a: Appointment) => router.push(`/appointments/${a.id}`);
 
@@ -76,6 +102,8 @@ export default function Schedule() {
           onHome={() => router.back()}
           onOpenSwitcher={() => setSwitcherOpen(true)}
           onMenu={() => setMenuOpen(true)}
+          onStep={canStep ? step : undefined}
+          onToday={canStep ? () => setDisplayedDate(new Date()) : undefined}
         />
 
         {viewType === 'day' ? (
@@ -132,7 +160,7 @@ export default function Schedule() {
         )}
 
         {/* Today button (all calendar views) */}
-        {!today && viewType !== 'schedule' ? (
+        {!today && viewType !== 'schedule' && !canStep ? (
           <Pressable onPress={() => setDisplayedDate(new Date())} style={[styles.todayBtn, { bottom: insets.bottom + 30, backgroundColor: theme.accent, borderRadius: theme.isEditorial ? 2 : 999 }]}>
             <Text style={[styles.todayText, { color: theme.onAccent }]}>Today</Text>
           </Pressable>
