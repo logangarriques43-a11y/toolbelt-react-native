@@ -6,7 +6,7 @@
  */
 
 import { useEffect, useRef } from 'react';
-import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 // ScrollView from gesture-handler so the horizontal day-swipe Pan and vertical
 // scroll cooperate on Android (RN's own ScrollView doesn't compose with RNGH
 // gestures there, which is why the grid didn't respond to drag on Android).
@@ -29,6 +29,7 @@ import type { Appointment } from '@/models/appointment';
 import { blockingTimeOff } from '@/models/time-off';
 import type { StaffMember } from '@/models/staff';
 import { useAppTheme } from '@/theme/theme-context';
+import { useContentWidth } from '@/lib/content-width';
 
 const LABELS = timeSlotLabels();
 const dayNumFmt = new Intl.DateTimeFormat('en-US', { day: 'numeric' });
@@ -55,7 +56,7 @@ export function MultiDayGrid({
   const { getSchedule } = useWorkingHours();
   const { events: timeOffEvents, deleteEvent, updateEvent } = useTimeOff();
   const { can } = usePermissions();
-  const { width } = useWindowDimensions();
+  const width = useContentWidth();
   const scrollRef = useRef<ScrollView>(null);
   const nonWorking = withOpacity(theme.inputBackground, 0.6);
   const canManageTimeOff = can('manageTimeOff');

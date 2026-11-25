@@ -31,6 +31,8 @@ export function ScheduleHeader({
   onHome,
   onOpenSwitcher,
   onMenu,
+  onStep,
+  onToday,
 }: {
   displayedDate: Date;
   onDateChange: (d: Date) => void;
@@ -38,6 +40,10 @@ export function ScheduleHeader({
   onHome: () => void;
   onOpenSwitcher: () => void;
   onMenu: () => void;
+  /** Previous / next period buttons (the computer layout, where there's no swipe). */
+  onStep?: (direction: 1 | -1) => void;
+  /** "Today" button beside the step buttons. */
+  onToday?: () => void;
 }) {
   const theme = useAppTheme();
   const [showPicker, setShowPicker] = useState(false);
@@ -55,6 +61,24 @@ export function ScheduleHeader({
           <Text style={theme.display(20, '500')}>{monthYearFmt.format(displayedDate)}</Text>
           <Icon name={showPicker ? 'chevron.up' : 'chevron.down'} size={10} weight="semibold" color={theme.secondaryText} />
         </Pressable>
+
+        {onStep ? (
+          <View style={styles.stepper}>
+            {onToday ? (
+              <Pressable
+                onPress={onToday}
+                style={[styles.todayBtn, { borderColor: theme.divider, borderRadius: theme.isEditorial ? 2 : 999 }]}>
+                <Text style={[styles.todayText, { color: theme.primaryText }]}>Today</Text>
+              </Pressable>
+            ) : null}
+            <Pressable onPress={() => onStep(-1)} accessibilityLabel="Previous" hitSlop={4} style={styles.iconBtn}>
+              <Icon name="chevron.left" size={16} weight="semibold" color={theme.accent} />
+            </Pressable>
+            <Pressable onPress={() => onStep(1)} accessibilityLabel="Next" hitSlop={4} style={styles.iconBtn}>
+              <Icon name="chevron.right" size={16} weight="semibold" color={theme.accent} />
+            </Pressable>
+          </View>
+        ) : null}
 
         <View style={styles.spacer} />
 
@@ -163,6 +187,9 @@ function DropdownDatePicker({
 }
 
 const styles = StyleSheet.create({
+  stepper: { flexDirection: 'row', alignItems: 'center', gap: 2, marginLeft: 12 },
+  todayBtn: { borderWidth: 1, paddingHorizontal: 14, paddingVertical: 6, marginRight: 6 },
+  todayText: { fontSize: 14, fontWeight: '600' },
   row: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth },
   iconBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
   monthBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },

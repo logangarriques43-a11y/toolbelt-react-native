@@ -4,8 +4,11 @@
   for the single-page web export (app.json → web.output "single"); the phone
   apps never load it.
   - Home-screen install: manifest + apple-touch-icon + standalone display.
-  - Desktop framing: the app is designed for phone-width screens, so wider
-    windows show it (and its modal sheets) in a centered 640px column.
+  - Mid-size windows (641–1023px) show the phone layout, and its modal
+    sheets, in a centered 640px column.
+  - Computers (1024px and wider) get the desktop layout: a sidebar beside the
+    screens (components/desktop-shell.web.tsx), and sheets presented as
+    centered panels (components/web/modal-frame.ts tags them).
 -->
 <html lang="en">
   <head>
@@ -38,8 +41,8 @@
       /* Keyboard focus ring in the app's sage instead of the browser default. */
       input:focus-visible, textarea:focus-visible, [tabindex]:focus-visible { outline: 2px solid #8FB996; outline-offset: 1px; }
 
-      /* Desktop framing: centered app column, modal sheets aligned to it. */
-      @media (min-width: 641px) {
+      /* Mid-size windows: the phone layout in a centered column, modal sheets aligned to it. */
+      @media (min-width: 641px) and (max-width: 1023px) {
         body { background: #DCDED6; }
         #root, body > div:not(#root) {
           max-width: 640px;
@@ -55,9 +58,32 @@
           right: calc(50% - 320px) !important;
         }
       }
-      @media (min-width: 641px) and (prefers-color-scheme: dark) {
+      @media (min-width: 641px) and (max-width: 1023px) and (prefers-color-scheme: dark) {
         body { background: #0A0B0A; }
         #root { box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 12px 48px rgba(0, 0, 0, 0.5); }
+      }
+
+      /* Computers: the app fills the window (sidebar layout); sheets open centered. */
+      @media (min-width: 1024px) {
+        /* The modal's portal covers the window so clicks beside a sheet never reach the page under it. */
+        body > div:not(#root):has(> [data-tb-modal]) { position: fixed; inset: 0; z-index: 9998; }
+        /* Full-screen forms: a centered rounded panel over a dimmed window. */
+        [data-tb-modal="panel"] {
+          top: max(24px, 4vh) !important;
+          bottom: max(24px, 4vh) !important;
+          left: calc(50% - 320px) !important;
+          right: calc(50% - 320px) !important;
+          border-radius: 18px;
+          overflow: hidden;
+          box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.4), 0 24px 64px rgba(0, 0, 0, 0.3);
+        }
+        /* Bottom sheets and menus: kept in a centered column; outside it is dimmed exactly like their own backdrop. */
+        [data-tb-modal="overlay"] {
+          left: calc(50% - 320px) !important;
+          right: calc(50% - 320px) !important;
+          box-shadow: 0 0 0 100vmax var(--tb-scrim, transparent);
+        }
+      }
       }
     </style>
   </head>
