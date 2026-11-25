@@ -12,9 +12,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { DashboardGradient } from '@/components/dashboard-gradient';
 import { ScreenHeader } from '@/components/screen-header';
 import { ThemedButton, ThemedIconTile } from '@/components/themed';
+import { gatedOff } from '@/lib/feature-flags';
+import type { Permission } from '@/models/permission';
 import { useAppTheme } from '@/theme/theme-context';
 
-const PERMISSIONS: { id: string; title: string; subtitle: string; icon: SFSymbol }[] = [
+const ALL_PERMISSIONS: { id: Permission; title: string; subtitle: string; icon: SFSymbol }[] = [
   { id: 'viewClients', title: 'View Clients', subtitle: 'See client list and details', icon: 'person.2.fill' },
   { id: 'editClients', title: 'Edit Clients', subtitle: 'Add, edit, or remove clients', icon: 'person.crop.circle.badge.plus' },
   { id: 'viewAppointments', title: 'View Appointments', subtitle: 'See the schedule and bookings', icon: 'calendar' },
@@ -27,6 +29,10 @@ const PERMISSIONS: { id: string; title: string; subtitle: string; icon: SFSymbol
   { id: 'sendInvoices', title: 'Send Invoices', subtitle: 'Create and send invoices to clients', icon: 'paperplane.fill' },
   { id: 'manageSettings', title: 'Manage Settings', subtitle: 'Change business settings', icon: 'gearshape.fill' },
 ];
+
+// Only features in this build: no Payments, Reports or Inventory toggles before
+// those modules exist.
+const PERMISSIONS = ALL_PERMISSIONS.filter((p) => !gatedOff(p.id));
 
 export default function StaffPermissions() {
   const theme = useAppTheme();
